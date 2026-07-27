@@ -145,7 +145,26 @@ Les balles du rough, elles, restent visibles de loin.
 
 On entre chez les Lutreau, les Lebel, les Webb, chez soi et au club house. Chaque salon a
 sa cheminée, son canapé, sa table basse, sa télévision, sa cuisine avec évier et frigo.
-Le vélo se range tout seul quand on rentre quelque part.
+Le vélo se range tout seul quand on rentre quelque part. **A devant une haie saute
+par-dessus**, si ça retombe sur quelque chose de franchissable.
+
+Trois villas du hameau n'appartiennent à personne, et c'est très bien comme ça. À la fenêtre
+de l'une d'elles, on peut mater Candice et Jennifer. Trois fois, pas plus.
+
+## Le club house
+
+Plan repris du croquis. **Trois portes en façade**, chacune avec son point de chute :
+à gauche le vestibule, au centre le passage vers le patio, à droite le restaurant.
+
+Aile ouest, du sud au nord : le vestibule et son escalier vers le premier étage, puis un
+couloir bordé de vitrines à trophées avec les toilettes de chaque côté, puis la pièce qui
+distribue les vestiaires, femmes au rez-de-chaussée et hommes à l'étage. Les photos d'équipe
+montrent les daronnes de tout le monde, et il y a même un Imad Lahoud sur l'une d'elles.
+
+Au centre : la salle de billard qui donne sur le patio, le patio et sa fontaine, et au sud la
+salle cheminée, sol en pierre, trois groupes de fauteuils clubs marron avec leur table basse
+en bois, et la grosse cheminée sur la droite. À l'est : le bar, le restaurant et les cuisines
+au fond.
 
 ## Règles de vie du monde
 

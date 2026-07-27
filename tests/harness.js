@@ -242,8 +242,38 @@ game.bike = false; clear();
 });
 
 t.DOORS.filter(d => d.to !== 'club').forEach(d => entre(d.x, d.y, d.to));
-const dclub = t.DOORS.find(d => d.to === 'club');
-entre(dclub.x, dclub.y, 'club');
+
+/* le club house a trois portes en facade, chacune avec son point de chute */
+const portesClub = t.DOORS.filter(d => d.to === 'club');
+check('trois entrees au club house', new Set(portesClub.map(d => d.sx + ',' + d.sy)).size === 3,
+  portesClub.map(d => d.x + '->' + d.sx + ',' + d.sy).join(' '));
+portesClub.forEach(d => {
+  clear(); tp(d.x, d.y + 1); game.dir = 1;
+  /* un seul pas, pile sur la porte, pour lire le point de chute exact */
+  t.press('up'); t.update();
+  let n = 0; while (game.moving && n++ < 80) t.update();
+  t.release('up'); frames(2); clear();
+  check('la porte en x=' + d.x + ' mene au bon endroit',
+    game.inside === 'club' && game.px === d.sx && game.py === d.sy,
+    game.px + ',' + game.py + ' au lieu de ' + d.sx + ',' + d.sy);
+  /* et on ressort par la meme */
+  for (let i = 0; i < 12 && game.inside === 'club'; i++) { hold('down', 20); clear(); }
+  check('on ressort du club par la porte en x=' + d.x, game.inside === null, 'inside=' + game.inside);
+  clear();
+});
+/* les pieces du plan doivent toutes exister */
+const club = t.INT.club;
+const dedans = new Set(club.map);
+[['vitrines du couloir', T.VITRINE], ['escaliers', T.ESCAL], ['toilettes', T.WC],
+ ['billard', T.BILL], ['cheminee', T.CHEM], ['fauteuils clubs', T.FAUT],
+ ['tables basses', T.TBAS], ['fontaine du patio', T.FOUNT], ['bar', T.BAR],
+ ['cuisines', T.KITCH], ['casiers des vestiaires', T.LOCKER]].forEach(([nom, tuile]) => {
+  check('le club house a ses ' + nom, dedans.has(tuile));
+});
+check('trois groupes de fauteuils dans la salle cheminee',
+  [13, 18, 23].every(x => club.map[18 * club.w + x] === T.FAUT));
+check('la cheminee est a droite de la salle',
+  club.map[17 * club.w + 26] === T.CHEM && club.map[17 * club.w + 27] === T.CHEM);
 
 /* portes fermees : elles parlent, elles n ouvrent pas */
 t.LOCKED.forEach(L => {

@@ -299,14 +299,14 @@ const T={FAIR:0,ROUGH:1,GREEN:2,SAND:3,WATER:4,PATH:5,TREE:6,DENSE:7,TEE:8,FLAG:
   DESK:69,CART:70,PLANT:71,BILL:72,WHITE:73,WROOF:74,
   PROOF:75,FTOP:76,FACADE:77,FWIN:78,FDOOR:79,FLOW:80,BDOOR:81,
   CHEM:82,TBAS:83,FAUT:84,BIBLI:85,FRIGO:86,EVIER:87,BUFFET:88,
-  HRIDGE:89,HEAVE:90,HWIN:91,HWINB:92,HBAIE:93,LUC:94,STORE:95,PLAT:96,TRANSAT:97,CANETTE:98};
+  HRIDGE:89,HEAVE:90,HWIN:91,HWINB:92,HBAIE:93,LUC:94,STORE:95,PLAT:96,TRANSAT:97,CANETTE:98,ESCAL:99,VITRINE:100,WC:101};
 const SOLID=new Set([T.TREE,T.WATER,T.CAR,T.SWALL,T.SWIN,T.HEDGE,T.PARA,T.POOL,
   T.HWALL,T.HROOF,T.SIGN,T.FLAG,T.STALL,T.FOUNT,T.LOCKER,T.BAR,T.TABLE,T.SHOP,T.WALLI,T.SROOF,T.FIRE,T.LOG,
   T.SWINB,T.WOOD,T.BAIE,T.FLATR,T.BROOF,T.TNET,T.SOFA,T.TVGC,T.BED,T.KITCH,T.EASEL,T.JACU,
   T.GATE,T.STONEW,T.VASIS,T.DESK,T.CART,T.PLANT,T.BILL,T.WHITE,T.WROOF,
   T.PROOF,T.FTOP,T.FACADE,T.FWIN,T.FLOW,
   T.CHEM,T.TBAS,T.FAUT,T.BIBLI,T.FRIGO,T.EVIER,T.BUFFET,
-  T.HRIDGE,T.HEAVE,T.HWIN,T.HWINB,T.HBAIE,T.LUC,T.STORE,T.PLAT]);
+  T.HRIDGE,T.HEAVE,T.HWIN,T.HWINB,T.HBAIE,T.LUC,T.STORE,T.PLAT,T.VITRINE,T.WC]);
 const cache={};
 function tile(id,v,f){
   const key=id+':'+v+':'+(f||0); if(cache[key])return cache[key];
@@ -637,6 +637,20 @@ function tile(id,v,f){
       R('#d8d3c6',3,7,10,1); R('#c9c4bb',4,11,8,2);
       R('#8a8a92',3,2,1,12); R('#8a8a92',12,2,1,12);
       R('#5a5a62',5,14,2,2); R('#5a5a62',9,14,2,2); break;
+    case T.ESCAL: R('#a89b86',0,0,16,16);
+      for(let y=0;y<16;y+=4){R('#7a7061',0,y,16,1);R('#c4b9a0',0,y+1,16,2);R('#b0a48c',0,y+3,16,1);}
+      R('#6b6250',0,0,1,16); R('#6b6250',15,0,1,16); break;
+    case T.VITRINE: R('#a89b86',0,0,16,16);
+      R('#5a3d22',0,0,16,14); R('#7a5433',1,1,14,12);
+      R('#2b3444',2,2,12,10); R('#3d4a5e',2,2,12,1);
+      R('#e8b83a',3,5,2,5); R('#f2d24a',2,3,4,3); R('#c8a02a',3,10,2,1);
+      R('#d8d3c6',7,4,6,5); R('#8a8f96',8,5,4,3); R('#5a6068',8,5,1,3);
+      R('#e0c88a',7,10,6,1);
+      R('#5a3d22',0,14,16,2); break;
+    case T.WC: R('#c9c4bb',0,0,16,16);
+      R('#b4bcc4',0,0,16,2);
+      R('#f4f6f8',4,4,8,9); R('#dde3e8',5,6,6,6); R('#c9d2d8',5,12,6,2);
+      R('#eef2f5',5,1,6,3); R('#8a9098',7,3,2,1); break;
     case T.GATE: R('#4e8a3e',0,0,16,16); R('#5a4632',0,0,2,16); R('#5a4632',14,0,2,16);
       for(let x=3;x<14;x+=3) R('#7a6244',x,2,2,12); R('#7a6244',2,3,12,2); R('#7a6244',2,10,12,2); break;
     default: R('#7cb85c',0,0,16,16);
@@ -714,13 +728,14 @@ function voitureA(x,y){return VOITURES.find(v=>v.x===x&&v.y===y);}
 
 const FEU={x:109,y:36}, MAMOU={x:99,y:18};
 /* les huit villas forestieres du hameau, eparpillees */
+const FENETRE={x:0,y:0,vu:0};
 const VILLAS=[
  {id:'lutreau',   x:89, y:4,  n:'CHEZ LES LUTREAU',   into:'lutreau'},
  {id:'jungers',   x:99, y:3,  n:'CHEZ TOI',           into:'jungers'},
  {id:'molina',    x:109,y:4,  n:'CHEZ MONSIEUR MOLINA'},
- {id:'gandibleu', x:89, y:12, n:'CHEZ LES GANDIBLEU'},
- {id:'huet',      x:99, y:11, n:'CHEZ HERVÉ HUET'},
- {id:'margulis',  x:109,y:12, n:'CHEZ MAÎTRE MARGULIS'},
+ {id:'villa1',    x:89, y:12, n:'UNE VILLA DU HAMEAU'},
+ {id:'villa2',    x:99, y:11, n:'UNE VILLA DU HAMEAU'},
+ {id:'villa3',    x:109,y:12, n:'UNE VILLA DU HAMEAU', fenetre:1},
  {id:'dutreuil',  x:89, y:20, n:'CHEZ PERRINE DUTREUIL'},
  {id:'bernardini',x:109,y:20, n:'CHEZ LES BERNARDINI'}];
 /* les cinq maisons de lisiere, alignees le long des trous 4 et 5 */
@@ -734,7 +749,7 @@ const LISIERE=[
 const EVENOU=[{y:76},{y:82},{y:88}];
 const MAMOU_WIN=[[100,21],[102,21],[104,21],[100,22],[104,22]];
 const DOORS=[];
-function door(x,y,to,tl){put(x,y,tl||T.SDOOR);DOORS.push({x:x,y:y,to:to});}
+function door(x,y,to,tl,sx,sy){put(x,y,tl||T.SDOOR);DOORS.push({x:x,y:y,to:to,sx:sx,sy:sy});}
 function doorAt(x,y){return DOORS.find(d=>d.x===x&&d.y===y);}
 /* villa forestiere : plain-pied, toit plat en debord, baies toute hauteur, murs en pierre */
 function villa(x,y,w){
@@ -837,9 +852,11 @@ function buildWorld(){
   rect(54,47,19,2,T.PROOF);
   rect(54,49,19,1,T.FTOP);
   rect(54,50,19,2,T.FACADE);
-  [55,58,61,66,69,72].forEach(x=>put(x,50,T.FWIN));
-  [55,57,60,68,70,72].forEach(x=>put(x,51,T.FWIN));
-  door(63,51,'club',T.FDOOR);door(64,51,'club',T.FDOOR);
+  [55,59,61,66,68,72].forEach(x=>put(x,50,T.FWIN));
+  [55,59,61,66,72].forEach(x=>put(x,51,T.FWIN));
+  door(57,51,'club',T.FDOOR,5,22);
+  door(63,51,'club',T.FDOOR,22,22);door(64,51,'club',T.FDOOR,22,22);
+  door(69,51,'club',T.FDOOR,33,22);
   put(62,51,T.FACADE);put(65,51,T.FACADE);
   rect(54,52,19,4,T.STONE);
   rect(54,56,19,1,T.PATIO);
@@ -875,6 +892,7 @@ function buildWorld(){
   /* ---------- le hameau : huit villas forestieres ---------- */
   VILLAS.forEach(v=>{
     villa(v.x,v.y,7);
+    if(v.fenetre){FENETRE.x=v.x+5;FENETRE.y=v.y+1;}
     if(v.into)door(v.x+3,v.y+1,v.into,T.BDOOR);
     else put(v.x+3,v.y+1,T.BDOOR);
     rect(v.x-2,v.y+4,11,2,T.LAWN);
@@ -971,44 +989,66 @@ function makeInt(id,w,h,name,sx,sy,ox,oy,fn){
 }
 function curMap(){return game.inside?INT[game.inside]:null;}
 
-makeInt('club',34,20,'CLUB HOUSE',17,18,63,52,function(){
+makeInt('club',40,24,'CLUB HOUSE',22,22,63,52,function(){
   imap.fill(T.WALLI);
-  irect(2,2,10,10,T.FLOOR);
-  irect(2,13,10,6,T.FLOOR);
-  irect(14,2,9,9,T.PATIO);
-  irect(25,2,7,8,T.FLOOR);
-  irect(25,11,7,4,T.FLOOR);
-  irect(25,16,7,3,T.FLOOR);
-  irect(13,12,11,7,T.FLOOR);
-  /* restaurant, vieilles pierres */
-  [[3,3],[7,3],[3,7],[7,7],[9,10]].forEach(([x,y])=>{iput(x,y,T.TABLE);iput(x,y+1,T.CHAIR);iput(x+1,y,T.CHAIR);});
-  irect(2,2,10,1,T.STONE); irect(2,2,1,10,T.STONE);
-  /* patio */
-  iput(18,6,T.FOUNT);iput(19,6,T.FOUNT);iput(18,7,T.FOUNT);iput(19,7,T.FOUNT);
-  iput(15,3,T.HEDGE);iput(21,3,T.HEDGE);iput(15,9,T.HEDGE);iput(21,9,T.HEDGE);
-  /* bar */
-  irect(26,3,5,1,T.BAR); for(let x=26;x<31;x++) iput(x,5,T.STOOL);
-  iput(27,8,T.TABLE);iput(30,8,T.TABLE);
-  /* vestiaires */
-  for(let y=11;y<15;y+=2) for(let x=26;x<32;x++) iput(x,y,T.LOCKER);
-  iput(28,12,T.BENCH);
-  for(let x=25;x<32;x++){iput(x,16,T.LOCKER);iput(x,18,T.LOCKER);}
-  iput(28,17,T.BENCH);
-  /* salle billard et accueil */
-  irect(14,13,5,5,T.FLOOR);
-  iput(15,14,T.BILL);iput(16,14,T.BILL);iput(17,14,T.BILL);
-  iput(15,16,T.STOOL);iput(17,16,T.STOOL);
-  iput(21,13,T.DESK);iput(22,13,T.DESK);iput(20,15,T.PLANT);
-  /* boutique */
-  irect(3,14,7,1,T.SHOP); iput(3,17,T.RUG);iput(4,17,T.RUG);
-  /* passages */
-  iput(12,6,T.ARCH);iput(13,6,T.ARCH);
-  iput(12,15,T.ARCH);
-  iput(18,11,T.ARCH);iput(19,11,T.ARCH);
-  iput(23,5,T.ARCH);iput(24,5,T.ARCH);
-  iput(24,13,T.ARCH); iput(24,17,T.ARCH);
-  iput(17,19,T.EXIT);iput(18,19,T.EXIT);
-  irect(16,17,3,2,T.RUG);
+  /* ---------- aile ouest : vestiaires, toilettes, couloir des trophees, vestibule ---------- */
+  irect(1,1,10,4,T.FLOOR);          /* vestiaires femmes, au rez-de-chaussee */
+  irect(1,5,10,3,T.FLOOR);          /* la piece qui distribue les vestiaires */
+  irect(1,9,3,4,T.FLOOR);           /* toilettes hommes */
+  irect(9,9,2,4,T.FLOOR);           /* toilettes femmes */
+  irect(5,8,3,9,T.FLOOR);           /* le couloir des trophees */
+  irect(1,17,10,6,T.FLOOR);         /* le vestibule */
+  iput(4,10,T.ARCH); iput(8,10,T.ARCH);
+  for(let x=1;x<11;x+=2){iput(x,1,T.LOCKER);iput(x+1,1,T.LOCKER);}
+  for(let x=1;x<11;x+=2){iput(x,3,T.LOCKER);iput(x+1,3,T.LOCKER);}
+  iput(5,2,T.BENCH);
+  iput(2,6,T.ESCAL);iput(3,6,T.ESCAL);          /* vers les vestiaires hommes, a l'etage */
+  iput(8,6,T.BENCH);
+  iput(1,9,T.WC);iput(1,11,T.WC);iput(3,12,T.WC);
+  iput(9,9,T.WC);iput(9,11,T.WC);
+  iput(5,8,T.VITRINE);iput(5,11,T.VITRINE);iput(5,14,T.VITRINE);
+  iput(7,9,T.VITRINE);iput(7,12,T.VITRINE);iput(7,15,T.VITRINE);
+  iput(2,18,T.ESCAL);iput(2,19,T.ESCAL);iput(2,20,T.ESCAL);   /* vers le premier etage */
+  iput(9,18,T.PLANT); irect(4,21,3,2,T.RUG);
+  iput(11,20,T.ARCH); iput(11,12,T.ARCH);
+  /* ---------- la salle de billard, qui donne sur le patio ---------- */
+  irect(12,8,6,9,T.FLOOR);
+  iput(13,10,T.BILL);iput(14,10,T.BILL);iput(15,10,T.BILL);
+  iput(13,14,T.BILL);iput(14,14,T.BILL);iput(15,14,T.BILL);
+  iput(17,9,T.STOOL);iput(17,13,T.STOOL);iput(12,16,T.PLANT);
+  iput(18,10,T.ARCH);iput(18,13,T.ARCH);
+  /* ---------- le patio ---------- */
+  irect(19,5,9,12,T.STONE);
+  iput(23,10,T.FOUNT);iput(24,10,T.FOUNT);iput(23,11,T.FOUNT);iput(24,11,T.FOUNT);
+  iput(20,6,T.HEDGE);iput(26,6,T.HEDGE);iput(20,15,T.HEDGE);iput(26,15,T.HEDGE);
+  iput(21,7,T.TABLE);iput(25,13,T.TABLE);
+  for(let x=24;x<=27;x++) iput(x,16,T.WALLI);
+  /* ---------- la salle cheminee ---------- */
+  irect(12,17,16,6,T.STONE);
+  iput(26,17,T.CHEM);iput(27,17,T.CHEM);
+  [13,18,23].forEach(x=>{
+    iput(x,18,T.FAUT);iput(x+2,18,T.FAUT);
+    iput(x+1,20,T.TBAS);
+    iput(x+1,21,T.FAUT);
+  });
+  iput(12,22,T.PLANT);
+  iput(28,20,T.ARCH);
+  /* ---------- cuisines, restaurant, bar ---------- */
+  irect(29,1,10,7,T.FLOOR);
+  iput(29,1,T.KITCH);iput(30,1,T.EVIER);iput(31,1,T.KITCH);iput(32,1,T.FRIGO);
+  iput(34,1,T.KITCH);iput(35,1,T.KITCH);iput(37,1,T.FRIGO);
+  iput(31,4,T.TABLE);iput(35,4,T.TABLE);iput(33,6,T.BUFFET);
+  iput(33,8,T.ARCH);
+  irect(29,9,10,10,T.FLOOR);
+  [[30,10],[34,10],[30,14],[34,14],[37,12],[37,16]].forEach(([x,y])=>{
+    iput(x,y,T.TABLE);iput(x,y+1,T.CHAIR);iput(x+1,y,T.CHAIR);});
+  iput(28,12,T.ARCH);
+  irect(29,19,10,4,T.FLOOR);
+  irect(30,19,6,1,T.BAR);
+  for(let x=30;x<36;x++) iput(x,20,T.STOOL);
+  iput(37,20,T.TABLE);iput(37,22,T.TABLE);
+  /* ---------- les trois portes de la facade ---------- */
+  iput(5,23,T.EXIT); iput(22,23,T.EXIT); iput(33,23,T.EXIT);
 });
 
 /* chez les Lutreau : plain-pied en coco beige, trois chambres, salon ouvert sur le jardin */
@@ -1154,7 +1194,7 @@ const ITEMS=[
   txt:"Un vélo posé contre un mur, sans cadenas, comme toujours. SELECT pour l'enfourcher."},
  {id:'manette',x:12,y:9,inside:'lutreau',n:'Deuxième manette',
   txt:"La deuxième manette GameCube, derrière le canapé. Le fil est noué depuis 2003."},
- {id:'rolex',x:28,y:12,inside:'club',n:'Rolex',
+ {id:'rolex',x:6,y:6,inside:'club',n:'Rolex',
   txt:"Une Rolex oubliée sur le banc du vestiaire hommes. Elle est encore chaude."}];
 /* aucun objet ne doit finir sous un arbre */
 ITEMS.forEach(it=>{if(it.inside===null&&SOLID.has(at(it.x,it.y)))put(it.x,it.y,T.ROUGH);});
@@ -1296,7 +1336,7 @@ const NPCS=[
   d:[["Allez allez allez, on ne traîne pas dans l'entrée, il y a une compétition !"],
      ["Toi je t'ai vu passer trois fois. Tu cherches quelqu'un ou tu tournes ?"],
      ["Tenue correcte. Rentre-moi ce polo. Voilà. Bonne partie !"]]},
- {id:'jackie',x:26,y:17,dir:0,inside:'club',name:'JACKIE',
+ {id:'jackie',x:8,y:7,dir:0,inside:'club',name:'JACKIE',
   pal:pal('#2b2b33','#3f5d8a','#2b2b33','#1b2030'),
   d:[["Les chaussures, tu les tapes DEHORS. Pas sur mon carrelage."],
      ["J'ai une 2 CV de 72. Bleu glacier. Elle démarre à la manivelle quand elle boude."],
@@ -1314,7 +1354,7 @@ const NPCS=[
   pal:pal('#8a3f4a','#c9a9b4','#5a3d4a','#8a6238'),
   d:[["On ne touche pas aux gants. Ils sont neufs."],
      ["Tu me rapportes encore des balles ? Fais voir ça."]]},
- {id:'barman',x:28,y:4,dir:0,inside:'club',name:'BARMAN',heal:true,
+ {id:'barman',x:33,y:21,dir:0,inside:'club',name:'BARMAN',heal:true,
   pal:pal('#2b2b33','#f4f2ec','#2b2b33','#4a2f18'),
   d:[["Assieds-toi deux minutes. Perrier rondelle, sur le compte des parents.","Voilà. Tu repars comme neuf."]]},
  /* --- les chiens --- */
@@ -1344,9 +1384,9 @@ const LOCKED=[
  {x:107,y:85,who:'CHEZ LES EVENOU',d:["La deuxième maison. C'est celle de l'oncle, celui qui a la piscine hors sol."]},
  {x:107,y:91,who:'CHEZ LES EVENOU',d:["La troisième. Camille dort là quand elle vient. Elle vient rarement."]},
  {x:112,y:5,who:'CHEZ MONSIEUR MOLINA',d:["Le directeur du golf habite là. On ne sonne pas chez le directeur."]},
- {x:92,y:13,who:'CHEZ LES GANDIBLEU',d:["Le garage est ouvert. Il n'y a rien dedans, la Porsche est au parking."]},
- {x:102,y:12,who:'CHEZ HERVÉ HUET',d:["Tout est parfaitement rangé et parfaitement silencieux. Comme lui."]},
- {x:112,y:13,who:'CHEZ MAÎTRE MARGULIS',d:["Une plaque en cuivre : avocat au barreau de Versailles. On ne sonne pas non plus."]},
+ {x:92,y:13,who:'UNE VILLA DU HAMEAU',d:["Une villa comme les autres. On n'a jamais su qui habitait là.","Une voiture différente chaque été, et jamais la même plaque."]},
+ {x:102,y:12,who:'UNE VILLA DU HAMEAU',d:["Volets clos toute l'année. Même en août.","Victor dit qu'il y a une piscine derrière. Personne n'a vérifié."]},
+ {x:112,y:13,who:'UNE VILLA DU HAMEAU',d:["Celle-là, tout le monde sait ce qu'il y a dedans. Enfin, qui.","On n'entre pas. On passe devant. Très lentement."]},
  {x:92,y:21,who:'CHEZ PERRINE DUTREUIL',d:["La grand-mère des Lutreau. Ça sent le gâteau depuis l'allée."]},
  {x:112,y:21,who:'CHEZ LES BERNARDINI',d:["Un panier de basket vissé au-dessus du garage. Le filet est en lambeaux."]},
  {x:46,y:42,who:'PRO SHOP',d:["Le pro shop. Cathy est devant, elle te voit venir de loin."]},
@@ -1372,6 +1412,18 @@ NPCS.forEach(n=>{n.gx0=n.x;n.gy0=n.y;n.i0=n.inside;});
 [['charles',0.09],['victor',0.11],['oscar',0.06],['antoine',0.14],['kuperfils',0.17],
  ['louis',0.15],['paul',0.12]].forEach(([id,sk])=>{
   const n=NPCS.find(x=>x.id===id); if(n){n.gang=true;n.skill=sk;n.roam=0;}});
+const TROPHEES=[
+ ["Coupe du Président 1994. Une photo d'équipe, tout le monde en polo rentré.",
+  "Au deuxième rang, ta mère. Elle a exactement la même tête qu'aujourd'hui."],
+ ["Challenge des Familles 1998. Les mères d'abord, les enfants devant, les pères derrière.",
+  "La mère de Charles rit tellement qu'elle est floue sur la photo."],
+ ["Trophée du Vexin 2001. Une vitrine pleine de coupes et une seule médaille.",
+  "La médaille, c'est Georgie. Personne ne commente."],
+ ["Une photo d'équipe sans légende. Tout le monde sourit sauf un type au bout du rang.",
+  "Louis prétend que c'est Imad Lahoud. Personne ne sait qui c'est.",
+  "Louis non plus, en fait. Mais il le dit avec beaucoup d'assurance."],
+ ["Coupe des Dames 1996. Ta mère, la mère d'Oscar, la mère de Kupi et Perrine Dutreuil.",
+  "Elles ont gagné. Elles le rappellent encore."]];
 const RUMEURS=[
  ["On a volé une Rolex dans le vestiaire hommes.","Une Rolex. Ici. Vous imaginez."],
  ["Il paraît que c'est un enfant. Ils sont partout, ces enfants."],
@@ -1379,7 +1431,7 @@ const RUMEURS=[
 
 /* ---------- état ---------- */
 const S={TITLE:0,WORLD:1,DIALOG:2,MENU:3,PAGE:4,SHOP:5,GOLF:6,BATTLE:7,TRANS:8,ASK:9,PENTE:10,CLOPE:11,PICK:12};
-const game={state:S.TITLE,tick:0,inside:null,mute:false,clopes:0,shake:0,
+const game={state:S.TITLE,tick:0,inside:null,mute:false,clopes:0,shake:0,hop:null,hopH:0,
   pick:0,heroId:'moi',heroPal:null,fade:null,feuCall:false,
   px:40,py:57,dir:1,frame:0,step:0,moving:false,ox:0,oy:0,
   banner:null,bannerT:0,zone:'',toast:null,toastT:0,
@@ -1542,11 +1594,13 @@ function drawScene(cx,cy){
     }
   } else {
     const hx=Math.round(game.px*TS+game.ox-cx),hy=Math.round(game.py*TS+game.oy-cy)-4;
-    const buis=inBrush(game.px,game.py);
-    if(!buis){ctx.fillStyle='rgba(0,0,0,.2)';ctx.beginPath();ctx.ellipse(hx+8,hy+16,6,2.5,0,0,7);ctx.fill();}
-    if(game.bike&&!golf.on)drawSprite(buis?BIKE.slice(0,10):BIKE,hx,hy,1,game.heroPal,game.dir===2);
+    const buis=inBrush(game.px,game.py)&&!game.hop;
+    const saut=game.hopH||0;
+    if(!buis){ctx.fillStyle='rgba(0,0,0,'+(saut?0.12:0.2)+')';ctx.beginPath();
+      ctx.ellipse(hx+8,hy+16,saut?4:6,saut?1.6:2.5,0,0,7);ctx.fill();}
+    if(game.bike&&!golf.on)drawSprite(buis?BIKE.slice(0,10):BIKE,hx,hy-saut,1,game.heroPal,game.dir===2);
     else if(buis)drawSprite(pers(game.dir===3?2:game.dir,game.frame).slice(0,10),hx,hy,1,game.heroPal,game.dir===2);
-    else drawActeur(game.heroId,game.heroPal,game.dir,game.frame,hx,hy,1,game.dir===2);
+    else drawActeur(game.heroId,game.heroPal,game.dir,game.frame,hx,hy-saut,1,game.dir===2);
     if(buis)brushOver(hx,hy+9,game.px+game.py);
   }
   if(golf.on&&golf.phase!=='result'){
@@ -1622,7 +1676,7 @@ function arrive(){
     if(z!==game.zone){game.zone=z;game.banner=z;game.bannerT=0;}
     if(t===T.SDOOR||t===T.FDOOR||t===T.BDOOR||t===T.HBAIE||t===T.STORE){
       const d=doorAt(game.px,game.py);
-      if(d){goInside(d.to);return;}
+      if(d){goInside(d.to,d);return;}
       const L=LOCKED.find(l=>l.x===game.px&&l.y===game.py);
       if(L){say(L.d,null,L.who||null);return;}
     }
@@ -1650,15 +1704,15 @@ function arrive(){
       for(const it of ITEMS) if(!game.items[it.id]&&it.inside===game.inside&&it.x===game.px&&it.y===game.py) takeItem(it);
       return;
     }
-    if(game.px>=25&&game.px<=31&&game.py>=16&&game.py<=18){
+    if(game.px>=1&&game.px<=10&&game.py>=1&&game.py<=4){
       say(["Une dame d'une soixantaine d'années en sous-vêtements se retourne lentement.",
            "MAIS ENFIN. C'EST LE VESTIAIRE DES DAMES.",
            "Tu ressors à reculons en regardant le plafond."],
-        ()=>{game.px=23;game.py=17;game.ox=0;game.oy=0;},'LES DAMES');
+        ()=>{game.px=5;game.py=6;game.ox=0;game.oy=0;},'LES DAMES');
       return;}
-    if(game.px>=25&&game.px<=31&&game.py>=11&&game.py<=14&&!game.vuNu){
+    if(game.px>=1&&game.px<=4&&game.py>=5&&game.py<=7&&!game.vuNu){
       game.vuNu=true;
-      say(["Un vieux monsieur entièrement nu se sèche les cheveux devant la glace.",
+      say(["Un vieux monsieur entièrement nu descend l'escalier des vestiaires hommes, serviette à la main.",
            "Il te dit bonjour très naturellement. Tu réponds bonjour."],null,'VESTIAIRE');
       return;}
     for(const it of ITEMS) if(!game.items[it.id]&&it.inside===game.inside&&it.x===game.px&&it.y===game.py) takeItem(it);
@@ -1669,24 +1723,46 @@ function takeItem(it){
   if(it.id==='rolex')game.rolex=true;
   say([it.txt,'('+it.n+' rangé dans le sac.)']);
 }
-function goInside(id){
+const CLUB_SORTIES={'5,23':[57,52],'22,23':[63,52],'33,23':[69,52]};
+function goInside(id,d){
   const C=INT[id]; if(!C)return;
   const avaitLeVelo=game.bike;
   game.bike=false;
-  game.inside=id;game.px=C.sx;game.py=C.sy;game.dir=1;
+  game.inside=id;
+  game.px=(d&&d.sx!==undefined)?d.sx:C.sx;
+  game.py=(d&&d.sy!==undefined)?d.sy:C.sy;
+  game.dir=1;
   if(avaitLeVelo)toast('Tu poses le vélo contre le mur. On ne rentre pas avec.');
   game.ox=0;game.oy=0;game.moving=false;
   game.banner=C.name;game.bannerT=0;game.zone=C.name;
 }
 function goOutside(){
   const C=curMap();
+  const par=(game.inside==='club')?CLUB_SORTIES[game.px+','+game.py]:null;
   game.inside=null;
-  game.px=C?C.ox:62;game.py=C?C.oy:52;game.dir=0;
+  game.px=par?par[0]:(C?C.ox:62);
+  game.py=par?par[1]:(C?C.oy:52);
+  game.dir=0;
   game.ox=0;game.oy=0;game.moving=false;
   game.zone=zoneAt(game.px,game.py);game.banner=game.zone;game.bannerT=0;
 }
 
+/* A devant une haie : on saute par-dessus si ça retombe sur quelque chose de franchissable */
+function sauteHaie(){
+  if(game.inside||game.hop)return false;
+  const[dx,dy]=DV[game.dir];
+  const devant=getTile(game.px+dx,game.py+dy);
+  if(devant!==T.HEDGE&&devant!==T.GATE)return false;
+  const nx=game.px+dx*2, ny=game.py+dy*2;
+  if(nx<1||ny<1||nx>MW-2||ny>MH-2)return false;
+  if(solidAt(nx,ny))return false;
+  game.hop={t:0,dur:18,x0:game.px,y0:game.py,x1:nx,y1:ny};
+  game.px=nx;game.py=ny;game.moving=false;
+  sfx('ok');
+  return true;
+}
 function interact(){
+  if(sauteHaie())return;
   const[dx,dy]=DV[game.dir],tx=game.px+dx,ty=game.py+dy;
   const n=npcAt(tx,ty);
   if(n){
@@ -1727,6 +1803,12 @@ function interact(){
   if(t===T.VASIS){say(["Un vasistas sur le toit. Trop haut, même pour Charles."]);return;}
   if(t===T.JACU){say(["Le jacuzzi des Webb. Il bulle tout seul depuis ce matin.","Le père d'Oscar dit que c'est bon pour le dos. Il ne s'y met jamais."]);return;}
   if(t===T.BILL){say(["Le billard du club. Deux queues, une craie, et une bille qui a disparu en 1994."]);return;}
+  if(t===T.VITRINE){say(TROPHEES[(Math.random()*TROPHEES.length)|0],null,'COULOIR DES TROPHÉES');return;}
+  if(t===T.ESCAL){say(game.inside==='club'
+    ?["L'escalier. En haut il y a le premier étage et les vestiaires hommes.",
+      "Ça sent le talc et la moquette de 1988."]
+    :["Des marches. Elles montent."]);return;}
+  if(t===T.WC){say(["Les toilettes. Il y a un distributeur de savon vide depuis toujours."]);return;}
   if(t===T.EASEL){say(["Une planche poncée, deux couches de peinture, et un motif que personne n'a demandé.","Margot trouve ça très bien. Margot a raison."]);return;}
   if(t===T.CART){say(["La voiturette de Daniel. Sièges orthopédiques, sur mesure, dossier réglable.","On ne s'assoit pas dedans. Jamais. C'est écrit nulle part mais c'est écrit."]);return;}
   if(t===T.TENN||t===T.TNET){say(["Les courts en terre battue. Il faut réserver. Personne ne réserve jamais."]);return;}
@@ -1745,6 +1827,22 @@ function interact(){
   if(t===T.BUFFET){say(["Un buffet en bois sombre. Le tiroir du haut est plein de piles mortes et de clés inconnues."]);return;}
   if(t===T.DESK){say(["Le comptoir. Une feuille de départs, un crayon, et deux paires d'yeux."]);return;}
   if(t===T.GATE){say(["Le portillon du fond du jardin. Il donne directement sur un départ.","Les Lebel n'ont jamais eu besoin du parking."]);return;}
+  if(tx===FENETRE.x&&ty===FENETRE.y){
+    FENETRE.vu++;
+    if(FENETRE.vu===1)say([
+      "Tu montes sur la murette et tu regardes par la fenêtre du salon.",
+      "Candice et Jennifer sont assises par terre devant la télé. Elles se font les ongles.",
+      "Jennifer dit quelque chose, Candice rit très fort. Tu n'entends rien à travers la vitre.",
+      "Tu restes trois secondes de trop."],null,'LA FENÊTRE');
+    else if(FENETRE.vu===2)say([
+      "Tu remontes sur la murette.",
+      "Candice tourne la tête et te regarde droit dans les yeux.",
+      "Tu redescends si vite que tu te retournes le pied dans les graviers."],null,'LA FENÊTRE');
+    else say([
+      "Jennifer a collé un papier sur le carreau. Il y a un mot dessus.",
+      "« ON VOUS VOIT. »"],null,'LA FENÊTRE');
+    return;
+  }
   if(t===T.PLANT){say(["Une plante verte. Elle survit à tout, comme tout ce qui est ici depuis longtemps."]);return;}
   if(t===T.FIRE){say(game.phase==='f'
     ?["Le feu. On s'assoit par terre autour, il n'y a rien pour s'asseoir et il n'y en a jamais eu."]
@@ -3340,7 +3438,7 @@ function drawTitle(){
 
 /* ---------- choix du personnage ---------- */
 const PICKS=[
- {id:'moi',n:'PIERRE',npc:null,sp:[102,6,null],tag:"Grand, brun. Très précis, longueur moyenne.",
+ {id:'moi',n:'PIERRE',npc:null,sp:[102,6,null],tag:"Grand, brun. Très précis.",
   intro:["TA MÈRE : Je descends au practice. Tu me fais dix-huit trous aujourd'hui.","TA MÈRE : Et si tu rentres après neuf, ton père va gueuler. Moi je dis rien, mais il va gueuler."]},
  {id:'charles',n:'CHARLES',npc:'charles',sp:[92,7,null],tag:"Seize ans. Tape énorme, air shots fréquents.",
   intro:["TA MÈRE : Faites ce que vous voulez mes petits chéris. Rentrez quand vous voulez.","Tu poses la manette. Tu la reprends. Tu la reposes. Bon. Dehors."]},
@@ -3624,6 +3722,16 @@ function update(){
     case S.PICK: updatePick();break;
     case S.WORLD:
       roam();updateVelo();
+      if(game.hop){
+        const h=game.hop; h.t++;
+        const k=Math.min(1,h.t/h.dur);
+        game.ox=Math.round((h.x0-h.x1)*TS*(1-k));
+        game.oy=Math.round((h.y0-h.y1)*TS*(1-k));
+        game.hopH=Math.round(Math.sin(Math.PI*k)*11);
+        game.frame=1;
+        if(h.t>=h.dur){game.hop=null;game.ox=0;game.oy=0;game.hopH=0;arrive();}
+        clearPressed();break;
+      }
       /* autour du feu, ca discute sans qu'on ait besoin de demander */
       if(game.phase==='f'&&!game.inside&&Math.hypot(game.px-FEU.x,game.py-FEU.y)<5){
         game.feuT=(game.feuT||0)+1;
