@@ -41,7 +41,12 @@ node tests/harness.js
 3. Tuiles (`tile()`, peintes proceduralement dans un canvas 16x16, mises en cache)
 4. Carte du domaine 120x96 (`buildWorld`) et les cinq intérieurs (`makeInt`)
 5. Balles au sol, objets, personnages et répliques
-6. Musique chiptune WebAudio (`TRACKS.balade` en balade, `TRACKS.golf` en partie)
+6. Son WebAudio : quatre musiques (`TRACKS.balade`, `.golf`, `.practice`, `.grassboard`),
+   une banque de bruitages dans `sfx()` (pas, feuilles, sable, drive, fer, putt, coups des
+   autres, atterrissage, mur, trou, plouf, nage, page de dialogue, ramassage, porte, vélo,
+   klaxon, moteur, verre), et deux ambiances continues dans `ambiances()` : le crépitement
+   du feu quand on s'en approche la nuit, et le roulement du grass board, du vélo et de la
+   voiturette. La musique se coupe au menu, les bruitages restent.
 7. Départementale et voitures, éclats de verre, clopes, mini-carte
 8. Golf : partie à quatre, IA des copains, putting zoomé, balle perdue
 9. Bagarres, pente en planche, vélo dans le hameau, menus, titre, boucle, sauvegarde

@@ -14,7 +14,7 @@ src = src.replace('load().finally(loop);', `globalThis.__t={game,golf,net,update
   HOLES,PICKS,INT,DOORS,LOCKED,cars,shards,keys,press,release,consume,MAMOU,MAMOU_WIN,FEU,
   players,P_:()=>players,goInside,goOutside,zoneAt,menuList,buildMini,SOLID,getTile,S,ballSpots,updatePick,
   startHole,save,load,solidAt,placeGang,SPOTS,TRACKS,musWant,pente,CRIS,phaseOf,BALLS,updateCars,timeStep,breakWindow,velo,updateVelo,leaves,inBrush,ballVisible,estVitre,estCassee,VILLAS,LISIERE,EVENOU,VOITURES,FICHES,fiche,skillDe,vitPuissance,vitPrecision,longueurDe,cours,startCours,INVITES,inviteRecue,FEU,
-  pers,dogSpr,BODY_SIDE,DOG_SIDE,piscineOuverte,baignade,entreDansLeau,proposePartie,updateAttente,departDu1,hNow,AU_FEU,FEU_RING,FEU_TALK,feuMenu,eteindreLeFeu,bikeSpr,BIKE_DOWN,BIKE_UP,BIKE_SIDE,MISSIONS,ACTES,mission,missionCourante,niveau,chaparde,voleVoiturette,updateVoiturette,BUTIN};`);
+  pers,dogSpr,BODY_SIDE,DOG_SIDE,sfx,ambiances,piscineOuverte,baignade,entreDansLeau,proposePartie,updateAttente,departDu1,hNow,AU_FEU,FEU_RING,FEU_TALK,feuMenu,eteindreLeFeu,bikeSpr,BIKE_DOWN,BIKE_UP,BIKE_SIDE,MISSIONS,ACTES,mission,missionCourante,niveau,chaparde,voleVoiturette,updateVoiturette,BUTIN};`);
 
 /* ---------- faux canvas ---------- */
 function fakeCtx() {
@@ -617,6 +617,31 @@ check('la partie part au bout de cinq secondes', !game.attente, 'apres ' + att +
 check('elle demarre seule si personne ne repond', t.golf.on || game.state === t.S.GOLF,
   'golf=' + t.golf.on + ' etat=' + game.state);
 t.golf.on = false; game.state = t.S.WORLD; clear();
+
+/* ---------- 8 septies. les bruitages ---------- */
+/* sans AudioContext le harnais ne peut pas ecouter, mais rien ne doit planter
+   et tous les bruitages doivent exister dans la banque */
+const BRUITS = ['klaxon','moteur','verre','wouf','ok','pas','feuille','sable','drive','fer',
+  'putt','coupautre','atterri','mur','trou','plouf','nage','page','objet','porte','velo'];
+let bruitOk = true;
+BRUITS.forEach(b => { try { t.sfx(b); } catch (e) { bruitOk = false; fails.push('bruitage ' + b + ' -> ' + e.message); } });
+check('tous les bruitages repondent sans planter', bruitOk);
+const srcJeu = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+BRUITS.forEach(b => check("le bruitage '" + b + "' est bien declare", srcJeu.indexOf("case '" + b + "'") >= 0 || b === 'klaxon'));
+[["les pas", "sfx(sol===T.DENSE?'feuille'"], ["le drive", "golf.club<=1?'drive':'fer'"],
+ ["les coups des autres", "'coupautre'"], ["l atterrissage", "sfx('atterri')"],
+ ["la balle dans le trou", "sfx('trou')"], ["le plouf", "sfx('plouf')"],
+ ["la validation de dialogue", "sfx('page')"], ["le ramassage", "sfx('objet')"],
+ ["les portes", "sfx('porte')"], ["la voiture qui passe", "sfx('moteur')"],
+ ["le velo", "sfx('velo')"]].forEach(([nom, code]) =>
+  check('le jeu declenche ' + nom, srcJeu.indexOf(code) >= 0));
+check('une ambiance continue pour le feu et le roulement', srcJeu.indexOf('function ambiances(') >= 0);
+try { t.ambiances(); check('l ambiance tourne sans audio', true); }
+catch (e) { check('l ambiance tourne sans audio', false, e.message); }
+check('une musique de practice', !!t.TRACKS.practice && t.TRACKS.practice.lead.length >= 32);
+t.golf.practice = true; t.cours.on = false;
+check('la musique bascule au practice', t.musWant() === 'practice', t.musWant());
+t.golf.practice = false;
 
 /* ---------- 9. menus, carte, sac, fiche ---------- */
 game.state = t.S.WORLD; game.inside = null; tp(45, 57);

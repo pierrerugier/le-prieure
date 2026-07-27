@@ -2079,6 +2079,13 @@ function tryMove(){
     return;
   }
   game.moving=true;game.ox=-dx*TS;game.oy=-dy*TS;game.px=nx;game.py=ny;
+  if(!game.voiturette&&!game.nage){
+    const sol=getTile(nx,ny);
+    game.pasG=!game.pasG;
+    sfx(sol===T.DENSE?'feuille':sol===T.SAND?'sable':'pas',game.pasG?1:0);
+  }
+  if(game.bike)sfx('velo');
+  if(game.nage&&((game.tick>>0)%2===0))sfx('nage');
 }
 function arrive(){
   const t=getTile(game.px,game.py);
@@ -2132,6 +2139,7 @@ function arrive(){
   }
 }
 function takeItem(it){
+  sfx('objet');
   game.items[it.id]=true;
   if(it.id==='rolex')game.rolex=true;
   say([it.txt,'('+it.n+' rangé dans le sac.)']);
@@ -2141,6 +2149,7 @@ function goInside(id,d){
   const C=INT[id]; if(!C)return;
   const avaitLeVelo=game.bike;
   game.bike=false;
+  sfx('porte');
   game.inside=id;
   game.px=(d&&d.sx!==undefined)?d.sx:C.sx;
   game.py=(d&&d.sy!==undefined)?d.sy:C.sy;
@@ -2150,6 +2159,7 @@ function goInside(id,d){
   game.banner=C.name;game.bannerT=0;game.zone=C.name;
 }
 function goOutside(){
+  sfx('porte');
   const C=curMap();
   const par=(game.inside==='club')?CLUB_SORTIES[game.px+','+game.py]:null;
   game.inside=null;
@@ -2625,6 +2635,7 @@ function swing(pow,acc,who){
   golf.ex=p.bx+Math.cos(golf.aim)*d;golf.ey=p.by+Math.sin(golf.aim)*d;
   golf.apex=apex;golf.curve=curve;
   golf.dur=Math.max(18,Math.round(20+d*2.2));golf.t=0;golf.phase='fly';
+  sfx(p.human?(golf.club<=1?'drive':'fer'):'coupautre');
   if(golf.practice){game.seau--;mission('practice');}
 }
 function puttGo(pow){
@@ -2633,6 +2644,7 @@ function puttGo(pow){
   const sp=0.024+pow*0.075;
   golf.vx=Math.cos(golf.aim)*sp;golf.vy=Math.sin(golf.aim)*sp;
   golf.phase='roll';golf.rt=0;
+  sfx(players[golf.cur].human?'putt':'coupautre');
 }
 function land(){
   const p=players[golf.cur],h=golf.hole>=0?HOLES[golf.hole]:null;
@@ -2647,6 +2659,9 @@ function land(){
   }
   const t=getTile(Math.round(p.bx),Math.round(p.by));
   let msg='';
+  if(t===T.WATER||t===T.POOL)sfx('plouf');
+  else if(SOLID.has(t))sfx('mur');
+  else sfx('atterri');
   if(t===T.WATER){p.stroke++;msg="Dans l'eau. Un coup de pénalité.";p.bx=golf.lx;p.by=golf.ly;}
   else if(t===T.ROAD||t===T.LINE){p.stroke++;msg='Sur la départementale. Hors limites.';p.bx=golf.lx;p.by=golf.ly;}
   else if(t===T.ASPH||t===T.CAR){
@@ -2688,6 +2703,7 @@ function holed(p){
   holedVrai(p);
 }
 function holedVrai(p){
+  sfx('trou');
   if(p.human)mission('trou');
   p.done=true;p.card[golf.hole]=p.stroke;
   if(p.human)game.card[golf.hole]=p.stroke;
@@ -3165,6 +3181,17 @@ const TRACKS={
   bass:[43,0,0,0,50,0,0,0, 43,0,0,0,50,0,0,0, 48,0,0,0,55,0,0,0, 48,0,0,0,55,0,0,0,
         45,0,0,0,52,0,0,0, 45,0,0,0,52,0,0,0, 41,0,0,0,48,0,0,0, 43,0,0,0,50,0,0,0],
   drum:0},
+ /* practice : tranquille, repetitif, on tape des balles sans y penser */
+ practice:{bpm:104,wave:'triangle',vol:0.15,
+  lead:[76,0,74,0, 72,0,74,0, 76,0,79,0, 76,0,0,0,
+        74,0,72,0, 71,0,72,0, 74,0,76,0, 74,0,0,0,
+        72,0,71,0, 69,0,71,0, 72,0,74,0, 72,0,0,0,
+        71,0,69,0, 67,0,69,0, 71,0,72,0, 74,0,0,0],
+  bass:[48,0,0,0, 55,0,0,0, 48,0,0,0, 55,0,0,0,
+        50,0,0,0, 57,0,0,0, 50,0,0,0, 57,0,0,0,
+        45,0,0,0, 52,0,0,0, 45,0,0,0, 52,0,0,0,
+        43,0,0,0, 50,0,0,0, 43,0,0,0, 50,0,0,0],
+  drum:0},
  /* grass board : ca descend, ca va vite, on ne freine pas */
  grassboard:{bpm:152,wave:'square',vol:0.16,
   lead:[74,74,76,78, 74,0,78,0, 81,0,78,76, 74,0,0,0,
@@ -3187,33 +3214,89 @@ const TRACKS={
         43,0,43,0, 43,0,43,50, 36,0,36,0, 36,0,36,43,
         41,0,41,0, 40,0,40,0, 38,0,38,0, 43,0,0,0],
   drum:1}};
+let sfxBus=null, brBuf=null, feuSrc=null, feuGain=null, rouleSrc=null, rouleGain=null, rouleFil=null;
 function audioInit(){
   if(AC)return;
   try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ AC=null;return; }
   musBus=AC.createGain(); musBus.gain.value=game.mute?0:0.8; musBus.connect(AC.destination);
+  sfxBus=AC.createGain(); sfxBus.gain.value=0.9; sfxBus.connect(AC.destination);
   musNext=AC.currentTime+0.1;
+  /* un bruit blanc en boucle, recycle pour le feu et le roulement */
+  const n=AC.sampleRate*2;
+  brBuf=AC.createBuffer(1,n,AC.sampleRate);
+  const d=brBuf.getChannelData(0);
+  for(let i=0;i<n;i++) d[i]=Math.random()*2-1;
 }
-function blip(f,t,dur,type,vol){
+/* une boucle filtree, pour les ambiances continues */
+function boucle(freq,q,vol){
+  if(!AC||!brBuf)return null;
+  const src=AC.createBufferSource(); src.buffer=brBuf; src.loop=true;
+  const fil=AC.createBiquadFilter(); fil.type='lowpass'; fil.frequency.value=freq; fil.Q.value=q||1;
+  const g=AC.createGain(); g.gain.value=0;
+  src.connect(fil); fil.connect(g); g.connect(sfxBus);
+  src.start();
+  return {src:src,fil:fil,gain:g,vol:vol||0.1};
+}
+function ambiances(){
+  if(!AC||AC.state==='suspended')return;
+  /* le feu crepite quand on est pres et qu'il brule */
+  if(!feuGain){const b=boucle(900,1,0.12); if(b){feuSrc=b.src;feuGain=b.gain;}}
+  if(feuGain){
+    const pres=(!game.inside&&game.phase==='f'&&!game.feuEteint)
+      ?Math.max(0,1-Math.hypot(game.px-FEU.x,game.py-FEU.y)/9):0;
+    const cible=pres*0.13*(0.85+Math.sin(game.tick/6)*0.15);
+    feuGain.gain.value+=(cible-feuGain.gain.value)*0.08;
+  }
+  /* le roulement : grass board, velo, voiturette */
+  if(!rouleGain){const b=boucle(400,3,0.1); if(b){rouleSrc=b.src;rouleGain=b.gain;rouleFil=b.fil;}}
+  if(rouleGain){
+    let cible=0, f=400;
+    if(game.state===S.PENTE&&pente.crash<=0){cible=0.085;f=280+Math.min(700,pente.d*3);}
+    else if(game.state===S.WORLD&&!game.inside&&game.moving){
+      if(game.voiturette){cible=0.05;f=520;}
+      else if(game.bike){cible=0.035;f=760;}
+    }
+    rouleGain.gain.value+=(cible-rouleGain.gain.value)*0.12;
+    if(rouleFil)rouleFil.frequency.value+=(f-rouleFil.frequency.value)*0.1;
+  }
+}
+function blip(f,t,dur,type,vol,bus,f2){
   if(!AC)return;
   const o=AC.createOscillator(), g=AC.createGain();
   o.type=type||'square'; o.frequency.setValueAtTime(f,t);
+  if(f2)o.frequency.exponentialRampToValueAtTime(Math.max(20,f2),t+dur);
   g.gain.setValueAtTime(0.0001,t);
   g.gain.linearRampToValueAtTime(vol,t+0.012);
   g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
-  o.connect(g); g.connect(musBus); o.start(t); o.stop(t+dur+0.03);
+  o.connect(g); g.connect(bus||musBus); o.start(t); o.stop(t+dur+0.03);
 }
-function noiseHit(t,vol,dur){
+/* une bouffee de bruit filtree : pas, feuilles, plouf, impacts */
+function souffle(t,dur,f0,f1,vol,type){
+  if(!AC||!brBuf)return;
+  const src=AC.createBufferSource(); src.buffer=brBuf; src.loop=true;
+  const fil=AC.createBiquadFilter(); fil.type=type||'bandpass'; fil.Q.value=1.2;
+  fil.frequency.setValueAtTime(f0,t);
+  fil.frequency.exponentialRampToValueAtTime(Math.max(30,f1||f0),t+dur);
+  const g=AC.createGain();
+  g.gain.setValueAtTime(0.0001,t);
+  g.gain.linearRampToValueAtTime(vol,t+0.008);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  src.connect(fil); fil.connect(g); g.connect(sfxBus);
+  src.start(t); src.stop(t+dur+0.05);
+}
+function noiseHit(t,vol,dur,bus){
   if(!AC)return;
   const n=Math.floor(AC.sampleRate*(dur||0.06));
   const b=AC.createBuffer(1,n,AC.sampleRate), d=b.getChannelData(0);
   for(let i=0;i<n;i++) d[i]=(Math.random()*2-1)*(1-i/n);
   const s=AC.createBufferSource(); s.buffer=b;
   const g=AC.createGain(); g.gain.value=vol||0.2;
-  s.connect(g); g.connect(musBus); s.start(t);
+  s.connect(g); g.connect(bus||musBus); s.start(t);
 }
 function musWant(){
   if(game.state===S.TITLE)return 'balade';
   if(game.state===S.PENTE)return 'grassboard';
+  if(golf.practice&&!cours.on)return 'practice';
   if(golf.on||game.state===S.BATTLE)return 'golf';
   return 'balade';
 }
@@ -3234,13 +3317,43 @@ function musTick(){
   }
 }
 setInterval(musTick,60);
-function sfx(kind){
-  if(!AC)return;
-  const t=AC.currentTime;
-  if(kind==='klaxon'){blip(NOTE(70),t,0.16,'square',0.22);blip(NOTE(65),t+0.05,0.2,'square',0.2);}
-  else if(kind==='verre'){noiseHit(t,0.35,0.22);blip(NOTE(96),t,0.06,'square',0.12);blip(NOTE(101),t+0.05,0.08,'square',0.1);}
-  else if(kind==='wouf'){blip(NOTE(52),t,0.09,'square',0.2);blip(NOTE(47),t+0.08,0.12,'square',0.18);}
-  else if(kind==='ok'){blip(NOTE(76),t,0.07,'square',0.16);blip(NOTE(83),t+0.07,0.12,'square',0.16);}
+setInterval(ambiances,50);
+/* toute la banque de bruitages, au format GBA : court, sec, et jamais fort */
+function sfx(kind,f){
+  if(!AC||AC.state==='suspended')return;
+  const t=AC.currentTime, B=sfxBus;
+  switch(kind){
+    case 'klaxon': blip(NOTE(70),t,0.16,'square',0.2,B); blip(NOTE(65),t+0.05,0.2,'square',0.18,B); break;
+    case 'moteur': souffle(t,0.9,300,900,0.05,'bandpass'); souffle(t+0.35,0.7,900,240,0.045,'bandpass'); break;
+    case 'verre': noiseHit(t,0.28,0.2,B);
+      blip(2400,t,0.05,'square',0.1,B,1600); blip(3100,t+0.04,0.07,'square',0.09,B,1900);
+      blip(1800,t+0.11,0.09,'triangle',0.07,B,900); break;
+    case 'wouf': blip(NOTE(52),t,0.09,'square',0.18,B); blip(NOTE(47),t+0.08,0.12,'square',0.16,B); break;
+    case 'ok': blip(NOTE(76),t,0.07,'square',0.14,B); blip(NOTE(83),t+0.07,0.12,'square',0.14,B); break;
+    /* les pas */
+    case 'pas': souffle(t,0.055,(f?200:170),90,0.05,'lowpass'); break;
+    case 'feuille': souffle(t,0.14,2600,1100,0.055,'bandpass'); break;
+    case 'sable': souffle(t,0.12,3600,1600,0.05,'bandpass'); break;
+    /* les coups de golf */
+    case 'drive': noiseHit(t,0.22,0.05,B); blip(760,t,0.13,'square',0.13,B,180);
+      souffle(t+0.01,0.22,1800,300,0.05,'bandpass'); break;
+    case 'fer': noiseHit(t,0.15,0.04,B); blip(900,t,0.09,'square',0.1,B,320); break;
+    case 'putt': blip(1200,t,0.05,'triangle',0.09,B,700); break;
+    case 'coupautre': noiseHit(t,0.07,0.04,B); blip(700,t,0.07,'square',0.05,B,260); break;
+    case 'atterri': souffle(t,0.1,340,140,0.06,'lowpass'); break;
+    case 'mur': noiseHit(t,0.2,0.05,B); blip(230,t,0.11,'square',0.11,B,90); break;
+    case 'trou': blip(1400,t,0.05,'triangle',0.1,B,900); blip(1000,t+0.06,0.05,'triangle',0.09,B,650);
+      souffle(t+0.1,0.16,320,110,0.07,'lowpass'); break;
+    /* l'eau */
+    case 'plouf': souffle(t,0.4,2200,180,0.13,'lowpass'); noiseHit(t,0.12,0.12,B); break;
+    case 'nage': souffle(t,0.2,1400,320,0.05,'bandpass'); break;
+    /* l'interface */
+    case 'page': blip(1500,t,0.035,'square',0.06,B); break;
+    case 'objet': blip(NOTE(81),t,0.06,'square',0.11,B); blip(NOTE(85),t+0.05,0.06,'square',0.11,B);
+      blip(NOTE(88),t+0.1,0.12,'square',0.11,B); break;
+    case 'porte': souffle(t,0.16,600,240,0.07,'bandpass'); blip(180,t+0.12,0.09,'square',0.08,B,120); break;
+    case 'velo': blip(2600,t,0.02,'square',0.035,B); break;
+  }
 }
 
 /* ---------- la departementale : une voiture toutes les dix secondes ---------- */
@@ -3260,6 +3373,7 @@ function updateCars(){
     if(game.inside||game.state!==S.WORLD)continue;
     const t=at(game.px,game.py);
     if(t!==T.ROAD&&t!==T.LINE)continue;
+    if(!c.moteur&&Math.abs(c.y-game.py)<14&&Math.abs(c.x-game.px)<16){c.moteur=1;sfx('moteur');}
     if(!c.honk&&Math.abs(c.y-game.py)<9){c.honk=1;sfx('klaxon');}
     if(Math.abs(c.y-game.py)<0.9&&Math.abs(c.x-game.px)<=1.2){cars.splice(i,1);carHit();return;}
   }
@@ -3480,12 +3594,13 @@ function entreDansLeau(annonce){
   }
   if(at(nx,ny)!==T.POOL)return;
   game.nage=true;game.bike=false;game.px=nx;game.py=ny;game.ox=0;game.oy=0;game.moving=false;
+  sfx('plouf');
   mission('piscine');
   if(annonce)say(["Tu sautes. L'eau est froide pendant exactement deux secondes.",
     "Après, on n'en sort plus."],null,'LA PISCINE');
 }
 function sortDeLeau(){
-  game.nage=false;
+  game.nage=false;sfx('plouf');
   say(["Tu remontes par l'échelle et tu laisses des traces mouillées jusqu'aux transats."],null,'LA PISCINE');
 }
 function feuMenu(){
@@ -4533,6 +4648,7 @@ function update(){
     case S.DIALOG:{
       const pg=game.dlg[game.dl]||[],len=pg.join('').length;
       const suite=()=>{
+        sfx('page');
         if(game.dl<game.dlg.length-1){game.dl++;game.dc=0;game.autoT=0;}
         else{game.state=game.ret;game.auto=0;const c=game.dcb;game.dcb=null;if(c)c();}
       };
