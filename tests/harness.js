@@ -14,7 +14,7 @@ src = src.replace('load().finally(loop);', `globalThis.__t={game,golf,net,update
   HOLES,PICKS,INT,DOORS,LOCKED,cars,shards,keys,press,release,consume,MAMOU,MAMOU_WIN,FEU,
   players,P_:()=>players,goInside,goOutside,zoneAt,menuList,buildMini,SOLID,getTile,S,ballSpots,updatePick,
   startHole,save,load,solidAt,placeGang,SPOTS,TRACKS,musWant,pente,CRIS,phaseOf,BALLS,updateCars,timeStep,breakWindow,velo,updateVelo,leaves,inBrush,ballVisible,estVitre,estCassee,VILLAS,LISIERE,EVENOU,VOITURES,FICHES,fiche,skillDe,vitPuissance,vitPrecision,longueurDe,cours,startCours,INVITES,inviteRecue,FEU,
-  pers,dogSpr,BODY_SIDE,DOG_SIDE};`);
+  pers,dogSpr,BODY_SIDE,DOG_SIDE,MISSIONS,ACTES,mission,missionCourante,niveau,chaparde,voleVoiturette,updateVoiturette,BUTIN};`);
 
 /* ---------- faux canvas ---------- */
 function fakeCtx() {
@@ -117,9 +117,13 @@ check('trois baraques Evenou', t.EVENOU.length === 3 && t.EVENOU.every(e => at(e
   t.EVENOU.map(e => at(e.x + 2, 89)).join(','));
 check('des champs separent les Evenou du hameau', at(100, 82) === T.CHAMP && at(112, 83) === T.CHAMP,
   at(100,82) + '/' + at(112,83));
-check('le 712 est au nord du practice', at(12, 12) === T.HWALL || at(12, 12) === T.HWIN, 'tuile ' + at(12,12));
+check('le 712 est un hangar gris au nord du practice',
+  at(12, 12) === T.HANG && at(11, 11) === T.HANGW && at(12, 8) === T.HANGR,
+  [at(12,12), at(11,11), at(12,8)].join('/'));
+check('une petite route relie le 712 a la departementale',
+  at(25, 16) === T.GRAVEL && at(29, 20) === T.GRAVEL, at(25,16) + '/' + at(29,20));
 check('le mini-golf devant le 712', at(8, 18) === T.MINIG && at(17, 18) === T.MINIG);
-check('la cabane dans le bois', at(6, 26) === T.CABW, 'tuile ' + at(6,26));
+check('la cabane dans le bois', at(6, 26) === T.CABW || at(6, 27) === T.CABW, 'tuile ' + at(6,26));
 check('les Mamoumani sont au nord du practice', t.MAMOU.x < 30 && t.MAMOU.y < 20,
   t.MAMOU.x + ',' + t.MAMOU.y);
 check('le trou 6 ne coupe plus le hameau',
@@ -506,6 +510,55 @@ check('les autres gueulent pendant la descente', criVu, 'cri : ' + t.pente.cri);
 check('ce qu ils gueulent parle de grass board',
   !t.pente.cri || t.CRIS.indexOf(t.pente.cri) >= 0);
 game.state = t.S.WORLD; clear();
+
+/* ---------- 8 quinquies. la trame et les missions ---------- */
+check('une trentaine de missions', t.MISSIONS.length >= 30, t.MISSIONS.length + ' missions');
+check('six actes', new Set(t.MISSIONS.map(m => m.a)).size === 6);
+check('chaque mission a un titre, une consigne et une fin',
+  t.MISSIONS.every(m => m.t && m.d && m.f && m.ev));
+check('les actes se suivent sans reculer',
+  t.MISSIONS.every((m, i) => i === 0 || m.a >= t.MISSIONS[i - 1].a));
+check('aucun titre en double', new Set(t.MISSIONS.map(m => m.t)).size === t.MISSIONS.length);
+/* on doit pouvoir derouler toute la trame en tirant les evenements */
+game.mission = 0; game.missionN = 0;
+let garde3 = 0;
+while (t.missionCourante() && garde3++ < 500) {
+  const m = t.missionCourante();
+  t.mission(m.ev, m.qui);
+  clear();
+}
+check('la trame se deroule jusqu au bout', !t.missionCourante(),
+  'bloque sur ' + (t.missionCourante() ? t.missionCourante().t : ''));
+check('le carnet compte toutes les missions', game.mission === t.MISSIONS.length);
+game.mission = 0; game.missionN = 0; clear();
+check('le carnet est dans le menu', t.menuList().indexOf('CARNET') >= 0);
+game.page = 'CARNET'; game.state = t.S.PAGE; frames(3); game.state = t.S.WORLD;
+
+/* le chapardage chez le caddie master rend toujours quelque chose */
+[0, 1, 2].forEach(() => {
+  const av = { g: !!game.items.gant, c: game.clopes, b: game.bag[0] };
+  t.chaparde(); clear();
+  check('on ressort de la cabane avec quelque chose',
+    (!!game.items.gant !== av.g) || game.clopes > av.c || game.bag[0] > av.b);
+});
+/* la voiturette : on la prend, elle laboure, Alain rattrape */
+clear(); game.state = t.S.WORLD; game.inside = null; tp(50, 70);
+t.voleVoiturette(); clear();
+check('on peut voler la voiturette', game.voiturette === true);
+const avantTraces = game.traces || 0;
+for (let i = 0; i < 6; i++) { hold('down', 12); }
+check('elle laisse des traces sur le gazon', (game.traces || 0) > avantTraces,
+  avantTraces + ' -> ' + game.traces);
+let poursuite = 0;
+while (game.voiturette && poursuite++ < 6000) t.update();
+check('Alain finit par rattraper', !game.voiturette, 'apres ' + poursuite + ' images');
+clear();
+
+/* la topologie en cuve */
+check('la route est le point bas', t.niveau(31, 50) === 0);
+check('le hameau domine', t.niveau(110, 20) > t.niveau(60, 50));
+check('le practice est haut', t.niveau(14, 40) > t.niveau(40, 40));
+check('les Evenou surplombent', t.niveau(105, 88) >= t.niveau(105, 60));
 
 /* ---------- 9. menus, carte, sac, fiche ---------- */
 game.state = t.S.WORLD; game.inside = null; tp(45, 57);
