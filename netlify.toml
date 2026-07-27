@@ -1,0 +1,4 @@
+# La copie Netlify est la version hors ligne, servie telle quelle.
+[build]
+  publish = "public"
+  command = "echo rien a construire"
