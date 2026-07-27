@@ -253,10 +253,19 @@ function pers(dir,frame){
   const b=(dir===0)?BODY_DOWN:(dir===1)?BODY_UP:BODY_SIDE;
   return b.concat((dir===0||dir===1)?LEGS_DOWN[frame]:LEGS_SIDE[frame]);
 }
-const BIKE=["                ","     KKKKKK     ","    KCCCCCCK    ","   KCCCCCCCCK   ",
-"   KccccccccK   ","   KSSSSSSSSK   ","   KSESSSSESK   ","    KSSDDSSK    ","   KWWWWWWWWK   ",
-"  KSWWWWWWWWSK  ","   KWWWWWWWWK   ","   KPPPPPPPPK   ","  KKPPKKKKPPKK  ",
-" KOOKPKKKKKPKOOK"," KOOOKKKKKKKOOOK"," KKOOK    KOOKK "];
+const BIKE_DOWN=["                ","     KKKKKK     ","    KCCCCCCK    ","   KCCCCCCCCK   ",
+"   KccccccccK   ","   KSSSSSSSSK   ","   KSESSSSESK   ","    KSSDDSSK    ",
+"   KWWWWWWWWK   ","  KSWWWWWWWWSK  ","   KWWWWWWWWK   ","   KPPPPPPPPK   ",
+" KKKKPPPPPPKKKK "," KOOK KPPK KOOK ","     KOOOOK     ","     KOOOOK     "];
+const BIKE_UP=["                ","     KKKKKK     ","    KCCCCCCK    ","   KCCCCCCCCK   ",
+"   KCCCCCCCCK   ","   KHHHHHHHHK   ","   KHHHHHHHHK   ","    KHHHHHHK    ",
+"   KWWWWWWWWK   ","  KSWWWWWWWWSK  ","   KWWWWWWWWK   ","   KPPPPPPPPK   ",
+" KKKKPPPPPPKKKK "," KOOK KPPK KOOK ","     KOOOOK     ","     KOOOOK     "];
+const BIKE_SIDE=["                ","     KKKKK      ","    KCCCCCK     ","   KCCCCCCCKK   ",
+"   KHSSSSSSK    ","   KHSSSESSK    ","   KHSSSSSSK    ","    KSSDDSK     ",
+"    KWWWWWK     ","   KWWWWWWSK    ","    KWWWWWK     ","    KPPPPPK     ",
+"   KKPPPPPKK    "," KOOK KKKK KOOK ","KOOOOK    KOOOOK"," KOOK      KOOK "];
+function bikeSpr(dir){return dir===0?BIKE_DOWN:dir===1?BIKE_UP:BIKE_SIDE;}
 const SPR_BOAR=["                ","                ","   KK      KK   ","  KHHK    KHHK  ",
 "  KHHHKKKKHHHK  "," KHHHHHHHHHHHHK "," KHEHHHHHHHHEHK ","KHHHHHHHHHHHHHHK",
 "KhHHHHHHHHHHHHhK","KKHHHHHHHHHHHHKK"," KHHHHHHHHHHHHK "," KHHKHHKKHHKHHK ",
@@ -300,7 +309,7 @@ const T={FAIR:0,ROUGH:1,GREEN:2,SAND:3,WATER:4,PATH:5,TREE:6,DENSE:7,TEE:8,FLAG:
   PROOF:75,FTOP:76,FACADE:77,FWIN:78,FDOOR:79,FLOW:80,BDOOR:81,
   CHEM:82,TBAS:83,FAUT:84,BIBLI:85,FRIGO:86,EVIER:87,BUFFET:88,
   HRIDGE:89,HEAVE:90,HWIN:91,HWINB:92,HBAIE:93,LUC:94,STORE:95,PLAT:96,TRANSAT:97,CANETTE:98,ESCAL:99,VITRINE:100,WC:101,CHAMP:102,MINIG:103,CABW:104,CABR:105,
-  HANG:106,HANGR:107,HANGW:108,TRACE:109,PICKUP:110,CHARIOT:111};
+  HANG:106,HANGR:107,HANGW:108,TRACE:109,PICKUP:110,CHARIOT:111,TALUS:112,TALUH:113};
 const SOLID=new Set([T.TREE,T.WATER,T.CAR,T.SWALL,T.SWIN,T.HEDGE,T.PARA,T.POOL,
   T.HWALL,T.HROOF,T.SIGN,T.FLAG,T.STALL,T.FOUNT,T.LOCKER,T.BAR,T.TABLE,T.SHOP,T.WALLI,T.SROOF,T.FIRE,T.LOG,
   T.SWINB,T.WOOD,T.BAIE,T.FLATR,T.BROOF,T.TNET,T.SOFA,T.TVGC,T.BED,T.KITCH,T.EASEL,T.JACU,
@@ -664,6 +673,17 @@ function tile(id,v,f){
       R('#8a3f4a',5,1,6,2); R('#c9c4bb',6,0,1,3); R('#c9c4bb',9,0,1,3);
       R('#22242c',3,11,3,3); R('#22242c',10,11,3,3);
       R('#5a5f68',4,12,1,1); R('#5a5f68',11,12,1,1); break;
+    /* un talus large : herbe rase en haut, devers marque, pied plus sombre */
+    case T.TALUS: R('#6fae54',0,0,16,4);
+      for(let i=0;i<4;i++) R('#7fbf62',(nr()*15)|0,(nr()*3)|0,2,1);
+      R('#5c9b45',0,4,16,2);
+      R('#4e8a3e',0,6,16,4); R('#447a36',0,10,16,3); R('#3a682e',0,13,16,3);
+      for(let i=0;i<7;i++) R(nr()>0.5?'#3f7332':'#568f47',(nr()*15)|0,6+((nr()*9)|0),2,2);
+      R('#335c28',0,15,16,1); break;
+    case T.TALUH: R('#5c9b45',0,0,16,4);
+      R('#4e8a3e',0,4,16,4); R('#447a36',0,8,16,4); R('#3a682e',0,12,16,4);
+      for(let i=0;i<8;i++) R(nr()>0.5?'#3f7332':'#568f47',(nr()*15)|0,(nr()*15)|0,2,2);
+      break;
     case T.CHAMP: R('#c9a86a',0,0,16,16);
       for(let y=(v%2)?0:2;y<16;y+=4){R('#b0904f',0,y,16,2);R('#dcc189',0,y+2,16,1);}
       for(let i=0;i<8;i++) R(nr()>0.5?'#a8874a':'#e0c894',(nr()*16)|0,(nr()*16)|0,2,1); break;
@@ -910,6 +930,8 @@ function buildWorld(){
   /* les vestiaires forment le mur ouest et separent de la terrasse */
   rect(74,43,3,14,T.HWALL); rect(74,43,3,2,T.HROOF);
   put(75,56,T.SDOOR);
+  for(let y=39;y<=60;y++)for(let x=72;x<=94;x++)
+    if(at(x,y)===T.TREE||at(x,y)===T.DENSE)put(x,y,T.ROUGH);
   rect(77,42,15,16,T.PDECK);
   rect(79,45,8,10,T.POOL);
   for(let x=74;x<=92;x++){put(x,41,T.HEDGE);put(x,58,T.HEDGE);}
@@ -1037,6 +1059,35 @@ function buildWorld(){
   rect(70,70,6,1,T.GRAVEL); rect(69,57,1,14,T.GRAVEL);
 
   put(72,32,T.PICKUP); put(73,32,T.GRAVEL);
+
+  /* ---------- les talus ----------
+     Le domaine est en cuve. On ne pose des talus qu'aux endroits ou le relief
+     se raconte : sous le practice, sous le parking, autour du club house, sous la
+     piscine, au pied du hameau et sous les Evenou. Deux cases de large, jamais en
+     travers d'un green ni d'un depart, et jamais sur la piscine. */
+  const talus=(x0,y0,w,h,vertical)=>{
+    for(let j=0;j<h;j++)for(let i=0;i<w;i++){
+      const x=x0+i,y=y0+j;
+      const t0=at(x,y);
+      if(t0===T.GREEN||t0===T.FLAG||t0===T.TEE||t0===T.SAND||t0===T.WATER)continue;
+      if(t0===T.POOL||t0===T.PDECK||t0===T.TRANSAT)continue;
+      if(SOLID.has(t0)&&t0!==T.TREE&&t0!==T.HEDGE)continue;
+      if(t0===T.PATH||t0===T.GRAVEL||t0===T.ASPH||t0===T.ROAD||t0===T.LINE)continue;
+      if(t0===T.STONE||t0===T.DECK||t0===T.LAWN||t0===T.CHAMP)continue;
+      put(x,y,(vertical||j<h-1)?T.TALUH:T.TALUS);
+    }
+  };
+  /* le practice domine la route */
+  talus(6,26,24,2); talus(6,56,24,2);
+  /* le parking et le club house, un cran au-dessus de la route */
+  talus(36,43,11,2);
+  talus(52,32,22,2); talus(52,56,22,2);
+  /* la piscine est plus haute que la terrasse, le talus passe devant, pas dedans */
+  talus(73,58,20,2);
+  /* le pied du hameau, qui domine tout */
+  talus(86,28,2,50,1); talus(86,3,2,24,1);
+  /* et les Evenou en surplomb du parcours */
+  talus(94,86,24,2);
 
   /* ---------- chemins ---------- */
   for(let x=36;x<=54;x++) put(x,44,T.PATH);
@@ -1243,21 +1294,34 @@ const BALLS=[
  {n:'Top-Flite usée', v:0, w:30}];
 const ballSpots=[];
 (function seedBalls(){
+  const pose=(x,y)=>{
+    if(x<5||y<5||x>MW-6||y>MH-6) return false;
+    if(ballSpots.some(b=>Math.abs(b.x-x)<2&&Math.abs(b.y-y)<2)) return false;
+    let r=rnd()*84, k=0;
+    for(let i=0;i<BALLS.length;i++){ r-=BALLS[i].w; if(r<=0){k=i;break;} }
+    ballSpots.push({x:x,y:y,k:k,taken:false});
+    return true;
+  };
+  /* l'essentiel se perd dans le sous-bois, la ou personne ne va chercher */
   let tries=0;
-  while(ballSpots.length<82 && tries<14000){
+  while(ballSpots.length<70 && tries<40000){
+    tries++;
+    const x=(rnd()*MW)|0, y=(rnd()*MH)|0;
+    if(at(x,y)!==T.DENSE) continue;
+    if(Math.hypot(x-63,y-45)<14) continue;
+    pose(x,y);
+  }
+  /* et quelques-unes dans le rough, au bord des trous, plus visibles */
+  tries=0;
+  while(ballSpots.length<96 && tries<12000){
     tries++;
     const h=HOLES[(rnd()*HOLES.length)|0];
     const t0=rnd(), ax=h.tx+(h.gx-h.tx)*t0, ay=h.ty+(h.gy-h.ty)*t0;
-    const ang=rnd()*Math.PI*2, rr=5+rnd()*7;
+    const ang=rnd()*Math.PI*2, rr=6+rnd()*8;
     const x=Math.round(ax+Math.cos(ang)*rr), y=Math.round(ay+Math.sin(ang)*rr);
-    if(x<5||y<5||x>MW-6||y>MH-6) continue;
-    const t=at(x,y);
-    if(t!==T.ROUGH&&t!==T.DENSE) continue;
+    if(at(x,y)!==T.ROUGH) continue;
     if(Math.hypot(x-63,y-45)<16) continue;
-    if(ballSpots.some(b=>Math.abs(b.x-x)<3&&Math.abs(b.y-y)<3)) continue;
-    let r=rnd()*84, k=0;
-    for(let i=0;i<BALLS.length;i++){ r-=BALLS[i].w; if(r<=0){k=i;break;} }
-    ballSpots.push({x,y,k,taken:false});
+    pose(x,y);
   }
 })();
 const ITEMS=[
@@ -1336,6 +1400,11 @@ const NPCS=[
      ["On fait la course jusqu'au portail ? Trois, deux... j'ai déjà commencé !"],
      ["Charles a dit que j'avais pas le droit de vous suivre. Donc je vous suis."],
      ["La fontaine du patio est pleine de pièces. Enfin, elle l'était."]]},
+ {id:'alex',x:110,y:48,dir:0,inside:null,roam:1,name:'ALEX',noplay:true,
+  pal:pal('#f2d24a','#8fc6e8','#3f5d8a','#e8d79a'),
+  d:[["Oscar il a dit que je pouvais venir. Il a dit. Demande-lui."],
+     ["Moi aussi je tape à cent mètres. Presque cent. Enfin je tape."],
+     ["Si vous fumez je le dis pas. Mais faut me donner une gorgée."]]},
  {id:'margaux',x:3,y:3,dir:0,inside:'lebel',name:'MARGAUX',noplay:true,
   pal:pal('#8a9e6e','#f4f2ec','#5a5b46','#c9a35c'),
   d:[["Je ponce, je peins, je reponce. Tu peux regarder si tu parles pas."],
@@ -1435,6 +1504,14 @@ const NPCS=[
   pal:pal('#8a3f4a','#c9a9b4','#5a3d4a','#8a6238'),
   d:[["On ne touche pas aux gants. Ils sont neufs."],
      ["Tu me rapportes encore des balles ? Fais voir ça."]]},
+ {id:'cohen',x:34,y:12,dir:0,inside:'club',name:'M. COHEN',
+  pal:pal('#2b2b33','#f4f2ec','#2b2b33','#8a8a92'),
+  d:[["Alors, on mange quelque chose ? Je mets ça sur le compte de vos parents."],
+     ["Deux Orangina, un croque, et un supplément frites que vous n'avez pas commandé.",
+      "Ça arrive. C'est la fin du service, on ne compte plus très bien."],
+     ["Le poisson du jour, c'est du surgelé. Tout est surgelé. Vous voulez du poisson ?"],
+     ["Votre père a réglé la note de dimanche. Il a demandé ce que c'était, le supplément.",
+      "Je lui ai dit que c'était le pain. Il y avait beaucoup de pain."]]},
  {id:'sophieb',x:31,y:21,dir:0,inside:'club',name:'SOPHIE',
   pal:pal('#8a3f4a','#f4f2ec','#2b2b33','#7a5433'),
   d:[["Qu'est-ce que je vous sers ? Non, pas ça. Vous avez treize ans."],
@@ -1522,7 +1599,22 @@ const LOCKED=[
  {x:39,y:42,who:'SECRÉTARIAT',d:["Le secrétariat. Deux personnes derrière le comptoir, jamais les mêmes."]},
  {x:75,y:56,who:'VESTIAIRES PISCINE',d:["Vestiaires de la piscine. Un banc mouillé, trois serviettes, aucune à toi."]}
 ];
-/* autour du feu, chacun sa place sur le cercle, et tout le monde regarde les flammes */
+/* Le cercle du feu : douze places, et une treizieme laissee au joueur au sud.
+   Il y a tout le monde, pas seulement la bande qui joue au golf. */
+const FEU_RING=[[109,33],[111,33],[112,35],[113,36],[112,38],[110,39],
+                [107,39],[105,38],[105,36],[106,34],[107,33],[111,39]];
+const AU_FEU=['charles','victor','oscar','antoine','kuperfils','louis','paul',
+              'margot','margaux','valentine','arthur','alex'];
+function placeAutourDuFeu(){
+  AU_FEU.forEach((id,i)=>{
+    const n=NPCS.find(x=>x.id===id);
+    if(!n||n.gone||game.party.includes(n.id))return;
+    const q=FEU_RING[i%FEU_RING.length];
+    n.inside=null;n.x=q[0];n.y=q[1];n.bike=false;
+    const ex=FEU.x-n.x, ey=FEU.y-n.y;
+    n.dir=(Math.abs(ex)>Math.abs(ey))?(ex>0?3:2):(ey>0?0:1);
+  });
+}
 const SPOTS={
  charles:{h:[16,8],hin:'lutreau',f:[109,33]}, victor:{h:[95,9],f:[112,34]},
  oscar:{h:[109,48],f:[113,36]},  antoine:{h:[105,9],f:[112,39]},
@@ -1536,7 +1628,21 @@ const FEU_TALK=[
  ["PAUL : Les étoiles sont belles ce soir.","Personne ne répond. Personne n'ose.","CHARLES : Bon. Qui a les chamallows."],
  ["CHARLES : Celui qui va toucher la porte des Mamoumani gagne 10 euros.","ANTOINE : Tu n'as pas 10 euros.","CHARLES : Toi non plus. Donc c'est équilibré."],
  ["ARTHUR : J'ai déjà fait brûler un chêne entier ici.","LOUIS : Le chêne est là. Derrière toi.","ARTHUR : Un autre chêne."],
- ["KUPERFILS : J'ai ramené des chamallows. Ils étaient dans ma poche depuis mardi.","CHARLES : Garde-les Kupi. Garde-les bien."]];
+ ["KUPERFILS : J'ai ramené des chamallows. Ils étaient dans ma poche depuis mardi.","CHARLES : Garde-les Kupi. Garde-les bien."],
+ ["MARGOT : Je le dirai pas à maman.","CHARLES : Tu le diras dans dix minutes.","MARGOT : Oui."],
+ ["ALEX : Moi j'ai le droit d'être là.","OSCAR : Tu as le droit. Mais tu ne dis rien."],
+ ["VALENTINE : Mon frère a dit qu'il avait cramé un chêne.","LOUIS : Il a cramé une brindille.","ARTHUR : C'était un jeune chêne."],
+ ["MARGAUX : Je suis sortie. Une fois. Voilà, c'est fait.","VICTOR : On applaudit ?","MARGAUX : Non."],
+ ["ANTOINE : Ma mère vient dimanche.","KUPERFILS : On sait.","ANTOINE : Je disais ça comme ça."],
+ ["CHARLES : L'année prochaine on aura quatorze ans.","PAUL : Et alors ?","CHARLES : Et alors rien. Je disais."],
+ ["OSCAR : Cette été il est le meilleur été.","LOUIS : Ce. Cet été.","OSCAR : C'est ce que j'ai dit."],
+ ["VICTOR : Si on se perd de vue, on se retrouve ici. Même heure, dans vingt ans.","Personne ne répond. Tout le monde a entendu."],
+ ["KUPERFILS : Il y a un truc qui bouge dans les fougères.","ARTHUR : C'est le sanglier.","KUPERFILS : Arthur, il n'y a pas de sanglier.","ARTHUR : Il y a un sanglier."],
+ ["PAUL : Les étoiles sont belles ce soir.","Un silence. Puis Charles crache dans le feu, et ça repart."],
+ ["MARGOT : Qui a jeté une canette dans les fougères ?","VICTOR : Tout le monde.","MARGOT : Ah. D'accord."],
+ ["ARTHUR : J'ai encore des clopes.","LOUIS : On a vu.","ARTHUR : Je disais ça pour ceux qui en veulent."],
+ ["ANTOINE : Sur le green du 18, pour gagner l'US Open.","VICTOR : Antoine, il est minuit."],
+ ["ALEX : Vous parlez de quoi ?","CHARLES : De rien.","ALEX : Vous parlez de filles.","CHARLES : De rien, Alex."]];
 NPCS.forEach(n=>{n.gx0=n.x;n.gy0=n.y;n.i0=n.inside;});
 [['charles',0.09],['victor',0.11],['oscar',0.06],['antoine',0.14],['kuperfils',0.17],
  ['louis',0.15],['paul',0.12]].forEach(([id,sk])=>{
@@ -1600,6 +1706,8 @@ const MISSIONS=[
   f:"Neuf trous. Le score n'a aucune importance et tout le monde le connaît par coeur."},
  {a:4,t:"Le feu du 6",d:"À la nuit, rejoins le feu au bord du 6.",ev:'feu',
   f:"On s'assoit par terre. Il n'y a rien pour s'asseoir et il n'y en a jamais eu."},
+ {a:4,t:"La piscine",d:"Elle ouvre à dix heures et ferme à dix-neuf. Mets-toi à l'eau.",ev:'piscine',
+  f:"L'eau est froide pendant exactement deux secondes. Après, on n'en sort plus."},
  {a:4,t:"Le paquet d'Arthur",d:"Arthur Evenou échange des clopes contre une Pro V1.",ev:'clopes',
   f:"Arthur ramène toujours ce qu'il ne faut pas. C'est pour ça qu'on l'aime bien."},
  {a:4,t:"La première",d:"Fume une clope. Une seule.",ev:'clope',
@@ -1653,7 +1761,7 @@ function mission(ev,qui){
 /* ---------- état ---------- */
 const S={TITLE:0,WORLD:1,DIALOG:2,MENU:3,PAGE:4,SHOP:5,GOLF:6,BATTLE:7,TRANS:8,ASK:9,PENTE:10,CLOPE:11,PICK:12};
 const game={state:S.TITLE,tick:0,inside:null,mute:false,clopes:0,shake:0,hop:null,hopH:0,
-  voiturette:false,chasse:null,vols:0,traces:0,mission:0,missionN:0,
+  voiturette:false,chasse:null,vols:0,traces:0,mission:0,missionN:0,bieres:0,feuEteint:0,nage:false,attente:null,
   pick:0,heroId:'moi',heroPal:null,fade:null,feuCall:false,
   px:40,py:57,dir:1,frame:0,step:0,moving:false,ox:0,oy:0,
   banner:null,bannerT:0,zone:'',toast:null,toastT:0,
@@ -1688,11 +1796,11 @@ function box(x,y,w,h){
 }
 function text(s,x,y,col,sz){font(sz||10);ctx.fillStyle=col||'#38405a';ctx.textBaseline='top';ctx.fillText(s,x,y);}
 /* un texte centre dans un cadre : le cadre s'ajuste au texte, le texte se cale au milieu */
-function boxText(s,x,y,col,sz,minw){
+function boxText(s,x,y,col,sz,minw,maxw){
   const z=sz||10;
   font(z);
   const tw=ctx.measureText(s).width;
-  const w=Math.max(minw||0,Math.round(tw)+20), h=z+10;
+  const w=Math.min(maxw||W-x-6,Math.max(minw||0,Math.round(tw)+20)), h=z+10;
   box(x,y,w,h);
   ctx.fillStyle=col||'#38405a';ctx.textBaseline='top';
   font(z);
@@ -1716,7 +1824,7 @@ function say(lines,cb,who,auto){
 function toast(s){game.toast=s;game.toastT=0;}
 function drawDialog(){
   box(4,112,232,44);
-  if(game.who)boxText(game.who,8,93,'#38405a',9);
+  if(game.who)boxText(game.who,8,93,'#38405a',9,44,160);
   const pg=game.dlg[game.dl]||[];let n=game.dc;
   for(let i=0;i<pg.length;i++){const l=pg[i];
     text(l.slice(0,Math.max(0,Math.min(l.length,n))),14,122+i*14);n-=l.length;}
@@ -1764,19 +1872,7 @@ function drawScene(cx,cy){
     const t=src[y*mw+x];
     const anim=(t===T.WATER||t===T.POOL)?f
       :(t===T.FIRE)?(game.phase==='f'?(1+((game.tick>>4)&1)):0):0;
-    const sx0=x*TS-cx, sy0=y*TS-cy;
-    ctx.drawImage(tile(t,tv(x,y,t),anim),sx0,sy0);
-    if(!C){
-      const nv=niveau(x,y);
-      if(nv){ctx.fillStyle='rgba(255,248,224,'+(nv*0.022).toFixed(3)+')';ctx.fillRect(sx0,sy0,TS,TS);}
-      /* le talus quand on descend d'un plateau */
-      if(nv>niveau(x-1,y)){ctx.fillStyle='rgba(38,44,28,.45)';ctx.fillRect(sx0,sy0,3,TS);
-        ctx.fillStyle='rgba(120,140,88,.35)';ctx.fillRect(sx0+3,sy0,1,TS);}
-      if(nv>niveau(x+1,y)){ctx.fillStyle='rgba(38,44,28,.45)';ctx.fillRect(sx0+TS-3,sy0,3,TS);
-        ctx.fillStyle='rgba(120,140,88,.35)';ctx.fillRect(sx0+TS-4,sy0,1,TS);}
-      if(nv>niveau(x,y+1)){ctx.fillStyle='rgba(38,44,28,.42)';ctx.fillRect(sx0,sy0+TS-3,TS,3);
-        ctx.fillStyle='rgba(120,140,88,.32)';ctx.fillRect(sx0,sy0+TS-4,TS,1);}
-    }
+    ctx.drawImage(tile(t,tv(x,y,t),anim),x*TS-cx,y*TS-cy);
   }
   if(!game.inside)for(const b of ballSpots){
     if(!ballVisible(b))continue;
@@ -1802,7 +1898,7 @@ function drawScene(cx,cy){
       ctx.ellipse(sx+8,n.dog?sy+18:sy+16,n.dog?6.5:6,n.dog?2:2.5,0,0,7);ctx.fill();
     }
     if(n.dog)drawSprite(nBuis?dogSpr(n.dir,n.fr||0).slice(0,11):dogSpr(n.dir,n.fr||0),sx,sy+3,1,n.pal,n.dir===2);
-    else if(n.bike)drawSprite(nBuis?BIKE.slice(0,10):BIKE,sx,sy,1,n.pal,n.dir===2);
+    else if(n.bike)drawSprite(nBuis?bikeSpr(n.dir).slice(0,10):bikeSpr(n.dir),sx,sy,1,n.pal,n.dir===2);
     else if(nBuis)drawSprite(pers(n.dir===3?2:n.dir,n.fr||0).slice(0,10),sx,sy,1,n.pal,n.dir===2);
     else drawActeur(n.id,n.pal,n.dir,n.fr||0,sx,sy,1,n.dir===2);
     if(nBuis)brushOver(sx,sy+(n.dog?12:9),n.x+n.y);
@@ -1820,13 +1916,20 @@ function drawScene(cx,cy){
       }
       const hx=Math.round(p.px*TS-8-cx),hy=Math.round(p.py*TS-12-cy);
       if(hx<-16||hx>W||hy<-20||hy>H)continue;
-      /* le chariot, pose a cote */
-      const kx=hx+(p.dir===2?12:-12);
-      ctx.fillStyle='rgba(0,0,0,.18)';ctx.beginPath();ctx.ellipse(kx+8,hy+16,5,2,0,0,7);ctx.fill();
-      ctx.fillStyle='#2b2b33';ctx.fillRect(kx+6,hy+4,3,10);
-      ctx.fillStyle='#8a3f4a';ctx.fillRect(kx+5,hy+2,5,3);
-      ctx.fillStyle='#c9c4bb';ctx.fillRect(kx+6,hy,1,3);ctx.fillRect(kx+8,hy,1,3);
-      ctx.fillStyle='#22242c';ctx.fillRect(kx+3,hy+13,3,3);ctx.fillRect(kx+9,hy+13,3,3);
+      /* le chariot reste devant le green, jamais dessus */
+      let cxp=p.px+(p.dir===2?0.8:-0.8), cyp=p.py;
+      if(golf.hole>=0){
+        const hh=HOLES[golf.hole];
+        const vx=cxp-(hh.gx+0.5), vy=cyp-(hh.gy+0.5), dd=Math.hypot(vx,vy)||1;
+        if(dd<4.2){cxp=hh.gx+0.5+vx/dd*4.6;cyp=hh.gy+0.5+vy/dd*4.6;}
+      }
+      const kx=Math.round(cxp*TS-8-cx), ky=Math.round(cyp*TS-12-cy);
+      const hy2=ky;
+      ctx.fillStyle='rgba(0,0,0,.18)';ctx.beginPath();ctx.ellipse(kx+8,hy2+16,5,2,0,0,7);ctx.fill();
+      ctx.fillStyle='#2b2b33';ctx.fillRect(kx+6,hy2+4,3,10);
+      ctx.fillStyle='#8a3f4a';ctx.fillRect(kx+5,hy2+2,5,3);
+      ctx.fillStyle='#c9c4bb';ctx.fillRect(kx+6,hy2,1,3);ctx.fillRect(kx+8,hy2,1,3);
+      ctx.fillStyle='#22242c';ctx.fillRect(kx+3,hy2+13,3,3);ctx.fillRect(kx+9,hy2+13,3,3);
       ctx.fillStyle='rgba(0,0,0,.2)';ctx.beginPath();ctx.ellipse(hx+8,hy+16,6,2.5,0,0,7);ctx.fill();
       drawActeur(p.fid||p.id,p.pal,p.dir,p.fr||0,hx,hy,1,p.dir===2);
     }
@@ -1836,7 +1939,15 @@ function drawScene(cx,cy){
     const saut=game.hopH||0;
     if(!buis){ctx.fillStyle='rgba(0,0,0,'+(saut?0.12:0.2)+')';ctx.beginPath();
       ctx.ellipse(hx+8,hy+16,saut?4:6,saut?1.6:2.5,0,0,7);ctx.fill();}
-    if(game.voiturette){
+    if(game.nage){
+      const sp2=pers(game.dir===3?2:game.dir,game.frame).slice(0,10);
+      drawSprite(sp2,hx,hy+3,1,game.heroPal,game.dir===2);
+      ctx.fillStyle='rgba(255,255,255,.55)';
+      const on2=(game.tick>>3)&1;
+      ctx.fillRect(hx+2+on2,hy+12,5,1);ctx.fillRect(hx+9-on2,hy+14,5,1);
+      ctx.fillStyle='rgba(120,200,230,.45)';ctx.fillRect(hx+1,hy+13,14,2);
+    }
+    else if(game.voiturette){
       ctx.fillStyle='#e8e4d8';ctx.fillRect(hx+1,hy+3,14,11);
       ctx.fillStyle='#c9c4bb';ctx.fillRect(hx+1,hy+3,14,3);
       ctx.fillStyle='#3f5d8a';ctx.fillRect(hx+3,hy+7,4,4);ctx.fillRect(hx+9,hy+7,4,4);
@@ -1844,7 +1955,7 @@ function drawScene(cx,cy){
       ctx.fillStyle='#22242c';ctx.fillRect(hx,hy+11,2,3);ctx.fillRect(hx+14,hy+11,2,3);
       drawSprite(pers(game.dir===3?2:game.dir,0).slice(0,9),hx,hy-6,1,game.heroPal,game.dir===2);
     }
-    else if(game.bike&&!golf.on)drawSprite(buis?BIKE.slice(0,10):BIKE,hx,hy-saut,1,game.heroPal,game.dir===2);
+    else if(game.bike&&!golf.on)drawSprite(buis?bikeSpr(game.dir).slice(0,10):bikeSpr(game.dir),hx,hy-saut,1,game.heroPal,game.dir===2);
     else if(buis)drawSprite(pers(game.dir===3?2:game.dir,game.frame).slice(0,10),hx,hy,1,game.heroPal,game.dir===2);
     else drawActeur(game.heroId,game.heroPal,game.dir,game.frame,hx,hy-saut,1,game.dir===2);
     if(buis)brushOver(hx,hy+9,game.px+game.py);
@@ -1942,6 +2053,7 @@ const DV=[[0,1],[0,-1],[-1,0],[1,0]];
 function npcAt(x,y){return NPCS.find(n=>!n.gone&&n.inside===game.inside&&n.x===x&&n.y===y);}
 function solidAt(x,y){
   if(!game.inside&&doorAt(x,y))return false;
+  if(game.nage&&getTile(x,y)===T.POOL)return false;
   return SOLID.has(getTile(x,y))||!!npcAt(x,y);
 }
 function tryMove(){
@@ -1980,6 +2092,7 @@ function arrive(){
       if(L){if(L.who==='LA CABANE')mission('cabane');say(L.d,null,L.who||null);return;}
     }
     if(t===T.DENSE)spawnLeaves(game.px,game.py);
+    if(game.nage&&t!==T.POOL)sortDeLeau();
     if(velo.race&&!velo.race.fini&&
        Math.abs(game.px-VELO_BUT.x)+Math.abs(game.py-VELO_BUT.y)<=1){veloFin(true);return;}
     const b=ballSpots.find(b=>!b.taken&&b.x===game.px&&b.y===game.py);
@@ -2107,7 +2220,7 @@ function interact(){
         "ARTHUR : Ça a brûlé toute la nuit, j'te jure."],null,'LE FEU D\'ARTHUR');
     },()=>say(["ARTHUR : Comme tu veux. Moi je l'aurais fait."],null,'ARTHUR'));
     return;}
-  if(t===T.TEE||under===T.TEE){startHole();return;}
+  if(t===T.TEE||under===T.TEE){departDu1();return;}
   if(t===T.MAT||under===T.MAT){startPractice();return;}
   if(t===T.TVGC){gamecube();return;}
   if(tx===49&&ty===61){chaparde();return;}
@@ -2122,7 +2235,7 @@ function interact(){
   if(t===T.SIGN){say(["GOLF DU PRIEURÉ. Domaine de Montcient. Prieuré fondé vers 1170 par les moines grandmontains.","Tenue correcte exigée. Les enfants restent sous la responsabilité des parents."]);return;}
   if(t===T.FLAG){say(["Le drapeau claque. Le green est plus rapide qu'il n'en a l'air."]);return;}
   if(t===T.WATER)   {say(["L'eau est trouble. On y a perdu beaucoup de balles et au moins un fer 7."]);return;}
-  if(t===T.POOL)    {say(["L'eau est bonne. Il faudrait juste avoir le droit de se baigner avant 18h."]);return;}
+  if(t===T.POOL||under===T.POOL){baignade();return;}
   if(t===T.FOUNT)   {say(["La fontaine du patio. Des pièces au fond. Margot est passée par là."]);return;}
   if(t===T.CAR)     {say(["Une Volvo break. Le coffre est ouvert, plein de sacs de golf."]);return;}
   if(t===T.LOCKER)  {say(["Des casiers en bois, alignés. Certains ne ferment plus depuis les années 80."]);return;}
@@ -2200,6 +2313,7 @@ function interact(){
     "C'est ce qui sépare le hameau des maisons des Evenou."]);return;}
   if(t===T.CABW||t===T.CABR){say(["La cabane du bois du 712. Des planches, un cadenas rouillé, aucun cadavre."]);return;}
   if(t===T.PLANT){say(["Une plante verte. Elle survit à tout, comme tout ce qui est ici depuis longtemps."]);return;}
+  if(t===T.FIRE&&game.phase==='f'){feuMenu();return;}
   if(t===T.FIRE){say(game.phase==='f'
     ?["Le feu. On s'assoit par terre autour, il n'y a rien pour s'asseoir et il n'y en a jamais eu."]
     :["Le foyer est froid. Un cercle de pierres et du bois noirci.","Ça brûlera ce soir. Ça brûle tous les soirs."]);return;}
@@ -2227,7 +2341,8 @@ const BUTIN=[
  {id:'clopes',t:"Un paquet entamé, posé sur la caisse à outils. Il n'était à personne."},
  {id:'prov1',t:"Une Titleist Pro V1 toute neuve, sortie de sa boîte. Elle disparaît dans ta poche."}];
 function chaparde(){
-  const b=BUTIN[(Math.random()*BUTIN.length)|0];
+  const pool=BUTIN.filter(x=>x.id!=='gant'||!game.items.gant);
+  const b=pool[(Math.random()*pool.length)|0];
   if(b.id==='clopes'){game.items.clopes=true;game.clopes+=5;}
   else if(b.id==='prov1')game.bag[0]++;
   else game.items.gant=true;
@@ -2269,12 +2384,17 @@ function updateVoiturette(){
   const c=game.chasse;
   if(!c||!c.on)return;
   c.t++;
-  if(c.t%9===0){
+  if(c.t%26===0){
     const dx=Math.sign(game.px-c.x), dy=Math.sign(game.py-c.y);
     if(Math.random()<0.5&&dx){if(!SOLID.has(at(c.x+dx,c.y)))c.x+=dx;}
     else if(dy){if(!SOLID.has(at(c.x,c.y+dy)))c.y+=dy;}
     else if(dx&&!SOLID.has(at(c.x+dx,c.y)))c.x+=dx;
   }
+  if(c.t>5400){c.on=false;
+    say(["Alain s'arrête, les mains sur les genoux.",
+      "ALAIN : Garde-la. Garde-la, j'en peux plus.",
+      "Il repart vers la cabane en marchant. Tu as gagné, et tu ne sais pas quoi en faire."],null,'ALAIN');
+    return;}
   if(Math.abs(c.x-game.px)+Math.abs(c.y-game.py)<=1){
     c.on=false;
     rendVoiturette(["ALAIN : Descends. DESCENDS.",
@@ -2407,6 +2527,32 @@ function mkP(id,name,pal,human,skill,fid){return{id,name,pal,human,skill,fid:fid
 function slopeOf(h){return{a:(h*2.3+0.6)%(Math.PI*2),s:0.6+((h*5)%4)*0.22};}
 function distM(p){const h=HOLES[golf.hole];return Math.round(Math.hypot(h.gx+0.5-p.bx,h.gy+0.5-p.by)*M);}
 
+/* Au depart du 1 : soit on joue seul, soit on propose une partie a tout le monde.
+   Quatre joueurs maximum, et on part au bout de cinq secondes avec ceux qui ont dit oui. */
+function departDu1(){
+  if(!net.on||net.count<2){startHole();return;}
+  askYN('Tu proposes une partie à tout le monde ?','LE DÉPART',
+    ()=>proposePartie(),()=>startHole());
+}
+function proposePartie(){
+  game.attente={t:0,pk:[]};
+  netSend({t:'invite',kind:'partie',from:game.hero.name});
+  toast('Partie proposée. On attend cinq secondes.');
+}
+function updateAttente(){
+  const a=game.attente; if(!a)return;
+  a.t++;
+  if(a.t%60===0&&a.t<300)
+    toast('Départ dans '+Math.ceil((300-a.t)/60)+'... '+(a.pk.length+1)+' joueur(s)');
+  if(a.pk.length>=3||a.t>=300){
+    game.attente=null;
+    game.party=a.pk.slice(0,3).filter(id=>NPCS.some(n=>n.id===id));
+    game.party.forEach((id,k)=>{const n=NPCS.find(x=>x.id===id);
+      if(n){n.gone=false;n.inside=null;n.x=TEE1[k][0];n.y=TEE1[k][1];n.dir=1;}});
+    toast(game.party.length?('Partie à '+(game.party.length+1)+'. On y va.'):'Personne. Tu joues seul.');
+    startHole();
+  }
+}
 function startHole(){
   let best=null,bd=99;
   for(const h of HOLES){const d=Math.hypot(h.tx-game.px,h.ty-game.py);if(d<bd){bd=d;best=h;}}
@@ -2956,6 +3102,7 @@ function drawGolf(){
     ctx.fillStyle='#e0503a';ctx.fillRect(121,137,Math.round(100*golf.stime/300),6);
     return;
   }
+  if(game.hudOff)return;
   box(4,112,232,44);
   if(golf.phase==='drop'){
     text('Elle est dedans.',14,122,'#38405a',10);
@@ -3212,9 +3359,9 @@ function startClope(){
 }
 function updateClope(){
   clope.t++;
-  if(clope.t%8===0)clope.puffs.push({x:0,y:0,r:1.5,a:1,vx:(Math.random()-0.4)*0.5});
+  if(clope.t%9===0)clope.puffs.push({x:0,y:0,r:0.8,a:1,vx:(Math.random()-0.4)*0.22});
   for(let i=clope.puffs.length-1;i>=0;i--){
-    const p=clope.puffs[i]; p.y-=0.7; p.x+=p.vx; p.r+=0.14; p.a-=0.011;
+    const p=clope.puffs[i]; p.y-=0.3; p.x+=p.vx; p.r+=0.055; p.a-=0.014;
     if(p.a<=0)clope.puffs.splice(i,1);
   }
   if(clope.t>250||consume('b')||consume('a')){
@@ -3223,24 +3370,23 @@ function updateClope(){
   }
 }
 function drawClope(){
-  const c=cam(game.px*TS+8,game.py*TS+8);
+  const c=cam(game.px*TS+8+game.ox,game.py*TS+8+game.oy);
   drawScene(c[0],c[1]); nightTint(c[0],c[1]);
-  ctx.fillStyle='rgba(10,12,18,.5)';ctx.fillRect(0,0,W,H);
-  const hx=88,hy=44;
-  const tremble=clope.t>200?((clope.t>>1)%2?1:-1):0;
-  drawSprite(pers(2,0),hx+tremble,hy,3,game.heroPal,false);
-  /* la clope au bec */
-  const mx=hx+3*11+tremble, my=hy+3*7;
-  ctx.fillStyle='#f4f2ec';ctx.fillRect(mx,my,7,2);
-  ctx.fillStyle=(game.tick>>3)%2?'#e0503a':'#f2a03d';ctx.fillRect(mx+7,my,2,2);
+  /* rien de zoome : la clope tient en quelques pixels au bec du personnage */
+  const hx=Math.round(game.px*TS+game.ox-c[0]),hy=Math.round(game.py*TS+game.oy-c[1])-4;
+  const cote=(game.dir===2||game.dir===3);
+  const mx=hx+(game.dir===2?3:cote?11:9), my=hy+7;
+  ctx.fillStyle='#f4f2ec';ctx.fillRect(mx,my,2,1);
+  ctx.fillStyle=(game.tick>>3)%2?'#e0503a':'#f2a03d';ctx.fillRect(game.dir===2?mx-1:mx+2,my,1,1);
   for(const p of clope.puffs){
-    ctx.globalAlpha=Math.max(0,p.a)*0.7;
+    ctx.globalAlpha=Math.max(0,p.a)*0.65;
     ctx.fillStyle='#e8e8ef';
-    ctx.beginPath();ctx.arc(mx+9+p.x,my-2+p.y,p.r,0,7);ctx.fill();
+    ctx.beginPath();ctx.arc(mx+1+p.x,my-2+p.y,p.r,0,7);ctx.fill();
   }
   ctx.globalAlpha=1;
+  drawClock();
   box(4,112,232,44);
-  text(clope.t>200?'Ça pique un peu, en fait.':'Tu fumes une clope derrière le practice.',14,122);
+  text(clope.t>200?'Ça pique un peu, en fait.':'Tu allumes une clope, la main devant le vent.',14,122);
   text('Il reste '+game.clopes+' clope(s) dans le paquet.',14,136,'#8a92a8',9);
 }
 
@@ -3309,6 +3455,79 @@ function timeStep(){
   }
 }
 /* le feu de camp : on t'appelle, tu y vas a pied ou d'un coup de A */
+/* autour du feu on ne fait pas que parler */
+/* ---------- la piscine ---------- */
+function piscineOuverte(){const h=hNow();return h>=10&&h<19;}
+function baignade(){
+  if(game.nage){
+    say(["Tu es déjà dedans. Ressors par le bord si tu veux."]);return;
+  }
+  if(!piscineOuverte()){
+    say(["Le portillon est fermé. La piscine ouvre à dix heures et ferme à dix-neuf.",
+      "Sophie Godot dit qu'elle a une clé. Sophie Godot dit beaucoup de choses."],null,'LA PISCINE');
+    return;
+  }
+  askYN('Tu te mets à l\'eau ?','LA PISCINE',()=>{
+    entreDansLeau(1);
+    netSend({t:'invite',kind:'piscine',from:game.hero.name});
+  },()=>say(["Plus tard. L'eau est à vingt et un, c'est écrit sur le panneau."]));
+}
+function entreDansLeau(annonce){
+  const[dx,dy]=DV[game.dir];
+  let nx=game.px+dx, ny=game.py+dy;
+  if(at(nx,ny)!==T.POOL){
+    for(const d of DV){ if(at(game.px+d[0],game.py+d[1])===T.POOL){nx=game.px+d[0];ny=game.py+d[1];break;} }
+  }
+  if(at(nx,ny)!==T.POOL)return;
+  game.nage=true;game.bike=false;game.px=nx;game.py=ny;game.ox=0;game.oy=0;game.moving=false;
+  mission('piscine');
+  if(annonce)say(["Tu sautes. L'eau est froide pendant exactement deux secondes.",
+    "Après, on n'en sort plus."],null,'LA PISCINE');
+}
+function sortDeLeau(){
+  game.nage=false;
+  say(["Tu remontes par l'échelle et tu laisses des traces mouillées jusqu'aux transats."],null,'LA PISCINE');
+}
+function feuMenu(){
+  if(game.feuEteint){
+    say(["Il ne reste qu'un carré de cendres qui fume encore.",
+      "On est douze debout autour d'un tas de cendres. Il est temps de rentrer."],null,'LE FEU');
+    return;
+  }
+  if((game.bieres||0)>=3){
+    askYN('On l\'éteint tous ensemble ?','LE FEU',()=>eteindreLeFeu(),
+      ()=>say(["Pas encore. On a le temps."]));
+    return;
+  }
+  askYN('Il reste des bières dans le pack. Tu en prends une ?','LE FEU',()=>{
+    game.bieres=(game.bieres||0)+1;
+    say(["Tu décapsules sur une pierre du foyer, comme Victor t'a montré.",
+      "C'est tiède et c'est amer. Tu finis quand même.",
+      game.bieres===1?"CHARLES : Tu fais la grimace.":
+      game.bieres===2?"VICTOR : Deuxième. On te surveille.":
+        "KUPERFILS : Trois. Tu vas dormir dans le rough."],()=>{
+      askYN('Tu la lances dans les bois derrière ?','LE FEU',()=>{
+        const dx=FEU.x+3+((Math.random()*4)|0), dy=FEU.y-3+((Math.random()*7)|0);
+        if(!SOLID.has(at(dx,dy)))put(dx,dy,T.CANETTE);
+        miniC=null;sfx('verre');
+        say(["Tu la balances par-dessus les fougères. Elle rebondit deux fois.",
+          "MARGOT : Qui a jeté une canette ?",
+          "Personne ne répond. Personne ne répond jamais."],null,'LE FEU');
+      },()=>say(["Tu la poses contre une pierre. Elle finira dans les fougères quand même."]));
+    },'LE FEU');
+  },()=>say(["Pas tout de suite."]));
+}
+function eteindreLeFeu(){
+  game.feuEteint=1;
+  put(FEU.x,FEU.y,T.LOG);
+  miniC=null;
+  say(["VICTOR : Allez. Tout le monde debout.",
+    "Douze personnes se lèvent en même temps et forment un cercle un peu plus serré.",
+    "Ça siffle, ça fume, ça sent très mauvais.",
+    "CHARLES : Reculez, reculez, ça éclabousse.",
+    "Le feu meurt en trente secondes. On rentre à vélo, dans le noir, sans lumière.",
+    "C'était le meilleur soir de l'été. On le saura dans quinze ans."],null,'LE FEU');
+}
 function callFeu(){
   if(game.inside)return;
   game.feuCall=true;
@@ -3320,7 +3539,7 @@ function goFeu(){
   game.feuCall=false;
   fadeTo(()=>{
     game.inside=null;
-    game.px=109;game.py=36;game.dir=1;game.ox=0;game.oy=0;game.moving=false;
+    game.px=109;game.py=41;game.dir=1;game.ox=0;game.oy=0;game.moving=false;
     game.zone=zoneAt(game.px,game.py);game.banner='LE FEU DE CAMP';game.bannerT=0;
     game.state=S.WORLD;
   });
@@ -3370,10 +3589,9 @@ function placeGang(){
     }
     if(game.phase==='g'){n.x=n.gx0;n.y=n.gy0;n.inside=n.i0||null;}
     else if(game.phase==='h'){n.x=sp.h[0];n.y=sp.h[1];n.inside=sp.hin||null;}
-    else {n.x=sp.f[0];n.y=sp.f[1];
-      const ex=FEU.x-n.x, ey=FEU.y-n.y;
-      n.dir=(Math.abs(ex)>Math.abs(ey))?(ex>0?3:2):(ey>0?0:1);}
+    else {n.x=sp.f[0];n.y=sp.f[1];}
   }
+  if(game.phase==='f')placeAutourDuFeu();
 }
 /* deux personnes a l'accueil, jamais les trois, ca tourne */
 const ACCUEIL=['william','philippe','helene'];
@@ -3403,6 +3621,18 @@ function nightTint(cx,cy){
     }
   }
 }
+/* un rappel discret de la mission en cours, en haut a gauche */
+function drawMissionHUD(){
+  if(game.banner||game.toast)return;
+  const m=missionCourante(); if(!m)return;
+  font(8);
+  const s0=m.t+(m.n?(' '+(game.missionN||0)+'/'+m.n):'');
+  const w=Math.round(ctx.measureText(s0).width)+14;
+  ctx.fillStyle='rgba(20,26,38,.42)';ctx.fillRect(6,6,w,13);
+  ctx.fillStyle='#c8443a';ctx.fillRect(8,11,3,3);
+  ctx.fillStyle='#f4f2ec';ctx.textBaseline='top';font(8);
+  ctx.fillText(s0,14,9);
+}
 function drawClock(){
   const t=hhmm();
   font(10);
@@ -3418,7 +3648,7 @@ function askYN(q,who,yes,no){
 function drawAsk(){
   const a=game.ask;
   box(4,112,232,44);
-  if(a.who)boxText(a.who,8,93,'#38405a',9);
+  if(a.who)boxText(a.who,8,93,'#38405a',9,44,160);
   const ls=wrap(a.q,208);
   for(let i=0;i<ls.length&&i<3;i++)text(ls[i],14,119+i*13);
   box(178,68,54,42);
@@ -4027,7 +4257,11 @@ function updatePick(){
     game.state=S.WORLD;
     game.zone=game.inside?INT[game.inside].name:zoneAt(game.px,game.py);
     game.banner=game.zone;game.bannerT=0;
-    say(INTRO.concat(p.intro));
+    const m0=missionCourante();
+    say(INTRO.concat(p.intro).concat(m0?[
+      '— '+ACTES[m0.a]+' —',
+      'PREMIÈRE MISSION : '+m0.t+'. '+m0.d,
+      '(START, puis CARNET, pour la revoir à tout moment.)']:[]));
   }
 }
 
@@ -4101,6 +4335,12 @@ function netConnect(){
     }
     else if(m.t==='verre'){ breakWindow(m.x,m.y,true); }
     else if(m.t==='invite'){ inviteRecue(m); }
+    else if(m.t==='rejoint'){
+      if(game.attente&&m.pk&&game.attente.pk.indexOf(m.pk)<0&&game.attente.pk.length<3){
+        game.attente.pk.push(m.pk);
+        toast((m.pk||'Quelqu\'un')+' rejoint la partie.');
+      }
+    }
   };
 }
 function netSend(o){
@@ -4126,7 +4366,10 @@ function netTick(){
 const INVITES={
  cours:{q:" ouvre un cours collectif au practice. Tu viens ?",go:[24,42],run:()=>startCours('GILLES',1)},
  pente:{q:" remonte la planche en haut de la pente. Tu descends ?",go:[109,24],run:()=>startPente(1)},
- mamou:{q:" est devant chez les Mamoumani, driver en main. Tu viens ?",go:[98,24],run:()=>startMamou(1)}};
+ mamou:{q:" est devant chez les Mamoumani, driver en main. Tu viens ?",go:[25,22],run:()=>startMamou(1)},
+ piscine:{q:" est déjà dans la piscine. Tu viens te baigner ?",go:[80,44],run:()=>entreDansLeau(0)},
+ partie:{q:" propose une partie au départ du 1. Tu joues ?",go:[52,56],
+   run:()=>{netSend({t:'rejoint',pk:game.heroId||'moi'});toast('Tu es sur le départ. Ça va commencer.');}}};
 function inviteRecue(m){
   const I=INVITES[m.kind]; if(!I)return;
   if(game.state!==S.WORLD||game.fade||game.inside||golf.on)return;
@@ -4153,7 +4396,7 @@ function drawPeers(cx,cy){
     if(sx<-24||sx>W+24||sy<-28||sy>H+8)continue;
     const pBuis=inBrush(Math.round(p.rx),Math.round(p.ry));
     if(!pBuis){ctx.fillStyle='rgba(0,0,0,.18)';ctx.beginPath();ctx.ellipse(sx+8,sy+16,6,2.5,0,0,7);ctx.fill();}
-    if(p.bike)drawSprite(pBuis?BIKE.slice(0,10):BIKE,sx,sy,1,peerPal(p.pk),p.dir===2);
+    if(p.bike)drawSprite(pBuis?bikeSpr(p.dir).slice(0,10):bikeSpr(p.dir),sx,sy,1,peerPal(p.pk),p.dir===2);
     else if(pBuis)drawSprite(pers(p.dir===3?2:p.dir,p.fr||0).slice(0,10),sx,sy,1,peerPal(p.pk),p.dir===2);
     else drawActeur(p.pk,peerPal(p.pk),p.dir,p.fr||0,sx,sy,1,p.dir===2);
     if(pBuis)brushOver(sx,sy+9,Math.round(p.rx)+Math.round(p.ry));
@@ -4234,7 +4477,7 @@ function update(){
       break;
     case S.PICK: updatePick();break;
     case S.WORLD:
-      roam();updateVelo();updateVoiturette();
+      roam();updateVelo();updateVoiturette();updateAttente();
       if(game.hop){
         const h=game.hop; h.t++;
         const k=Math.min(1,h.t/h.dur);
@@ -4249,11 +4492,11 @@ function update(){
       if(game.phase==='f'&&!game.inside&&Math.hypot(game.px-FEU.x,game.py-FEU.y)<5){
         game.feuT=(game.feuT||0)+1;
         if(game.feuT>20&&!game.feuVu){game.feuVu=1;mission('feu');}
-        if(game.feuT>460){game.feuT=0;
+        if(game.feuT>250){game.feuT=0;
           say(FEU_TALK[(Math.random()*FEU_TALK.length)|0],null,'AUTOUR DU FEU',true);break;}
       } else game.feuT=0;
       if(game.moving){
-        const sp=game.voiturette?5:(inBrush(game.px,game.py)?(game.bike?2.4:1.3):(game.bike?4:2));
+        const sp=game.nage?1.1:game.voiturette?5:(inBrush(game.px,game.py)?(game.bike?2.4:1.3):(game.bike?4:2));
         if(game.ox<0)game.ox=Math.min(0,game.ox+sp);
         if(game.ox>0)game.ox=Math.max(0,game.ox-sp);
         if(game.oy<0)game.oy=Math.min(0,game.oy+sp);
@@ -4263,7 +4506,15 @@ function update(){
       }else{
         if(consume('start')){game.state=S.MENU;game.menuIdx=0;break;}
         if(consume('select')){
-          if(game.voiturette){rendVoiturette(["Tu descends. La voiturette reste là, en travers.",
+          if(game.nage){
+      const sp2=pers(game.dir===3?2:game.dir,game.frame).slice(0,10);
+      drawSprite(sp2,hx,hy+3,1,game.heroPal,game.dir===2);
+      ctx.fillStyle='rgba(255,255,255,.55)';
+      const on2=(game.tick>>3)&1;
+      ctx.fillRect(hx+2+on2,hy+12,5,1);ctx.fillRect(hx+9-on2,hy+14,5,1);
+      ctx.fillStyle='rgba(120,200,230,.45)';ctx.fillRect(hx+1,hy+13,14,2);
+    }
+    else if(game.voiturette){rendVoiturette(["Tu descends. La voiturette reste là, en travers.",
             "Alain la retrouvera. Alain retrouve toujours."]);break;}
           if(game.items.velo&&!game.inside){game.bike=!game.bike;
             if(game.bike)mission('velo');
@@ -4348,9 +4599,11 @@ function render(){
       drawScene(c[0],c[1]);nightTint(c[0],c[1]);
       ctx.fillStyle='rgba(10,12,18,.45)';ctx.fillRect(0,0,W,H);drawPage();break;
     case S.DIALOG:
-      if(game.ret===S.GOLF)drawGolf();else{drawScene(c[0],c[1]);nightTint(c[0],c[1]);}
+      /* pendant un dialogue le bandeau de golf s'efface, jamais deux cadres l'un sur l'autre */
+      if(game.ret===S.GOLF){game.hudOff=1;drawGolf();game.hudOff=0;}
+      else{drawScene(c[0],c[1]);nightTint(c[0],c[1]);}
       drawDialog();break;
-    default: drawScene(c[0],c[1]);nightTint(c[0],c[1]);drawClock();drawToast();
+    default: drawScene(c[0],c[1]);nightTint(c[0],c[1]);drawClock();drawMissionHUD();drawToast();
   }
   drawFade();
 }

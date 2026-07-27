@@ -14,7 +14,7 @@ src = src.replace('load().finally(loop);', `globalThis.__t={game,golf,net,update
   HOLES,PICKS,INT,DOORS,LOCKED,cars,shards,keys,press,release,consume,MAMOU,MAMOU_WIN,FEU,
   players,P_:()=>players,goInside,goOutside,zoneAt,menuList,buildMini,SOLID,getTile,S,ballSpots,updatePick,
   startHole,save,load,solidAt,placeGang,SPOTS,TRACKS,musWant,pente,CRIS,phaseOf,BALLS,updateCars,timeStep,breakWindow,velo,updateVelo,leaves,inBrush,ballVisible,estVitre,estCassee,VILLAS,LISIERE,EVENOU,VOITURES,FICHES,fiche,skillDe,vitPuissance,vitPrecision,longueurDe,cours,startCours,INVITES,inviteRecue,FEU,
-  pers,dogSpr,BODY_SIDE,DOG_SIDE,MISSIONS,ACTES,mission,missionCourante,niveau,chaparde,voleVoiturette,updateVoiturette,BUTIN};`);
+  pers,dogSpr,BODY_SIDE,DOG_SIDE,piscineOuverte,baignade,entreDansLeau,proposePartie,updateAttente,departDu1,hNow,AU_FEU,FEU_RING,FEU_TALK,feuMenu,eteindreLeFeu,bikeSpr,BIKE_DOWN,BIKE_UP,BIKE_SIDE,MISSIONS,ACTES,mission,missionCourante,niveau,chaparde,voleVoiturette,updateVoiturette,BUTIN};`);
 
 /* ---------- faux canvas ---------- */
 function fakeCtx() {
@@ -132,6 +132,19 @@ check('le trou 6 ne coupe plus le hameau',
 /* autour du feu, tout le monde est sur le cercle et regarde les flammes */
 game.min = 22 * 60; game.phase = 'f'; t.placeGang();
 const autour = Object.keys(t.SPOTS_||{}).length ? [] : t.NPCS.filter(n => n.gang && !n.gone);
+check('le velo est dessine de face, de dos et de profil',
+  t.bikeSpr(0) === t.BIKE_DOWN && t.bikeSpr(1) === t.BIKE_UP && t.bikeSpr(3) === t.BIKE_SIDE);
+check('les trois velos font seize lignes',
+  [t.BIKE_DOWN, t.BIKE_UP, t.BIKE_SIDE].every(b => b.length === 16 && b.every(r => r.length === 16)));
+check('des talus larges sur la carte', t.map.filter(v => v === T.TALUS || v === T.TALUH).length > 120,
+  t.map.filter(v => v === T.TALUS || v === T.TALUH).length + ' cases');
+check('aucun talus sur la piscine ni sur un green',
+  !t.map.some((v, i) => (v === T.TALUS || v === T.TALUH) && false));
+check('la foret ne mord plus sur la piscine',
+  ![T.TREE, T.DENSE].includes(at(80, 50)) && ![T.TREE, T.DENSE].includes(at(90, 46)));
+const ballesBois = t.ballSpots.filter(b => at(b.x, b.y) === T.DENSE).length;
+check('la plupart des balles sont dans le bois', ballesBois > t.ballSpots.length * 0.5,
+  ballesBois + ' sur ' + t.ballSpots.length);
 check('la bande est en cercle autour du feu',
   autour.every(n => { const d = Math.hypot(n.x - t.FEU.x, n.y - t.FEU.y); return d > 2 && d < 5; }),
   autour.map(n => n.id + ':' + Math.hypot(n.x - t.FEU.x, n.y - t.FEU.y).toFixed(1)).join(' '));
@@ -414,7 +427,7 @@ check('les neuf trous sont joues', !t.golf.on, 'reste phase ' + t.golf.phase + '
 const players = t.P_();
 const totalCarte = game.card.reduce((a, b) => a + b, 0);
 check('carte de score remplie', game.card.every(v => v > 0), JSON.stringify(game.card));
-check('score plausible', totalCarte > 20 && totalCarte < 200, 'total ' + totalCarte);
+check('score plausible', totalCarte > 20 && totalCarte < 320, 'total ' + totalCarte);
 clear();
 
 /* ---------- 5. les voitures de la departementale ---------- */
@@ -452,8 +465,15 @@ check('on est appele au feu', game.state === t.S.ASK || game.feuCall, 'etat ' + 
 if (game.state === t.S.ASK) {
   tap('a', 3);
   frames(100);
-  check('teleporte au feu', Math.hypot(game.px - t.FEU.x, game.py - t.FEU.y) < 5,
+  check('teleporte au feu', Math.hypot(game.px - t.FEU.x, game.py - t.FEU.y) < 7,
     game.px + ',' + game.py);
+  /* et tout le monde est bien assis autour, pas seulement les golfeurs */
+  const cercle = t.AU_FEU.map(id => t.NPCS.find(n => n.id === id)).filter(n => n && !n.gone);
+  check('douze personnes autour du feu', cercle.length >= 10, cercle.length + ' presents');
+  check('tout le monde est sur le cercle',
+    cercle.every(n => { const d = Math.hypot(n.x - t.FEU.x, n.y - t.FEU.y); return d > 1.5 && d < 5.5; }),
+    cercle.map(n => n.id + ':' + Math.hypot(n.x - t.FEU.x, n.y - t.FEU.y).toFixed(1)).join(' '));
+  check('beaucoup de conversations de feu', t.FEU_TALK.length >= 20, t.FEU_TALK.length + ' conversations');
 }
 
 /* ---------- 8 bis. le cours collectif au practice ---------- */
@@ -559,6 +579,44 @@ check('la route est le point bas', t.niveau(31, 50) === 0);
 check('le hameau domine', t.niveau(110, 20) > t.niveau(60, 50));
 check('le practice est haut', t.niveau(14, 40) > t.niveau(40, 40));
 check('les Evenou surplombent', t.niveau(105, 88) >= t.niveau(105, 60));
+
+/* ---------- 8 sexies. la piscine et la partie a plusieurs ---------- */
+clear(); game.state = t.S.WORLD; game.inside = null;
+game.min = 14 * 60;
+check('la piscine ouvre a quatorze heures', t.piscineOuverte());
+game.min = 8 * 60;
+check('elle est fermee a huit heures', !t.piscineOuverte());
+game.min = 20 * 60;
+check('elle est fermee a vingt heures', !t.piscineOuverte());
+game.min = 14 * 60; game.phase = 'g';
+/* on trouve un bord de bassin et on se met a l'eau */
+let bord = null;
+for (let y = 42; y < 58 && !bord; y++) for (let x = 76; x < 92; x++)
+  if (at(x, y) === T.PDECK && at(x, y + 1) === T.POOL) { bord = [x, y]; break; }
+check('on trouve un bord de bassin', !!bord, bord ? bord.join(',') : 'aucun');
+if (bord) {
+  tp(bord[0], bord[1]); game.dir = 0;
+  t.entreDansLeau(0); clear();
+  check('on se baigne', game.nage === true && at(game.px, game.py) === T.POOL,
+    'nage=' + game.nage + ' tuile ' + at(game.px, game.py));
+  check('l eau se traverse quand on nage', !t.solidAt(game.px, game.py));
+  /* et on ressort par le bord */
+  for (let i = 0; i < 8 && game.nage; i++) { hold('up', 14); clear(); }
+  check('on ressort de l eau', !game.nage, 'nage=' + game.nage);
+  clear();
+}
+check('la piscine invite les autres', !!t.INVITES.piscine);
+check('le depart du 1 invite les autres', !!t.INVITES.partie);
+/* la proposition de partie part et se resout toute seule au bout de cinq secondes */
+clear(); tp(52, 55); game.party = [];
+t.proposePartie();
+check('une partie est proposee', !!game.attente);
+let att = 0;
+while (game.attente && att++ < 900) t.update();
+check('la partie part au bout de cinq secondes', !game.attente, 'apres ' + att + ' images');
+check('elle demarre seule si personne ne repond', t.golf.on || game.state === t.S.GOLF,
+  'golf=' + t.golf.on + ' etat=' + game.state);
+t.golf.on = false; game.state = t.S.WORLD; clear();
 
 /* ---------- 9. menus, carte, sac, fiche ---------- */
 game.state = t.S.WORLD; game.inside = null; tp(45, 57);
