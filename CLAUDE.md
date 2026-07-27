@@ -177,9 +177,19 @@ Vérifier le serveur : `curl http://localhost:8090/sante`.
 
 ## Déploiement
 
-**Le jeu en ligne** : n'importe quel hébergeur Node. Le blueprint `render.yaml` monte le
-service `le-prieure` avec `npm install` puis `npm start`. L'adresse du service est le lien
-à envoyer aux copains, elle sert le jeu et le monde.
+**Le jeu en ligne** : https://le-prieure.onrender.com , c'est le lien à envoyer. Service
+Render `le-prieure` (`srv-d9jhcjnavr4c73chm3d0`), plan gratuit, monté depuis le blueprint
+`render.yaml`. Il sert le jeu et le monde sur la même adresse.
+
+Piège de comptes : le navigateur et Render sont sur le GitHub **pierrejungers**, alors que
+le dépôt est sur **pierrerugier**. Render n'a donc pas accès au dépôt via l'application
+GitHub, et le service a été monté par **Public Git Repository** (URL publique collée à la
+main). Conséquence : pas de déploiement automatique au push. Après un `git push`, cliquer
+**Manual Deploy → Deploy latest commit** sur le tableau de bord, ou récupérer le crochet de
+déploiement dans Settings. Pour retrouver l'automatique, il faudrait installer l'application
+Render sur le compte `pierrerugier`.
+
+Le plan gratuit s'endort après quinze minutes sans personne, le réveil prend ~50 s.
 
 **La copie hors ligne** : Netlify, site `le-prieure-gba`,
 id `39d12514-eacb-4dd2-8e7d-2017f2db3110`, https://le-prieure-gba.netlify.app.
