@@ -75,17 +75,25 @@ huit voitures nommées ; le secrétariat et le pro shop à l'entrée ; le club h
 patio ; la terrasse ; la piscine dans son terrain clos, vestiaires à l'ouest formant le mur
 et transats sur la pelouse à l'est ; le putting green à trois trous et le départ du 1.
 
-Le hameau du Prieuré est au nord-est : **huit villas forestières** éparpillées (Lutreau,
-Jungers, Molina, Gandibleu, Huet, Margulis, Dutreuil, Bernardini), chacune avec son bout de
-pelouse et des haies de sous-bois franchissables, plus la maison des Mamoumani au milieu.
+**Au nord du practice, de l'autre côté de la route**, il y a le **712**, le club des sept à
+douze ans : un long bâtiment, six trous de mini-golf devant qui ne se jouent pas, un bois
+autour avec une cabane. On y croise des gosses qui racontent n'importe quoi et deux monos,
+Cyril et Laetitia, sympas mais beaufs, qui rappellent la pièce Harry Potter où tout le monde
+avait joué. La bande n'a plus l'âge depuis deux ans. Juste à côté, à sa droite, la **baraque
+des Mamoumani** et ses vitres.
+
+Le hameau du Prieuré est au nord-est : **huit villas forestières** éparpillées, chacune avec
+son bout de pelouse et des haies de sous-bois franchissables. Trois d'entre elles
+n'appartiennent à personne. Le hameau et les maisons de lisière forment **un seul domaine**,
+cerné de bois et clos par une haie, desservi par la même voie.
 
 **Cinq maisons de lisière** alignées le long des trous 4 et 5, sur le flanc est. D'ouest en
 est : le parcours, une bande de bois, les jardins séparés par des haies avec un passage d'un
 jardin à l'autre, les maisons, et la voie du hameau qui les dessert par derrière. Du nord au
 sud : Webb (jacuzzi), Lebel (en bois, symétrique), Martin, Kuperfils, Godot.
 
-**Trois baraques Evenou** alignées au sud-est, pavillons blancs des années 70 à grands
-jardins, le long du 4. **Les Robin** sont coincés dans l'arc que dessine le parcours, plus
+**Trois baraques Evenou** alignées tout au sud-est, pavillons blancs des années 70 à grands
+jardins. Elles ne font pas partie du hameau : des **champs d'agriculteurs** les en séparent. **Les Robin** sont coincés dans l'arc que dessine le parcours, plus
 près du club house, avec leur petite allée qui rejoint la route du club.
 
 Deux familles de maisons, à ne pas mélanger. Les **villas forestières** sont basses et
@@ -173,8 +181,10 @@ au fond.
   jamais le hameau.
 - Une journée dure environ quarante minutes. À la nuit, un message propose de rejoindre le feu
   au bord du 6, à pied ou d'un coup de A avec un fondu au noir.
-- À vélo dans le hameau, la bande finit toujours par rappliquer pour faire la course jusqu'au
-  portail des Mamoumani, puis glander.
+- À vélo dans le hameau, la bande finit toujours par rappliquer pour faire la course jusqu'en
+  haut de la pente, puis glander.
+- La descente en planche s'appelle **le grass board**, jamais autrement. Elle a sa propre
+  musique, plus rapide, et les autres gueulent « GRASS BOARD » pendant la descente.
 - Quand Antoine putte, il y en a toujours un pour dire « Antoine Zirimis, sur le green du 18,
   pour gagner l'US Open. Que se passe-t-il ? »
 - Le foyer est **froid en journée** : un cercle de pierres et du bois noirci. Il ne brûle

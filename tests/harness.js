@@ -13,7 +13,7 @@ if (src.indexOf('load().finally(loop);') < 0) throw new Error('point de sortie i
 src = src.replace('load().finally(loop);', `globalThis.__t={game,golf,net,update,render,map,MW,MH,T,at,put,NPCS,ITEMS,
   HOLES,PICKS,INT,DOORS,LOCKED,cars,shards,keys,press,release,consume,MAMOU,MAMOU_WIN,FEU,
   players,P_:()=>players,goInside,goOutside,zoneAt,menuList,buildMini,SOLID,getTile,S,ballSpots,updatePick,
-  startHole,save,load,solidAt,placeGang,phaseOf,BALLS,updateCars,timeStep,breakWindow,velo,updateVelo,leaves,inBrush,ballVisible,estVitre,estCassee,VILLAS,LISIERE,EVENOU,VOITURES,FICHES,fiche,skillDe,vitPuissance,vitPrecision,longueurDe,cours,startCours,INVITES,inviteRecue,FEU,
+  startHole,save,load,solidAt,placeGang,SPOTS,TRACKS,musWant,pente,CRIS,phaseOf,BALLS,updateCars,timeStep,breakWindow,velo,updateVelo,leaves,inBrush,ballVisible,estVitre,estCassee,VILLAS,LISIERE,EVENOU,VOITURES,FICHES,fiche,skillDe,vitPuissance,vitPrecision,longueurDe,cours,startCours,INVITES,inviteRecue,FEU,
   pers,dogSpr,BODY_SIDE,DOG_SIDE};`);
 
 /* ---------- faux canvas ---------- */
@@ -113,7 +113,30 @@ check('une bande de bois avant le parcours', at(105, 60) === T.DENSE, 'tuile ' +
 check('des passages entre les haies', at(107, 48) === T.LAWN && at(105, 48) === T.HEDGE,
   at(107,48) + ' / ' + at(105,48));
 check('huit villas forestieres', t.VILLAS.length === 8);
-check('trois baraques Evenou', t.EVENOU.length === 3 && t.EVENOU.every(e => at(107, e.y + 3) === T.STORE));
+check('trois baraques Evenou', t.EVENOU.length === 3 && t.EVENOU.every(e => at(e.x + 2, 89) === T.STORE),
+  t.EVENOU.map(e => at(e.x + 2, 89)).join(','));
+check('des champs separent les Evenou du hameau', at(100, 82) === T.CHAMP && at(112, 83) === T.CHAMP,
+  at(100,82) + '/' + at(112,83));
+check('le 712 est au nord du practice', at(12, 12) === T.HWALL || at(12, 12) === T.HWIN, 'tuile ' + at(12,12));
+check('le mini-golf devant le 712', at(8, 18) === T.MINIG && at(17, 18) === T.MINIG);
+check('la cabane dans le bois', at(6, 26) === T.CABW, 'tuile ' + at(6,26));
+check('les Mamoumani sont au nord du practice', t.MAMOU.x < 30 && t.MAMOU.y < 20,
+  t.MAMOU.x + ',' + t.MAMOU.y);
+check('le trou 6 ne coupe plus le hameau',
+  t.HOLES[5].gx < 88 && t.VILLAS.every(v => Math.hypot(v.x + 3 - t.HOLES[5].gx, v.y + 2 - t.HOLES[5].gy) > 8),
+  'green du 6 en ' + t.HOLES[5].gx + ',' + t.HOLES[5].gy);
+/* autour du feu, tout le monde est sur le cercle et regarde les flammes */
+game.min = 22 * 60; game.phase = 'f'; t.placeGang();
+const autour = Object.keys(t.SPOTS_||{}).length ? [] : t.NPCS.filter(n => n.gang && !n.gone);
+check('la bande est en cercle autour du feu',
+  autour.every(n => { const d = Math.hypot(n.x - t.FEU.x, n.y - t.FEU.y); return d > 2 && d < 5; }),
+  autour.map(n => n.id + ':' + Math.hypot(n.x - t.FEU.x, n.y - t.FEU.y).toFixed(1)).join(' '));
+check('ils regardent tous le feu', autour.every(n => {
+  const ex = t.FEU.x - n.x, ey = t.FEU.y - n.y;
+  const attendu = (Math.abs(ex) > Math.abs(ey)) ? (ex > 0 ? 3 : 2) : (ey > 0 ? 0 : 1);
+  return n.dir === attendu;
+}));
+game.min = 14 * 60; game.phase = 'g'; t.placeGang();
 check('la rangee de platanes borde le parking', at(35, 47) === T.PLAT && at(35, 59) === T.PLAT);
 check('huit voitures nommees au parking', t.VOITURES.length === 8 && t.VOITURES.every(v => at(v.x, v.y) === T.CAR));
 check('les transats au bord de la piscine', at(89, 44) === T.TRANSAT);
@@ -471,6 +494,18 @@ game.state = t.S.WORLD; game.inside = null; game.fade = null; game.inviteT = 0; 
 t.inviteRecue({ kind: 'cours', from: 'VICTOR' });
 check('une invitation ouvre une question', game.state === t.S.ASK, 'etat ' + game.state);
 tap('b', 3); clear();
+
+/* ---------- 8 quater. le grass board ---------- */
+check('le grass board a sa musique', !!t.TRACKS.grassboard && t.TRACKS.grassboard.lead.length >= 32);
+check('sa musique est plus rapide que la balade', t.TRACKS.grassboard.bpm > t.TRACKS.balade.bpm);
+clear(); game.state = t.S.PENTE;
+check('la musique bascule sur le grass board', t.musWant() === 'grassboard', t.musWant());
+let criVu = false;
+for (let i = 0; i < 3000 && !criVu; i++) { t.update(); if (t.pente.criT > 0) criVu = true; }
+check('les autres gueulent pendant la descente', criVu, 'cri : ' + t.pente.cri);
+check('ce qu ils gueulent parle de grass board',
+  !t.pente.cri || t.CRIS.indexOf(t.pente.cri) >= 0);
+game.state = t.S.WORLD; clear();
 
 /* ---------- 9. menus, carte, sac, fiche ---------- */
 game.state = t.S.WORLD; game.inside = null; tp(45, 57);
