@@ -260,7 +260,7 @@ if (bois && allee) {
   const nAllee = pas(allee[0], allee[1]);
   check('on avance moins vite dans le sous-bois', nBois > nAllee + 4,
     nBois + ' images au bois contre ' + nAllee + ' sur le chemin');
-  check('un pas sur le chemin fait bien seize images', Math.abs(nAllee - 16) <= 2, nAllee + ' images');
+  check('un pas sur le chemin fait bien huit images', Math.abs(nAllee - 8) <= 2, nAllee + ' images');
 }
 /* on est enfoui, et ca fait voler des feuilles */
 if (bois) {

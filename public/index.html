@@ -1172,6 +1172,18 @@ function box(x,y,w,h){
   ctx.fillStyle='#d8dce8';ctx.fillRect(x+3,y+h-4,w-6,1);ctx.fillRect(x+w-4,y+3,1,h-6);
 }
 function text(s,x,y,col,sz){font(sz||10);ctx.fillStyle=col||'#38405a';ctx.textBaseline='top';ctx.fillText(s,x,y);}
+/* un texte centre dans un cadre : le cadre s'ajuste au texte, le texte se cale au milieu */
+function boxText(s,x,y,col,sz,minw){
+  const z=sz||10;
+  font(z);
+  const tw=ctx.measureText(s).width;
+  const w=Math.max(minw||0,Math.round(tw)+20), h=z+10;
+  box(x,y,w,h);
+  ctx.fillStyle=col||'#38405a';ctx.textBaseline='top';
+  font(z);
+  ctx.fillText(s,x+Math.round((w-tw)/2),y+Math.round((h-z)/2)-1);
+  return w;
+}
 function ctext(s,y,col,sz){font(sz||10);const w=ctx.measureText(s).width;ctx.fillStyle=col||'#38405a';
   ctx.textBaseline='top';ctx.fillText(s,(W-w)/2,y);}
 function wrap(s,mx){font(10);const ws=s.split(' ');const o=[];let l='';
@@ -1189,8 +1201,7 @@ function say(lines,cb,who,auto){
 function toast(s){game.toast=s;game.toastT=0;}
 function drawDialog(){
   box(4,112,232,44);
-  if(game.who){font(9);const w=Math.max(44,ctx.measureText(game.who).width+20);
-    box(8,93,w,19);text(game.who,17,98,'#38405a',9);}
+  if(game.who)boxText(game.who,8,93,'#38405a',9);
   const pg=game.dlg[game.dl]||[];let n=game.dc;
   for(let i=0;i<pg.length;i++){const l=pg[i];
     text(l.slice(0,Math.max(0,Math.min(l.length,n))),14,122+i*14);n-=l.length;}
@@ -1303,8 +1314,8 @@ function drawScene(cx,cy){
   }
   ctx.restore();
   if(game.banner){
-    const w=Math.min(150,26+game.banner.length*6),a=Math.min(1,game.bannerT/8);
-    ctx.save();ctx.globalAlpha=a;box(6,6,w,22);text(game.banner,15,13);ctx.restore();
+    const a=Math.min(1,game.bannerT/8);
+    ctx.save();ctx.globalAlpha=a;boxText(game.banner,6,6,'#38405a',10);ctx.restore();
   }
 }
 
@@ -2551,8 +2562,9 @@ function nightTint(cx,cy){
 }
 function drawClock(){
   const t=hhmm();
-  const w=42;box(W-w-6,6,w,20);
-  text(t,W-w+2,13,'#38405a',10);
+  font(10);
+  const w=Math.max(44,Math.round(ctx.measureText(t).width)+20);
+  boxText(t,W-w-6,6,'#38405a',10,w);
 }
 
 /* ---------- questions oui / non ---------- */
@@ -2563,8 +2575,7 @@ function askYN(q,who,yes,no){
 function drawAsk(){
   const a=game.ask;
   box(4,112,232,44);
-  if(a.who){font(9);const w=Math.max(44,ctx.measureText(a.who).width+20);
-    box(8,93,w,19);text(a.who,17,98,'#38405a',9);}
+  if(a.who)boxText(a.who,8,93,'#38405a',9);
   const ls=wrap(a.q,208);
   for(let i=0;i<ls.length&&i<3;i++)text(ls[i],14,119+i*13);
   box(178,68,54,42);
@@ -3359,12 +3370,12 @@ function update(){
           say(FEU_TALK[(Math.random()*FEU_TALK.length)|0],null,'AUTOUR DU FEU',true);break;}
       } else game.feuT=0;
       if(game.moving){
-        const sp=inBrush(game.px,game.py)?(game.bike?0.85:0.6):(game.bike?2:1);
+        const sp=inBrush(game.px,game.py)?(game.bike?2.4:1.3):(game.bike?4:2);
         if(game.ox<0)game.ox=Math.min(0,game.ox+sp);
         if(game.ox>0)game.ox=Math.max(0,game.ox-sp);
         if(game.oy<0)game.oy=Math.min(0,game.oy+sp);
         if(game.oy>0)game.oy=Math.max(0,game.oy-sp);
-        game.step++;game.frame=1+((game.step>>3)&1);
+        game.step++;game.frame=1+((game.step>>2)&1);
         if(!game.ox&&!game.oy){game.moving=false;arrive();}
       }else{
         if(consume('start')){game.state=S.MENU;game.menuIdx=0;break;}
