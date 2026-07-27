@@ -3,12 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="theme-color" content="#101218">
 <title>Le Prieuré</title>
 <style>
-  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  /* rien ne se selectionne au doigt, jamais : c'est une console, pas une page */
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;
+    -webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none;
+    -webkit-touch-callout:none;-webkit-user-drag:none;}
   html,body{margin:0;padding:0;background:#101218;color:#e8e8ef;
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
-    overscroll-behavior:none;touch-action:manipulation;}
+    overscroll-behavior:none;overscroll-behavior-y:contain;touch-action:manipulation;
+    -webkit-text-size-adjust:100%;}
+  #sp,#pad,.dpad,.ab,#sys,.shoulders{touch-action:none;}
   #wrap{max-width:430px;margin:0 auto;padding:14px 10px 22px;}
   /* --- coque Game Boy Advance SP --- */
   #sp{background:linear-gradient(180deg,#41454d 0%,#33373d 46%,#2b2e34 100%);
@@ -44,7 +53,8 @@
     justify-content:center;}
   .dpad div.c{background:#24262b;border-radius:3px;box-shadow:inset 0 0 0 1px #1a1c20;}
   .btn{background:#2b2e34;border:0;border-radius:4px;color:#8d939e;font-size:13px;font-weight:700;
-    box-shadow:0 3px 0 #1a1c20;display:flex;align-items:center;justify-content:center;user-select:none;}
+    box-shadow:0 3px 0 #1a1c20;display:flex;align-items:center;justify-content:center;
+    touch-action:none;-webkit-user-select:none;user-select:none;}
   .btn:active{transform:translateY(2px);box-shadow:0 1px 0 #1a1c20;background:#383c44;}
   .ab{display:flex;gap:14px;justify-content:center;align-items:center;transform:rotate(-16deg);}
   .round{width:50px;height:50px;border-radius:50%;background:#3a3e46;color:#c9ced8;font-size:16px;
@@ -110,12 +120,25 @@ const KMAP={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',
 addEventListener('keydown',e=>{const k=KMAP[e.key]||KMAP[e.key.toLowerCase()];if(k){e.preventDefault();press(k);}});
 addEventListener('keyup',e=>{const k=KMAP[e.key]||KMAP[e.key.toLowerCase()];if(k){e.preventDefault();release(k);}});
 document.querySelectorAll('[data-k]').forEach(el=>{
-  const k=el.dataset.k, on=e=>{e.preventDefault();press(k);}, off=e=>{e.preventDefault();release(k);};
+  const k=el.dataset.k, on=e=>{e.preventDefault();e.stopPropagation();press(k);},
+        off=e=>{e.preventDefault();release(k);};
   el.addEventListener('touchstart',on,{passive:false});
+  el.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
   el.addEventListener('touchend',off,{passive:false});
   el.addEventListener('touchcancel',off,{passive:false});
+  el.addEventListener('contextmenu',e=>e.preventDefault());
   el.addEventListener('mousedown',on); el.addEventListener('mouseup',off); el.addEventListener('mouseleave',off);
 });
+/* le doigt qui traine ne doit ni selectionner, ni ouvrir un menu, ni zoomer */
+document.addEventListener('selectstart',e=>e.preventDefault());
+document.addEventListener('contextmenu',e=>e.preventDefault());
+document.addEventListener('gesturestart',e=>e.preventDefault());
+document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
+/* plus aucun doigt sur l'ecran : on relache tout, sinon une touche reste coincee
+   quand le pouce glisse hors du bouton */
+addEventListener('touchend',e=>{
+  if(e.touches&&e.touches.length===0){ for(const k in keys) release(k); }
+},{passive:true});
 function consume(k){ if(pressed[k]){pressed[k]=0;return true;} return false; }
 function clearPressed(){ for(const k in pressed) pressed[k]=0; }
 
