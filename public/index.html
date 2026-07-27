@@ -4229,7 +4229,8 @@ function shw(j,h,w){
   const k=h*0.58;
   if(j<k)return w;
   const t=(j-k)/(h-k);
-  return Math.max(1,Math.round(w*(1-t*t)));
+  let ww=Math.max(2,Math.round(w*(1-t*t)));
+  return ww-(ww%2);            /* largeur paire : le blason reste symetrique */
 }
 function drawCrest(cx,cy,s){
   const w=22,h=24;
@@ -4256,51 +4257,72 @@ function drawBanner(cx,cy,w,s){
 }
 /* ---------- titre et transition ---------- */
 const VERSION='3.0';
-function pixTree(x,y,s){
-  const R=(c,a,b,w,h)=>{ctx.fillStyle=c;ctx.fillRect(x+a*s,y+b*s,w*s,h*s);};
-  R('#5a4632',5,13,3,5); R('#3d2f21',5,17,3,1);
-  R('#1c4023',3,0,6,2); R('#1c4023',1,2,10,3); R('#1c4023',0,5,12,4); R('#1c4023',2,9,8,4);
-  R('#2f6b34',4,1,4,2); R('#2f6b34',2,3,7,3); R('#2f6b34',1,6,8,3); R('#2f6b34',3,9,5,3);
-  R('#3d8543',4,2,3,2); R('#3d8543',3,6,3,2);
+function pixTree(x,y,s,flip){
+  const R=(c,a,b,w,h)=>{ctx.fillStyle=c;ctx.fillRect(x+(flip?(12-a-w):a)*s,y+b*s,w*s,h*s);};
+  R('#4a3524',5,14,3,5); R('#33241a',5,18,3,1);
+  R('#1c4023',3,0,7,3); R('#1c4023',1,3,11,4); R('#1c4023',0,7,13,4); R('#1c4023',2,11,9,3);
+  R('#2f6b34',4,1,5,2); R('#2f6b34',2,4,8,3); R('#2f6b34',1,8,9,3); R('#2f6b34',3,12,6,2);
+  R('#3d8543',4,2,4,2); R('#3d8543',3,7,4,2); R('#4e9c52',5,3,2,1);
+}
+function drapeauTitre(x,y,flip){
+  ctx.fillStyle='rgba(0,0,0,.14)';ctx.beginPath();ctx.ellipse(x,y+1,7,2,0,0,7);ctx.fill();
+  ctx.fillStyle='#f4f2ec';ctx.fillRect(x,y-20,1,20);
+  ctx.fillStyle='#d8402f';ctx.fillRect(flip?x-9:x+1,y-20,9,6);
+  ctx.fillStyle='#a32b1f';ctx.fillRect(flip?x-9:x+1,y-15,9,1);
 }
 function drawTitle(){
-  const g=ctx.createLinearGradient(0,0,0,H);
-  g.addColorStop(0,'#8fd0e8');g.addColorStop(.34,'#cfe6c0');g.addColorStop(.38,'#6fae54');
-  g.addColorStop(1,'#4e8a3e');
-  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
-  for(let i=0;i<8;i++){
-    ctx.fillStyle=(i%2)?'rgba(124,184,92,.45)':'rgba(92,155,69,.35)';
-    ctx.fillRect(0,64+i*12,W,6);
-  }
-  /* deux arbres et un bunker, c'est un jeu de golf */
-  pixTree(6,90,2); pixTree(206,84,2);
-  ctx.fillStyle='#ecdfb0';ctx.beginPath();ctx.ellipse(74,150,30,8,0,0,7);ctx.fill();
-  ctx.fillStyle='#dbcb97';ctx.beginPath();ctx.ellipse(72,149,20,4,0,0,7);ctx.fill();
-  /* le drapeau du 1 */
-  ctx.fillStyle='rgba(0,0,0,.16)';ctx.beginPath();ctx.ellipse(178,137,8,2,0,0,7);ctx.fill();
-  ctx.fillStyle='#f4f2ec';ctx.fillRect(178,114,1,23);
-  ctx.fillStyle='#d8402f';ctx.fillRect(179,114,9,6);
-  ctx.fillStyle='#a32b1f';ctx.fillRect(179,119,9,1);
-  /* banniere et blason */
-  drawBanner(70,2,100,2);
-  drawCrest(109,13,2);
-  /* titre */
-  font(22);const t='LE PRIEURÉ',tw=ctx.measureText(t).width,tx=(W-tw)/2;
+  const CX=120, HZ=60;
+  /* ciel */
+  const g=ctx.createLinearGradient(0,0,0,HZ);
+  g.addColorStop(0,'#8fd0e8');g.addColorStop(1,'#dcefd6');
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,HZ);
+  /* la lisiere au fond */
+  ctx.fillStyle='#23502a';
+  for(let i=0;i<16;i++){const w=15,h=5+((i*7)%8);ctx.fillRect(i*w,HZ-h,w,h);}
+  /* le fairway et ses bandes de tonte, de plus en plus larges */
+  ctx.fillStyle='#4e8a3e';ctx.fillRect(0,HZ,W,H-HZ);
+  let yy=HZ,bw=3,k=0;
+  while(yy<H){ctx.fillStyle=(k%2)?'#5c9b45':'#6fae54';ctx.fillRect(0,yy,W,bw);yy+=bw;bw+=1;k++;}
+  ctx.fillStyle='#2f6b34';ctx.fillRect(0,HZ,W,2);
+  /* deux arbres qui encadrent, poses sur l'horizon */
+  pixTree(3,24,2,false); pixTree(211,24,2,true);
+  /* le bunker et deux drapeaux, en miroir */
+  ctx.fillStyle='#ecdfb0';ctx.beginPath();ctx.ellipse(CX,154,42,8,0,0,7);ctx.fill();
+  ctx.fillStyle='#dbcb97';ctx.beginPath();ctx.ellipse(CX,153,30,4,0,0,7);ctx.fill();
+  drapeauTitre(34,140,false); drapeauTitre(206,140,true);
+  /* le blason, centre au pixel, entierement dans le ciel */
+  drawCrest(CX-22,4,2);
+  /* le titre sur son bandeau, centre */
+  ctx.fillStyle='rgba(14,36,22,.34)';ctx.fillRect(38,66,164,28);
+  ctx.fillStyle='rgba(244,226,168,.28)';ctx.fillRect(38,66,164,1);ctx.fillRect(38,93,164,1);
+  font(21);
+  const t='LE PRIEURÉ', tw=ctx.measureText(t).width, tx=Math.round(CX-tw/2);
   ctx.textBaseline='top';
-  ctx.fillStyle='#16321f';ctx.fillText(t,tx+2,66);
-  ctx.fillStyle='#f4e2a8';ctx.fillText(t,tx,64);
-  ctext('DOMAINE DE MONTCIENT',90,'#1f4d38',9);
-  /* la balle qui roule */
-  const bx=24+((game.tick*0.7)%176);
-  ctx.fillStyle='rgba(0,0,0,.2)';ctx.beginPath();ctx.ellipse(bx,138,5,2,0,0,7);ctx.fill();
-  ctx.fillStyle='#fdfdfd';ctx.beginPath();ctx.arc(bx,135,4,0,7);ctx.fill();
-  ctx.fillStyle='#c9c9d2';ctx.fillRect(bx-2+((game.tick>>2)%4),133,1,1);
+  ctx.fillStyle='#12261c';ctx.fillText(t,tx+2,72);
+  ctx.fillStyle='#f4e2a8';ctx.fillText(t,tx,70);
+  /* le sous-titre, meme axe */
+  font(8);
+  const st='DOMAINE DE MONTCIENT', sw=ctx.measureText(st).width;
+  ctx.fillStyle='rgba(16,34,24,.30)';ctx.fillRect(Math.round(CX-sw/2)-8,98,Math.round(sw)+16,12);
+  ctx.fillStyle='#eaf3e2';ctx.fillText(st,Math.round(CX-sw/2),100);
+  /* la balle qui roule sur l'axe */
+  const bx=CX-70+((game.tick*0.7)%140);
+  ctx.fillStyle='rgba(0,0,0,.2)';ctx.beginPath();ctx.ellipse(bx,137,5,2,0,0,7);ctx.fill();
+  ctx.fillStyle='#fdfdfd';ctx.beginPath();ctx.arc(bx,134,4,0,7);ctx.fill();
+  ctx.fillStyle='#c9c9d2';ctx.fillRect(bx-2+((game.tick>>2)%4),132,1,1);
+  /* appel a l'action */
   if((game.tick>>4)%2===0){
-    ctx.fillStyle='rgba(12,26,18,.35)';ctx.fillRect(50,104,140,16);
-    ctext('APPUYEZ SUR START',107,'#ffffff',10);
+    font(10);
+    const a='APPUYEZ SUR START', aw=ctx.measureText(a).width, ax=Math.round(CX-aw/2);
+    ctx.fillStyle='#16321f';ctx.fillText(a,ax+1,117);
+    ctx.fillStyle='#ffffff';ctx.fillText(a,ax,116);
   }
-  text('VER '+VERSION,198,148,'rgba(255,255,255,.8)',8);
-  text(net.on?'EN LIGNE':'HORS LIGNE',8,148,net.on?'rgba(170,255,190,.9)':'rgba(255,255,255,.55)',8);
+  /* pied de page, meme ligne des deux cotes */
+  font(8);
+  const v='VER '+VERSION;
+  ctx.fillStyle='rgba(255,255,255,.8)';ctx.fillText(v,W-8-Math.round(ctx.measureText(v).width),149);
+  const r=net.on?'EN LIGNE':'HORS LIGNE';
+  ctx.fillStyle=net.on?'rgba(170,255,190,.9)':'rgba(255,255,255,.55)';ctx.fillText(r,8,149);
 }
 
 /* ---------- choix du personnage ---------- */
