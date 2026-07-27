@@ -13,7 +13,7 @@ if (src.indexOf('load().finally(loop);') < 0) throw new Error('point de sortie i
 src = src.replace('load().finally(loop);', `globalThis.__t={game,golf,net,update,render,map,MW,MH,T,at,put,NPCS,ITEMS,
   HOLES,PICKS,INT,DOORS,LOCKED,cars,shards,keys,press,release,consume,MAMOU,MAMOU_WIN,FEU,
   players,P_:()=>players,goInside,goOutside,zoneAt,menuList,buildMini,SOLID,getTile,S,ballSpots,updatePick,
-  startHole,save,load,solidAt,placeGang,SPOTS,TRACKS,musWant,pente,CRIS,phaseOf,BALLS,updateCars,timeStep,breakWindow,velo,updateVelo,leaves,inBrush,ballVisible,estVitre,estCassee,VILLAS,LISIERE,EVENOU,VOITURES,FICHES,fiche,skillDe,vitPuissance,vitPrecision,longueurDe,cours,startCours,INVITES,inviteRecue,FEU,
+  startHole,save,load,solidAt,placeGang,SPOTS,TRACKS,musWant,pente,CRIS,phaseOf,BALLS,updateCars,timeStep,breakWindow,velo,updateVelo,startPente,updatePente,leaves,inBrush,ballVisible,estVitre,estCassee,VILLAS,LISIERE,EVENOU,VOITURES,FICHES,fiche,skillDe,vitPuissance,vitPrecision,longueurDe,cours,startCours,INVITES,inviteRecue,FEU,
   pers,dogSpr,BODY_SIDE,DOG_SIDE,sfx,ambiances,piscineOuverte,baignade,entreDansLeau,proposePartie,updateAttente,departDu1,hNow,AU_FEU,FEU_RING,FEU_TALK,feuMenu,eteindreLeFeu,bikeSpr,BIKE_DOWN,BIKE_UP,BIKE_SIDE,MISSIONS,ACTES,mission,missionCourante,niveau,chaparde,voleVoiturette,updateVoiturette,BUTIN};`);
 
 /* ---------- faux canvas ---------- */
@@ -444,6 +444,8 @@ function golfBot() {
   botAttente++;
   const patience = botAttente > 400;   /* si la jauge nous echappe, on tape quand meme */
   if (game.state === t.S.DIALOG) { tap('a', 1); return; }
+  /* une partie dure assez longtemps pour que le feu de camp s'invite : on decline */
+  if (game.state === t.S.ASK) { tap('b', 1); return; }
   if (g.phase === 'aim' || g.phase === 'putt' || g.phase === 'result' || g.phase === 'card') { tap('a', 1); return; }
   if (g.phase === 'power') { if (patience || (g.gT > 0.7 && g.dirg > 0)) tap('a', 1); else frames(1); return; }
   if (g.phase === 'putpow') {
@@ -554,11 +556,24 @@ tap('b', 3); clear();
 /* ---------- 8 quater. le grass board ---------- */
 check('le grass board a sa musique', !!t.TRACKS.grassboard && t.TRACKS.grassboard.lead.length >= 32);
 check('sa musique est plus rapide que la balade', t.TRACKS.grassboard.bpm > t.TRACKS.balade.bpm);
-clear(); game.state = t.S.PENTE;
+clear(); t.startPente(1); game.state = t.S.PENTE;
 check('la musique bascule sur le grass board', t.musWant() === 'grassboard', t.musWant());
 let criVu = false;
 for (let i = 0; i < 3000 && !criVu; i++) { t.update(); if (t.pente.criT > 0) criVu = true; }
 check('les autres gueulent pendant la descente', criVu, 'cri : ' + t.pente.cri);
+/* une descente entiere doit se terminer toute seule et compter les portes */
+t.startPente(1); game.state = t.S.PENTE;
+check('dix portes a passer, pas des trous', t.pente.portes.length === 10);
+check('les portes sont assez larges pour etre passables', t.pente.portes.every(p => p.w >= 22));
+let desc = 0;
+while (game.state === t.S.PENTE && desc++ < 4000) t.update();
+check('la descente se termine toute seule', game.state !== t.S.PENTE, 'apres ' + desc + ' images');
+check('toutes les portes ont ete jugees', t.pente.portes.every(p => p.passe > 0),
+  t.pente.portes.filter(p => !p.passe).length + ' non jugee(s)');
+check('le compte des portes est coherent', t.pente.n + t.pente.rate === 10,
+  t.pente.n + ' passees, ' + t.pente.rate + ' ratees');
+check('on ne peut pas sortir de la piste', Math.abs(t.pente.x) <= 46, 'x=' + t.pente.x.toFixed(1));
+clear();
 check('ce qu ils gueulent parle de grass board',
   !t.pente.cri || t.CRIS.indexOf(t.pente.cri) >= 0);
 game.state = t.S.WORLD; clear();

@@ -34,6 +34,9 @@ sauvegarde. À relancer à chaque modification du moteur :
 node tests/harness.js
 ```
 
+Deux raccourcis d'URL pour regarder une zone sans y marcher : `?go=x,y[,interieur]` place le
+personnage au démarrage, `?demo=pente` ouvre directement le grass board.
+
 ## Architecture du script
 
 1. Écran, entrées clavier et tactile
@@ -190,6 +193,12 @@ au fond.
   haut de la pente, puis glander.
 - La descente en planche s'appelle **le grass board**, jamais autrement. Elle a sa propre
   musique, plus rapide, et les autres gueulent « GRASS BOARD » pendant la descente.
+  L'objectif tient en une ligne : **dix portes de slalom** à passer entre deux piquets, banderole
+  rouge tant qu'on ne l'a pas prise, verte une fois passée. Aucun obstacle à éviter, aucune
+  chute : les haies des deux bords freinent et repoussent, c'est tout. La piste se dessine
+  ligne par ligne en perspective, avec les bandes de tonte, la raie claire du milieu et les
+  arbres qui défilent derrière les haies. La largeur dessinée (`14+74*sc`) doit rester égale
+  à la largeur jouable (46 unités x 1.9), sinon on frotte une haie qu'on ne voit pas.
 - Quand Antoine putte, il y en a toujours un pour dire « Antoine Zirimis, sur le green du 18,
   pour gagner l'US Open. Que se passe-t-il ? »
 - Le foyer est **froid en journée** : un cercle de pierres et du bois noirci. Il ne brûle
