@@ -13,7 +13,7 @@ if (src.indexOf('load().finally(loop);') < 0) throw new Error('point de sortie i
 src = src.replace('load().finally(loop);', `globalThis.__t={game,golf,net,update,render,map,MW,MH,T,at,put,NPCS,ITEMS,
   HOLES,PICKS,INT,DOORS,LOCKED,cars,shards,keys,press,release,consume,MAMOU,MAMOU_WIN,FEU,
   players,P_:()=>players,goInside,goOutside,zoneAt,menuList,buildMini,SOLID,getTile,S,ballSpots,updatePick,
-  startHole,save,load,solidAt,placeGang,phaseOf,BALLS,updateCars,timeStep,breakWindow,velo,updateVelo,leaves,inBrush,ballVisible,estVitre,estCassee,cours,startCours,INVITES,inviteRecue,FEU,
+  startHole,save,load,solidAt,placeGang,phaseOf,BALLS,updateCars,timeStep,breakWindow,velo,updateVelo,leaves,inBrush,ballVisible,estVitre,estCassee,FICHES,fiche,skillDe,vitPuissance,vitPrecision,longueurDe,cours,startCours,INVITES,inviteRecue,FEU,
   pers,dogSpr,BODY_SIDE,DOG_SIDE};`);
 
 /* ---------- faux canvas ---------- */
@@ -146,6 +146,29 @@ check('aucun sprite miroite quand on va a droite', versDroite.length === 0,
   versDroite.join(' | '));
 check('les sprites miroitent quand on va a gauche', versGauche.length >= 6,
   versGauche.length + ' appel(s)');
+
+/* ---------- 1 ter. les fiches de personnage ---------- */
+t.PICKS.forEach(p => {
+  const f = t.fiche(p.id);
+  check('fiche de ' + p.id, !!t.FICHES[p.id] && f.n === p.n, JSON.stringify(f && f.n));
+  check('stats de ' + p.id + ' dans les clous', f.prec >= 1 && f.prec <= 5 && f.puis >= 1 && f.puis <= 5);
+});
+/* precis = jauge de precision plus lente, puissant = jauge de puissance plus lente */
+check('Louis vise plus lentement que Charles', t.vitPrecision('louis') < t.vitPrecision('charles'),
+  t.vitPrecision('louis').toFixed(4) + ' contre ' + t.vitPrecision('charles').toFixed(4));
+check('Oscar arme plus lentement que Louis', t.vitPuissance('oscar') < t.vitPuissance('louis'),
+  t.vitPuissance('oscar').toFixed(4) + ' contre ' + t.vitPuissance('louis').toFixed(4));
+check('Oscar tape plus loin que Louis', t.longueurDe('oscar') > t.longueurDe('louis'),
+  t.longueurDe('oscar').toFixed(2) + ' contre ' + t.longueurDe('louis').toFixed(2));
+check('Louis se trompe moins que Charles en IA', t.skillDe('louis') < t.skillDe('charles'),
+  t.skillDe('louis').toFixed(3) + ' contre ' + t.skillDe('charles').toFixed(3));
+check('Charles est le seul a faire des air shots',
+  t.PICKS.filter(p => t.fiche(p.id).airshot).map(p => p.id).join(',') === 'charles');
+/* tous les persos doivent avoir une allure differente */
+const allures = t.PICKS.map(p => { const f = t.fiche(p.id);
+  return [f.haut, f.bas, f.chev, f.coupe, f.taille, f.corps, f.short, f.lunettes].join('|'); });
+check('chaque perso a une allure unique', new Set(allures).size === allures.length,
+  allures.length - new Set(allures).size + ' doublon(s)');
 
 /* ---------- 2. titre et choix du perso ---------- */
 check('demarre sur le titre', game.state === t.S.TITLE);

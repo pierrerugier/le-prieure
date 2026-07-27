@@ -174,6 +174,81 @@ const LEGS_DOWN=[["   KPPPPPPPPK   ","   KPPPKKPPPK   ","   KOOK  KOOK   "],
 const LEGS_SIDE=[["    KPPPPPK     ","    KPPPPPK     ","    KOOOOOK     "],
 ["    KPPPPPK     ","   KPPPKPPK     ","  KOOK KOOK     "],
 ["    KPPPPPK     ","    KPPKPPPK    ","    KOOK KOOK   "]];
+/* ---------- les fiches : allure et stats de golf ----------
+   prec et puis vont de 1 a 5. Plus on est precis, plus la jauge de precision
+   oscille lentement. Plus on est puissant, plus la jauge de puissance oscille
+   lentement, et plus la balle part loin. */
+const FICHES={
+ moi:      {n:'PIERRE',   haut:'#f4f2ec',bas:'#1e2f4a',chev:'#4a2f18',coupe:'mi',   peau:'#f5c99b',taille:1, corps:0,short:0,lunettes:0,prec:5,puis:3},
+ charles:  {n:'CHARLES',  haut:'#22242a',bas:'#3f5d8a',chev:'#4a2f18',coupe:'mi',   peau:'#eab98a',taille:1, corps:0,short:0,lunettes:0,prec:2,puis:5,airshot:0.16},
+ victor:   {n:'VICTOR',   haut:'#7a2f3c',bas:'#e2d6b8',chev:'#3a2412',coupe:'court',peau:'#c98a56',taille:-1,corps:0,short:0,lunettes:0,prec:3,puis:3},
+ oscar:    {n:'OSCAR',    haut:'#f2d24a',bas:'#e2d6b8',chev:'#e8d79a',coupe:'court',peau:'#f7d2a8',taille:1, corps:1,short:1,lunettes:0,prec:3,puis:5},
+ antoine:  {n:'ANTOINE',  haut:'#e08a2f',bas:'#e6dcc0',chev:'#7a5433',coupe:'court',peau:'#f5c99b',taille:0, corps:0,short:0,lunettes:1,prec:2,puis:4},
+ kuperfils:{n:'KUPERFILS',haut:'#8fc6e8',bas:'#c9c4a8',chev:'#7a5433',coupe:'court',peau:'#f5c99b',taille:1, corps:0,short:1,lunettes:0,prec:3,puis:5},
+ louis:    {n:'LOUIS',    haut:'#1e2f4a',bas:'#ddd0ae',chev:'#1b1512',coupe:'mi',   peau:'#f5c99b',taille:-1,corps:0,short:0,lunettes:0,prec:5,puis:2},
+ paul:     {n:'PAUL',     haut:'#5a5b46',bas:'#3b3c2b',chev:'#4a2f18',coupe:'court',peau:'#e8b98a',taille:0, corps:2,short:0,lunettes:0,prec:3,puis:5},
+ margot:   {n:'MARGOT',   haut:'#e8749a',bas:'#4a6b9e',chev:'#e8cf7a',coupe:'boucle',peau:'#f7d2a8',taille:0,corps:0,short:1,lunettes:0,prec:3,puis:2},
+ margaux:  {n:'MARGAUX',  haut:'#2c5e2b',bas:'#3f5d8a',chev:'#2a1c12',coupe:'long', peau:'#c98a56',taille:0, corps:0,short:0,lunettes:0,prec:4,puis:2}
+};
+function fiche(id){return FICHES[id]||FICHES.moi;}
+function palFiche(f){
+  return Object.assign({},PAL,{
+    C:f.chev,c:f.chev,H:f.chev,h:f.chev,
+    W:f.haut,w:f.haut,
+    P:f.short?f.peau:f.bas,p:f.short?f.peau:f.bas,
+    S:f.peau,D:f.peau,
+    B:f.bas,L:'#1b2030',E:'#1b2030'});
+}
+/* les surcouches : cheveux longs, lunettes, carrure, short */
+const CHEV_MI_DOWN=["                ","                ","                ","                ",
+"   H        H   ","  HH        HH  ","  HH        HH  ","  H          H  ",
+"                ","                ","                ","                ",
+"                ","                ","                ","                "];
+const CHEV_LONG_DOWN=["                ","                ","                ","                ",
+"   H        H   ","  HH        HH  ","  HH        HH  ","  HH        HH  ",
+"  HH        HH  ","  H          H  ","                ","                ",
+"                ","                ","                ","                "];
+const CHEV_BOUCLE_DOWN=["                ","    HH    HH    ","   H  H  H  H   ","  H          H  ",
+"  H          H  ","  HH        HH  ","   H        H   ","                ",
+"                ","                ","                ","                ",
+"                ","                ","                ","                "];
+const CHEV_MI_SIDE=["                ","                ","                ","                ",
+"   H            ","  HH            ","  HH            ","  HH            ",
+"                ","                ","                ","                ",
+"                ","                ","                ","                "];
+const LUNETTES_DOWN=["                ","                ","                ","                ",
+"                ","   LLLLLLLLLL   ","   L L    L L   ","                ",
+"                ","                ","                ","                ",
+"                ","                ","                ","                "];
+const LUNETTES_SIDE=["                ","                ","                ","                ",
+"                ","    LLLLLL      ","    L    L      ","                ",
+"                ","                ","                ","                ",
+"                ","                ","                ","                "];
+const CARRURE=["                ","                ","                ","                ",
+"                ","                ","                ","                ",
+"                ","  WW        WW  ","  WW        WW  ","  WW        WW  ",
+"   W        W   ","                ","                ","                "];
+const OURLET=["                ","                ","                ","                ",
+"                ","                ","                ","                ",
+"                ","                ","                ","                ",
+"                ","   BBBBBBBBBB   ","                ","                "];
+/* dessine un personnage complet : corps, cheveux, lunettes, carrure, ourlet du short */
+function drawPerso(id,dir,frame,x,y,sc,flip){
+  const f=fiche(id), pal=palFiche(f);
+  const dy=(f.taille===1?-1:f.taille===-1?1:0)*sc;
+  const cote=(dir===2||dir===3);
+  drawSprite(pers(cote?2:dir,frame),x,y+dy,sc,pal,flip);
+  if(f.corps===1||f.corps===2)drawSprite(CARRURE,x,y+dy,sc,pal,flip);
+  if(f.coupe==='mi')drawSprite(cote?CHEV_MI_SIDE:CHEV_MI_DOWN,x,y+dy,sc,pal,flip);
+  else if(f.coupe==='long')drawSprite(cote?CHEV_MI_SIDE:CHEV_LONG_DOWN,x,y+dy,sc,pal,flip);
+  else if(f.coupe==='boucle')drawSprite(CHEV_BOUCLE_DOWN,x,y+dy,sc,pal,flip);
+  if(f.lunettes&&dir!==1)drawSprite(cote?LUNETTES_SIDE:LUNETTES_DOWN,x,y+dy,sc,pal,flip);
+  if(f.short)drawSprite(OURLET,x,y+dy,sc,pal,flip);
+}
+function drawActeur(id,pal,dir,fr,x,y,sc,flip){
+  if(FICHES[id])drawPerso(id,dir,fr,x,y,sc,flip);
+  else drawSprite(pers((dir===2||dir===3)?2:dir,fr),x,y,sc,pal,flip);
+}
 function pers(dir,frame){
   const b=(dir===0)?BODY_DOWN:(dir===1)?BODY_UP:BODY_SIDE;
   return b.concat((dir===0||dir===1)?LEGS_DOWN[frame]:LEGS_SIDE[frame]);
@@ -1185,6 +1260,12 @@ const golf={on:false,hole:-1,stroke:0,phase:'',club:0,aim:0,power:0,acc:0,gT:0,d
   bx:0,by:0,sx:0,sy:0,ex:0,ey:0,lx:0,ly:0,t:0,dur:1,hgt:0,apex:0,curve:0,
   rollv:0,practice:false,res:'',resT:0,lie:'tee',dist:0};
 const velo={t:0,off:0,on:false,team:[],race:null};
+/* un joueur precis a une jauge de precision plus lente, un joueur puissant a une
+   jauge de puissance plus lente et une balle qui part plus loin */
+function skillDe(id){return Math.max(0.04,0.19-fiche(id).prec*0.028);}
+function vitPuissance(id){return 0.021-fiche(id).puis*0.0024;}
+function vitPrecision(id){return 0.030-fiche(id).prec*0.0036;}
+function longueurDe(id){return 1+(fiche(id).puis-3)*0.06;}
 const M=14; /* metres par case */
 const CLUBS=[{n:'DRIVER',m:150,a:44,teeOnly:true},{n:'BOIS 3',m:140,a:46},{n:'FER 5',m:130,a:48},
   {n:'FER 7',m:115,a:52},{n:'FER 9',m:95,a:56},{n:'WEDGE',m:70,a:62},{n:'PUTTER',m:0,a:0}];
@@ -1305,8 +1386,8 @@ function drawScene(cx,cy){
     }
     if(n.dog)drawSprite(nBuis?dogSpr(n.dir,n.fr||0).slice(0,11):dogSpr(n.dir,n.fr||0),sx,sy+3,1,n.pal,n.dir===2);
     else if(n.bike)drawSprite(nBuis?BIKE.slice(0,10):BIKE,sx,sy,1,n.pal,n.dir===2);
-    else{const sp2=pers(n.dir===3?2:n.dir,n.fr||0);
-      drawSprite(nBuis?sp2.slice(0,10):sp2,sx,sy,1,n.pal,n.dir===2);}
+    else if(nBuis)drawSprite(pers(n.dir===3?2:n.dir,n.fr||0).slice(0,10),sx,sy,1,n.pal,n.dir===2);
+    else drawActeur(n.id,n.pal,n.dir,n.fr||0,sx,sy,1,n.dir===2);
     if(nBuis)brushOver(sx,sy+(n.dog?12:9),n.x+n.y);
   }
   drawPeers(cx,cy);
@@ -1323,14 +1404,15 @@ function drawScene(cx,cy){
       const hx=Math.round(p.px*TS-8-cx),hy=Math.round(p.py*TS-12-cy);
       if(hx<-16||hx>W||hy<-20||hy>H)continue;
       ctx.fillStyle='rgba(0,0,0,.2)';ctx.beginPath();ctx.ellipse(hx+8,hy+16,6,2.5,0,0,7);ctx.fill();
-      drawSprite(pers(p.dir===3?2:p.dir,p.fr||0),hx,hy,1,p.pal,p.dir===2);
+      drawActeur(p.fid||p.id,p.pal,p.dir,p.fr||0,hx,hy,1,p.dir===2);
     }
   } else {
     const hx=Math.round(game.px*TS+game.ox-cx),hy=Math.round(game.py*TS+game.oy-cy)-4;
     const buis=inBrush(game.px,game.py);
     if(!buis){ctx.fillStyle='rgba(0,0,0,.2)';ctx.beginPath();ctx.ellipse(hx+8,hy+16,6,2.5,0,0,7);ctx.fill();}
-    const spH=(game.bike&&!golf.on)?BIKE:pers(game.dir===3?2:game.dir,game.frame);
-    drawSprite(buis?spH.slice(0,10):spH,hx,hy,1,game.heroPal,game.dir===2);
+    if(game.bike&&!golf.on)drawSprite(buis?BIKE.slice(0,10):BIKE,hx,hy,1,game.heroPal,game.dir===2);
+    else if(buis)drawSprite(pers(game.dir===3?2:game.dir,game.frame).slice(0,10),hx,hy,1,game.heroPal,game.dir===2);
+    else drawActeur(game.heroId,game.heroPal,game.dir,game.frame,hx,hy,1,game.dir===2);
     if(buis)brushOver(hx,hy+9,game.px+game.py);
   }
   if(golf.on&&golf.phase!=='result'){
@@ -1641,7 +1723,7 @@ function lieAt(x,y){
 }
 const LIEF={tee:1,fairway:1,green:1,rough:0.76,bunker:0.6,bois:0.45,eau:0.5};
 let players=[];
-function mkP(id,name,pal,human,skill){return{id,name,pal,human,skill,bx:0,by:0,px:0,py:0,
+function mkP(id,name,pal,human,skill,fid){return{id,name,pal,human,skill,fid:fid||id,bx:0,by:0,px:0,py:0,
   stroke:0,done:false,card:new Array(9).fill(0),lie:'tee',dir:0,fr:0,wt:0,wd:0,wx:0,wy:0,say:''};}
 function slopeOf(h){return{a:(h*2.3+0.6)%(Math.PI*2),s:0.6+((h*5)%4)*0.22};}
 function distM(p){const h=HOLES[golf.hole];return Math.round(Math.hypot(h.gx+0.5-p.bx,h.gy+0.5-p.by)*M);}
@@ -1650,10 +1732,10 @@ function startHole(){
   let best=null,bd=99;
   for(const h of HOLES){const d=Math.hypot(h.tx-game.px,h.ty-game.py);if(d<bd){bd=d;best=h;}}
   if(!best||bd>4)return;
-  players=[mkP('moi',game.hero.name,game.heroPal,true,0)];
+  players=[mkP('moi',game.hero.name,game.heroPal,true,0,game.heroId)];
   for(const id of game.party){
     const n=NPCS.find(x=>x.id===id);
-    if(n)players.push(mkP(id,n.name,n.pal,false,n.skill||0.11));
+    if(n)players.push(mkP(id,n.name,n.pal,false,skillDe(id),id));
   }
   golf.on=true;golf.practice=false;golf.cible=null;game.state=S.GOLF;
   beginHole(best.n-1);
@@ -1704,11 +1786,15 @@ function swing(pow,acc,who){
   p.stroke++;
   golf.sx=p.bx;golf.sy=p.by;golf.lx=p.bx;golf.ly=p.by;
   const dev=(acc-0.5)*2;
-  let d=(c.m/M)*(0.42+pow*0.66)*(LIEF[p.lie]||1);
+  const F=fiche(p.fid||p.id);
+  let d=(c.m/M)*(0.42+pow*0.66)*(LIEF[p.lie]||1)*longueurDe(p.fid||p.id);
   let apex=c.a*(0.4+pow*0.65);
-  let curve=dev*(2.6+c.m*0.012);
+  let curve=dev*(2.6+c.m*0.012)*(1.35-F.prec*0.07);
+  golf.top=false;golf.airshot=false;
   if(c.teeOnly&&p.lie!=='tee'){d=0.15+Math.random()*0.12;apex=3;curve=0;golf.top=true;}
-  else golf.top=false;
+  else if(F.airshot&&Math.random()<F.airshot){
+    d=0.12+Math.random()*0.2;apex=2;curve=0;golf.airshot=true;
+  }
   if(p.lie==='bois'){apex*=0.4;d*=0.8;}
   golf.dist=d;
   golf.ex=p.bx+Math.cos(golf.aim)*d;golf.ey=p.by+Math.sin(golf.aim)*d;
@@ -1763,7 +1849,8 @@ function land(){
     p.stroke++;msg='Balle perdue dans les bois. Il rejoue une provisoire.';p.bx=golf.lx;p.by=golf.ly;p.lie=lieAt(p.bx,p.by);
   }
   golf.phase='result';golf.wait=48;
-  golf.res=(msg?msg+' ':'')+(golf.top?"Driver sur le fairway. Ça fait trois mètres et Charles se marre. ":'')
+  golf.res=(msg?msg+' ':'')+(golf.airshot?"Air shot. La balle n'a pas bougé d'un centimètre. ":'')
+    +(golf.top?"Driver sur le fairway. Ça fait trois mètres et Charles se marre. ":'')
     +(p.human?'':p.name+' : ')+distM(p)+' m du drapeau.';
 }
 function holed(p){
@@ -1799,8 +1886,8 @@ const cours={on:false,shot:0,max:10,tx:14,ty:42,pro:'GILLES'};
 const TAPIS=[[25,38],[25,41],[25,44],[25,47]];
 function startCours(pro,invite){
   const dispo=NPCS.filter(n=>n.gang&&!n.gone&&!game.party.includes(n.id)&&!n.dog).slice(0,3);
-  players=[mkP('moi',game.hero.name,game.heroPal,true,0)];
-  dispo.forEach(n=>players.push(mkP(n.id,n.name,n.pal,false,n.skill||0.11)));
+  players=[mkP('moi',game.hero.name,game.heroPal,true,0,game.heroId)];
+  dispo.forEach(n=>players.push(mkP(n.id,n.name,n.pal,false,skillDe(n.id),n.id)));
   players.forEach((p,i)=>{
     const t=TAPIS[i]||TAPIS[0];
     p.cours=0;p.bx=t[0]+0.5;p.by=t[1]+0.5;p.px=p.bx;p.py=p.by;p.lie='fairway';p.dir=2;
@@ -1848,7 +1935,7 @@ function coursFin(){
 }
 function startPractice(){
   if(game.seau<=0){say(["Le seau est vide. Alain en vend à la cabane, près du départ du 1.",'Cinq euros. Il te fera le prix de personne.'],null,'ALAIN');return;}
-  players=[mkP('moi',game.hero.name,game.heroPal,true,0)];
+  players=[mkP('moi',game.hero.name,game.heroPal,true,0,game.heroId)];
   const p=players[0];
   p.bx=game.px-1.5;p.by=game.py+0.5;p.px=p.bx;p.py=p.by;p.lie='fairway';
   golf.on=true;golf.practice=true;golf.hole=-1;golf.cur=0;golf.aim=Math.PI;
@@ -1856,7 +1943,7 @@ function startPractice(){
   game.state=S.GOLF;toast('Practice. '+game.seau+' balles dans le seau.');
 }
 function startMamou(invite){
-  players=[mkP('moi',game.hero.name,game.heroPal,true,0)];
+  players=[mkP('moi',game.hero.name,game.heroPal,true,0,game.heroId)];
   const p=players[0];
   p.bx=MAMOU.x+3;p.by=MAMOU.y+11;p.px=p.bx;p.py=p.by;p.lie='fairway';
   golf.on=true;golf.practice=true;golf.hole=-1;golf.cur=0;
@@ -1934,7 +2021,7 @@ function updateGolf(){
     return;
   }
   if(golf.phase==='power'||golf.phase==='putpow'){
-    golf.gT+=0.013*golf.dirg;
+    golf.gT+=vitPuissance(P.fid||P.id)*golf.dirg;
     if(golf.gT>=1){golf.gT=1;golf.dirg=-1;} if(golf.gT<=0){golf.gT=0;golf.dirg=1;}
     if(consume('a')){
       golf.power=golf.gT;
@@ -1943,7 +2030,7 @@ function updateGolf(){
     }return;
   }
   if(golf.phase==='acc'){
-    golf.gT+=0.019*golf.dirg;
+    golf.gT+=vitPrecision(P.fid||P.id)*golf.dirg;
     if(golf.gT>=1){golf.gT=1;golf.dirg=-1;} if(golf.gT<=0){golf.gT=0;golf.dirg=1;}
     if(consume('a')){golf.acc=golf.gT;swing(golf.power,golf.acc);}
     return;
@@ -2190,12 +2277,12 @@ function drawGolf(){
   const pw=(golf.phase==='power'||golf.phase==='putpow')?golf.gT:golf.power;
   ctx.fillStyle=pw>0.85?'#e0503a':pw>0.6?'#e8b83a':'#48c04a';
   ctx.fillRect(gx+1,119,Math.round((gw-2)*((golf.phase==='aim'||golf.phase==='putt')?0:pw)),8);
-  text('PUISSANCE',gx,130,'#8a92a8',8);
+  text('PUISSANCE '+etoiles(fiche(P.fid||P.id).puis),gx,130,'#8a92a8',7);
   if(golf.phase!=='putt'&&golf.phase!=='putpow'){
     ctx.fillStyle='#20242f';ctx.fillRect(gx,141,gw,10);
     ctx.fillStyle='#48c04a';ctx.fillRect(gx+gw/2-2,142,4,8);
     if(golf.phase==='acc'){ctx.fillStyle='#f8f8fa';ctx.fillRect(gx+1+Math.round((gw-4)*golf.gT),142,3,8);}
-    text('PRÉCISION',gx+62,131,'#8a92a8',8);
+    text('PRÉCISION '+etoiles(fiche(P.fid||P.id).prec),gx,152,'#8a92a8',7);
   } else {
     const sl=golf.slope;
     text('PENTE',gx,142,'#8a92a8',8);
@@ -3000,7 +3087,7 @@ function drawPage(){
   } else {
     text(game.hero.name,16,12,'#38405a',12);
     ctx.fillStyle='#c8d0e0';ctx.fillRect(16,30,208,1);
-    drawSprite(pers(0,0),22,40,3,game.heroPal);
+    drawPerso(game.heroId,0,0,22,40,3,false);
     text('PV',108,42,'#38405a',10);hpbar(140,46,72,game.hero.hp/game.hero.hpMax);
     text(game.hero.hp+' / '+game.hero.hpMax,140,54,'#38405a',9);
     text('ÂGE       13 ans',108,70,'#38405a',9);
@@ -3086,7 +3173,7 @@ function drawTitle(){
   ctx.textBaseline='top';
   ctx.fillStyle='#16321f';ctx.fillText(t,tx+2,66);
   ctx.fillStyle='#f4e2a8';ctx.fillText(t,tx,64);
-  ctext('GOLF DU PRIEURÉ , DOMAINE DE MONTCIENT',90,'#1f4d38',8);
+  ctext('DOMAINE DE MONTCIENT',90,'#1f4d38',9);
   /* la balle qui roule */
   const bx=24+((game.tick*0.7)%176);
   ctx.fillStyle='rgba(0,0,0,.2)';ctx.beginPath();ctx.ellipse(bx,138,5,2,0,0,7);ctx.fill();
@@ -3102,21 +3189,21 @@ function drawTitle(){
 
 /* ---------- choix du personnage ---------- */
 const PICKS=[
- {id:'moi',n:'PIERRE',npc:null,sp:[108,7,null],tag:"Villa forestière, plain-pied. Treize ans et deux euros.",
+ {id:'moi',n:'PIERRE',npc:null,sp:[108,7,null],tag:"Grand, brun. Très précis, longueur moyenne.",
   intro:"Ta mère crie quelque chose depuis la cuisine. Tu es déjà dans l'allée."},
- {id:'charles',n:'CHARLES',npc:'charles',sp:[97,8,null],tag:"Tape fort, tape partout. Ne passe jamais la manette.",
+ {id:'charles',n:'CHARLES',npc:'charles',sp:[97,8,null],tag:"Seize ans. Tape énorme, air shots fréquents.",
   intro:"Tu poses la manette. Tu la reprends. Tu la reposes. Bon. Dehors."},
- {id:'victor',n:'VICTOR',npc:'victor',sp:[99,8,null],tag:"Chef de bande. Répartie sale, coeur en or.",
+ {id:'victor',n:'VICTOR',npc:'victor',sp:[99,8,null],tag:"Petit, peau mate. Régulier partout.",
   intro:"Tu as un plan pour l'après-midi. Tu l'as déjà changé deux fois."},
- {id:'oscar',n:'OSCAR',npc:'oscar',sp:[95,65,null],tag:"Joue très bien. Parle très mal. Un jack russell ingérable.",
+ {id:'oscar',n:'OSCAR',npc:'oscar',sp:[95,65,null],tag:"Grand blond. Une force de la nature.",
   intro:"Duke a encore ouvert le portail tout seul. Duke est déjà loin."},
- {id:'antoine',n:'ANTOINE',npc:'antoine',sp:[12,11,'lutreau'],tag:"Déposé le matin, repris dimanche. Met trois heures à jouer.",
+ {id:'antoine',n:'ANTOINE',npc:'antoine',sp:[12,11,'lutreau'],tag:"Pull orange, grosses lunettes. Il aligne longtemps.",
   intro:"Tu te réveilles chez les Lutreau. Ta mère revient dimanche. On est mardi."},
- {id:'kuperfils',n:'KUPERFILS',npc:'kuperfils',sp:[102,16,null],tag:"On s'essuie les pieds trois fois chez lui. Trois.",
+ {id:'kuperfils',n:'KUPERFILS',npc:'kuperfils',sp:[102,16,null],tag:"Grand. Tape aussi fort qu'Oscar.",
   intro:"Tu as remis le maillot d'hier. Il est encore très bien. Sens, tu verras."},
- {id:'louis',n:'LOUIS',npc:'louis',sp:[113,14,null],tag:"L'intello. Maison des grands-parents, au bord du golf.",
+ {id:'louis',n:'LOUIS',npc:'louis',sp:[113,14,null],tag:"Petit. Le plus précis de la bande.",
   intro:"Tes grands-parents attaquent le fromage. Tu t'éclipses entre deux phrases."},
- {id:'paul',n:'PAUL',npc:'paul',sp:[107,21,null],tag:"Ne parle pas. Sauf au feu, pour dire que les étoiles sont belles.",
+ {id:'paul',n:'PAUL',npc:'paul',sp:[107,21,null],tag:"Musclé, silencieux. Une puissance rare.",
   intro:"Tu sors. Tu ne dis rien à personne. C'est très bien comme ça."}
 ];
 const INTRO=[
@@ -3124,18 +3211,16 @@ const INTRO=[
  "Les parents sont sur le parcours jusqu'à la nuit. C'est la seule information utile de la journée.",
  "Trouve les autres, prends un vélo, fouille le rough. Ce soir il y aura un feu au bord du 6.",
  "(START pour passer les textes.)"];
-function pickPal(p){
-  if(!p.npc)return null;
-  const n=NPCS.find(x=>x.id===p.npc);
-  return n?n.pal:null;
-}
+function pickPal(p){ return palFiche(fiche(p.id)); }
+function etoiles(n){ return '\u25cf'.repeat(n)+'\u25cb'.repeat(5-n); }
 function drawPick(){
   const g=ctx.createLinearGradient(0,0,0,H);
   g.addColorStop(0,'#1f4d38');g.addColorStop(1,'#3f7332');
   ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
   box(4,4,232,152);
   text('QUI ES-TU ?',14,10,'#38405a',11);
-  text(net.on?('EN LIGNE : '+net.count):'HORS LIGNE',158,12,net.on?'#2f8a4a':'#a8b0c4',8);
+  text(net.on?('EN LIGNE : '+net.count):'HORS LIGNE',104,12,net.on?'#2f8a4a':'#a8b0c4',8);
+  if((game.tick>>4)%2===0)text('A pour valider',166,12,'#c8443a',8);
   ctx.fillStyle='#c8d0e0';ctx.fillRect(14,26,212,1);
   for(let i=0;i<PICKS.length;i++){
     const cxx=14+(i%3)*74, cyy=32+((i/3)|0)*32;
@@ -3143,16 +3228,18 @@ function drawPick(){
     if(game.pick===i){ctx.fillStyle=libre?'#e8edf6':'#f2e2e2';ctx.fillRect(cxx-2,cyy-2,72,30);
       ctx.fillStyle='#c8443a';ctx.fillRect(cxx-2,cyy-2,2,30);}
     ctx.save(); if(!libre)ctx.globalAlpha=0.42;
-    drawSprite(pers(0,(game.tick>>4)%3),cxx,cyy+4,1,pickPal(PICKS[i]));
+    drawPerso(PICKS[i].id,0,(game.tick>>4)%3,cxx,cyy+4,1,false);
     ctx.restore();
     text(PICKS[i].n,cxx+20,cyy+10,libre?'#38405a':'#a8b0c4',9);
     if(!libre)text('pris',cxx+20,cyy+20,'#c8443a',8);
   }
   ctx.fillStyle='#c8d0e0';ctx.fillRect(14,128,212,1);
+  const fp=fiche(PICKS[game.pick].id);
+  text('PUISSANCE '+etoiles(fp.puis),132,133,'#5a627a',8);
+  text('PRÉCISION '+etoiles(fp.prec),132,144,'#5a627a',8);
   const ls=wrap(persoLibre(PICKS[game.pick].id)?PICKS[game.pick].tag
-    :'Ce personnage est joué par quelqu\'un d\'autre en ce moment.',150);
-  for(let i=0;i<ls.length&&i<2;i++)text(ls[i],14,132+i*12,'#5a627a',9);
-  if((game.tick>>4)%2===0)text('A pour valider',176,146,'#c8443a',9);
+    :'Déjà pris par quelqu\'un d\'autre.',110);
+  for(let i=0;i<ls.length&&i<2;i++)text(ls[i],14,133+i*11,'#5a627a',8);
 }
 function updatePick(){
   const n=PICKS.length;
@@ -3293,10 +3380,7 @@ function inviteRecue(m){
     }),
     ()=>toast('Tu laisses passer. Ils se débrouilleront.'));
 }
-function peerPal(pk){
-  const p=PICKS.find(x=>x.id===pk);
-  return p?pickPal(p):null;
-}
+function peerPal(pk){ return palFiche(fiche(pk)); }
 function drawPeers(cx,cy){
   for(const id in net.peers){
     const p=net.peers[id];
@@ -3308,8 +3392,9 @@ function drawPeers(cx,cy){
     if(sx<-24||sx>W+24||sy<-28||sy>H+8)continue;
     const pBuis=inBrush(Math.round(p.rx),Math.round(p.ry));
     if(!pBuis){ctx.fillStyle='rgba(0,0,0,.18)';ctx.beginPath();ctx.ellipse(sx+8,sy+16,6,2.5,0,0,7);ctx.fill();}
-    const spP=p.bike?BIKE:pers(p.dir===3?2:p.dir,p.fr||0);
-    drawSprite(pBuis?spP.slice(0,10):spP,sx,sy,1,peerPal(p.pk),p.dir===2);
+    if(p.bike)drawSprite(pBuis?BIKE.slice(0,10):BIKE,sx,sy,1,peerPal(p.pk),p.dir===2);
+    else if(pBuis)drawSprite(pers(p.dir===3?2:p.dir,p.fr||0).slice(0,10),sx,sy,1,peerPal(p.pk),p.dir===2);
+    else drawActeur(p.pk,peerPal(p.pk),p.dir,p.fr||0,sx,sy,1,p.dir===2);
     if(pBuis)brushOver(sx,sy+9,Math.round(p.rx)+Math.round(p.ry));
     if(p.name){
       font(8);const w=ctx.measureText(p.name).width;
