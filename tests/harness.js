@@ -156,6 +156,9 @@ const attendu = t.PICKS[game.pick].n;
 tap('a', 3);
 check('perso choisi', game.hero.name === attendu, game.hero.name + ' vs ' + attendu);
 check('intro jouee', game.state === t.S.DIALOG);
+/* START doit couper court a l'intro d'un coup */
+tap('start', 3);
+check('START saute les textes', game.state !== t.S.DIALOG, 'etat ' + game.state);
 check('on est dans le monde', clear(600), 'etat ' + game.state);
 const sp = t.PICKS[game.pick].sp;
 check('on demarre devant chez soi',

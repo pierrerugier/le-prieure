@@ -18,7 +18,12 @@
     overscroll-behavior:none;overscroll-behavior-y:contain;touch-action:manipulation;
     -webkit-text-size-adjust:100%;}
   #sp,#pad,.dpad,.ab,#sys,.shoulders{touch-action:none;}
-  #wrap{max-width:430px;margin:0 auto;padding:14px 10px 22px;}
+  #wrap{max-width:470px;margin:0 auto;padding:14px 10px 22px;}
+  @media (max-width:380px){
+    .dpad{grid-template-columns:repeat(3,46px);grid-template-rows:repeat(3,46px);}
+    .round{width:60px;height:60px;font-size:19px;}
+    .sh{width:72px;}
+  }
   /* --- coque Game Boy Advance SP --- */
   #sp{background:linear-gradient(180deg,#41454d 0%,#33373d 46%,#2b2e34 100%);
     border-radius:20px;padding:10px 10px 14px;
@@ -44,25 +49,25 @@
   #hinge i:nth-child(2){width:112px;}
   /* --- base --- */
   #base{padding:2px 6px 0;}
-  .shoulders{display:flex;justify-content:space-between;margin:0 2px 10px;}
-  .sh{width:66px;height:17px;border:0;border-radius:4px 4px 9px 9px;background:#3d424a;
-    color:#9aa0ab;font-size:9px;font-weight:700;letter-spacing:.1em;
-    box-shadow:0 2px 0 #22252a;user-select:none;}
+  .shoulders{display:flex;justify-content:space-between;margin:0 2px 12px;}
+  .sh{width:84px;height:24px;border:0;border-radius:4px 4px 11px 11px;background:#3d424a;
+    color:#9aa0ab;font-size:11px;font-weight:700;letter-spacing:.1em;
+    box-shadow:0 3px 0 #22252a;user-select:none;}
   #pad{display:grid;grid-template-columns:1fr 1fr;gap:6px;align-items:center;}
-  .dpad{display:grid;grid-template-columns:repeat(3,38px);grid-template-rows:repeat(3,38px);
+  .dpad{display:grid;grid-template-columns:repeat(3,52px);grid-template-rows:repeat(3,52px);
     justify-content:center;}
   .dpad div.c{background:#24262b;border-radius:3px;box-shadow:inset 0 0 0 1px #1a1c20;}
-  .btn{background:#2b2e34;border:0;border-radius:4px;color:#8d939e;font-size:13px;font-weight:700;
+  .btn{background:#2b2e34;border:0;border-radius:6px;color:#8d939e;font-size:17px;font-weight:700;
     box-shadow:0 3px 0 #1a1c20;display:flex;align-items:center;justify-content:center;
     touch-action:none;-webkit-user-select:none;user-select:none;}
   .btn:active{transform:translateY(2px);box-shadow:0 1px 0 #1a1c20;background:#383c44;}
-  .ab{display:flex;gap:14px;justify-content:center;align-items:center;transform:rotate(-16deg);}
-  .round{width:50px;height:50px;border-radius:50%;background:#3a3e46;color:#c9ced8;font-size:16px;
-    box-shadow:0 4px 0 #202329, inset 0 1px 0 #4d525b;}
+  .ab{display:flex;gap:16px;justify-content:center;align-items:center;transform:rotate(-16deg);}
+  .round{width:68px;height:68px;border-radius:50%;background:#3a3e46;color:#c9ced8;font-size:21px;
+    box-shadow:0 5px 0 #202329, inset 0 1px 0 #4d525b;}
   .round:active{box-shadow:0 1px 0 #202329;}
-  #sys{grid-column:1/3;display:flex;gap:18px;justify-content:center;margin-top:10px;}
-  .sys{padding:5px 15px;border-radius:20px;font-size:9px;letter-spacing:.14em;
-    background:#2d3037;color:#9aa0ab;box-shadow:0 3px 0 #1a1c20;transform:rotate(-16deg);}
+  #sys{grid-column:1/3;display:flex;gap:22px;justify-content:center;margin-top:16px;}
+  .sys{padding:9px 22px;border-radius:22px;font-size:11px;letter-spacing:.14em;
+    background:#2d3037;color:#9aa0ab;box-shadow:0 4px 0 #1a1c20;transform:rotate(-16deg);}
   #nin{text-align:center;font-size:9px;letter-spacing:.05em;color:#5f646d;margin-top:12px;
     font-style:italic;}
   #hint{max-width:430px;margin:14px auto 0;padding:0 14px;font-size:11px;line-height:1.65;color:#787e93;}
@@ -3098,7 +3103,7 @@ function drawTitle(){
 /* ---------- choix du personnage ---------- */
 const PICKS=[
  {id:'moi',n:'PIERRE',npc:null,sp:[108,7,null],tag:"Villa forestière, plain-pied. Treize ans et deux euros.",
-  intro:"Tu refermes la baie vitrée. Ta mère crie quelque chose derrière. Tu n'écoutes déjà plus."},
+  intro:"Ta mère crie quelque chose depuis la cuisine. Tu es déjà dans l'allée."},
  {id:'charles',n:'CHARLES',npc:'charles',sp:[97,8,null],tag:"Tape fort, tape partout. Ne passe jamais la manette.",
   intro:"Tu poses la manette. Tu la reprends. Tu la reposes. Bon. Dehors."},
  {id:'victor',n:'VICTOR',npc:'victor',sp:[99,8,null],tag:"Chef de bande. Répartie sale, coeur en or.",
@@ -3115,12 +3120,10 @@ const PICKS=[
   intro:"Tu sors. Tu ne dis rien à personne. C'est très bien comme ça."}
 ];
 const INTRO=[
- "Hameau du Prieuré, été 2005. Il est une heure et demie.",
- "Les parents sont sur le parcours. Ils rentreront à la nuit. C'est la seule information utile de la journée.",
- "Tout le domaine est à vous. Le parcours, le club house, la piscine, les bois, et la pente en terre derrière le hameau.",
- "Trouve les autres. Prends un vélo, il en traîne toujours un. Fouille le rough : les balles perdues valent de l'argent chez Cathy.",
- "Ce soir il y aura un feu au bord du 6. Il y a toujours un feu au bord du 6.",
- "Neuf trous, une pente, une départementale et une maison pleine de vitres. Vas-y."];
+ "Hameau du Prieuré, été 2005. Il est une heure et demie et personne ne t'attend nulle part.",
+ "Les parents sont sur le parcours jusqu'à la nuit. C'est la seule information utile de la journée.",
+ "Trouve les autres, prends un vélo, fouille le rough. Ce soir il y aura un feu au bord du 6.",
+ "(START pour passer les textes.)"];
 function pickPal(p){
   if(!p.npc)return null;
   const n=NPCS.find(x=>x.id===p.npc);
@@ -3422,6 +3425,11 @@ function update(){
         if(game.dl<game.dlg.length-1){game.dl++;game.dc=0;game.autoT=0;}
         else{game.state=game.ret;game.auto=0;const c=game.dcb;game.dcb=null;if(c)c();}
       };
+      if(consume('start')){
+        game.state=game.ret;game.auto=0;
+        const c0=game.dcb;game.dcb=null;if(c0)c0();
+        break;
+      }
       if(game.dc<len){game.dc+=(game.auto?2:((keys.a||keys.b)?3:1));if(game.dc>len)game.dc=len;}
       else if(game.auto){ if(++game.autoT>78||consume('a')||consume('b'))suite(); }
       else if(consume('a')||consume('b'))suite();
