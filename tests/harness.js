@@ -322,6 +322,38 @@ t.LOCKED.forEach(L => {
   clear();
 });
 
+/* ---------- 2 ter. ramasser ne coupe jamais la marche ---------- */
+clear();
+const objetTest = t.ITEMS.find(o => !o.inside && !game.items[o.id]);
+check('chaque objet a sa replique courte', t.ITEMS.every(o => o.trouve && o.trouve.length < 90),
+  t.ITEMS.filter(o => !o.trouve || o.trouve.length >= 90).map(o => o.id).join(','));
+check('les repliques sont a la premiere personne',
+  t.ITEMS.every(o => o.trouve.indexOf("J'ai trouvé") === 0));
+if (objetTest) {
+  tp(objetTest.x, objetTest.y - 1); game.dir = 0;
+  t.press('down');
+  let n4 = 0;
+  while (!game.items[objetTest.id] && n4++ < 200) t.update();
+  check('on ramasse ' + objetTest.id + ' en marchant', !!game.items[objetTest.id]);
+  check('le ramassage ne coupe pas la marche', game.state === t.S.WORLD, 'etat ' + game.state);
+  check('il previent en bas d ecran', !!game.toast, game.toast || 'rien');
+  t.release('down'); frames(2);
+}
+/* pareil pour une balle */
+const balleTest = t.ballSpots.find(b => !b.taken);
+if (balleTest) {
+  clear(); tp(balleTest.x, balleTest.y - 1); game.dir = 0;
+  t.press('down');
+  let n5 = 0;
+  while (!balleTest.taken && n5++ < 200) t.update();
+  t.release('down'); frames(2);
+  check('on ramasse une balle en marchant', balleTest.taken);
+  check('la balle ne coupe pas la marche', game.state === t.S.WORLD, 'etat ' + game.state);
+  check('elle se dit en une ligne', !!game.toast && game.toast.indexOf("J'ai trouvé") === 0,
+    game.toast || 'rien');
+}
+clear();
+
 /* ---------- 3 bis. le sous-bois ---------- */
 clear();
 /* on cherche une case de sous-bois avec une voisine de sous-bois, loin du bord */
@@ -622,7 +654,7 @@ t.golf.on = false; game.state = t.S.WORLD; clear();
 /* sans AudioContext le harnais ne peut pas ecouter, mais rien ne doit planter
    et tous les bruitages doivent exister dans la banque */
 const BRUITS = ['klaxon','moteur','verre','wouf','ok','pas','feuille','sable','drive','fer',
-  'putt','coupautre','atterri','mur','trou','plouf','nage','page','objet','porte','velo'];
+  'putt','coupautre','atterri','mur','trou','plouf','nage','page','objet','ramasse','porte','velo'];
 let bruitOk = true;
 BRUITS.forEach(b => { try { t.sfx(b); } catch (e) { bruitOk = false; fails.push('bruitage ' + b + ' -> ' + e.message); } });
 check('tous les bruitages repondent sans planter', bruitOk);
@@ -631,7 +663,7 @@ BRUITS.forEach(b => check("le bruitage '" + b + "' est bien declare", srcJeu.ind
 [["les pas", "sfx(sol===T.DENSE?'feuille'"], ["le drive", "golf.club<=1?'drive':'fer'"],
  ["les coups des autres", "'coupautre'"], ["l atterrissage", "sfx('atterri')"],
  ["la balle dans le trou", "sfx('trou')"], ["le plouf", "sfx('plouf')"],
- ["la validation de dialogue", "sfx('page')"], ["le ramassage", "sfx('objet')"],
+ ["la validation de dialogue", "sfx('page')"], ["le ramassage d un objet", "sfx('objet')"], ["le ramassage d une balle", "sfx('ramasse')"],
  ["les portes", "sfx('porte')"], ["la voiture qui passe", "sfx('moteur')"],
  ["le velo", "sfx('velo')"]].forEach(([nom, code]) =>
   check('le jeu declenche ' + nom, srcJeu.indexOf(code) >= 0));

@@ -1326,20 +1326,28 @@ const ballSpots=[];
 })();
 const ITEMS=[
  {id:'putter',x:76,y:18,inside:null,n:'Putter Scotty Cameron',
+  trouve:"J'ai trouvé un putter Scotty Cameron. Quelqu'un va très mal le vivre.",
   txt:"Un putter Scotty Cameron posé contre un arbre. Quelqu'un va très mal le vivre."},
  {id:'fluo',x:89,y:31,inside:null,n:'Balle fluo',
+  trouve:"J'ai trouvé une balle fluo.",
   txt:"Une balle fluo au bord du chemin des hameaux. Elle brille encore un peu."},
  {id:'casquette',x:106,y:9,inside:null,n:'Casquette Tiger Woods Nike',
+  trouve:"J'ai trouvé la casquette Nike de Tiger.",
   txt:"Une casquette Nike, celle de Tiger. Tachée de gazon, donc authentique."},
  {id:'crayon',x:60,y:53,inside:null,n:'Crayon avec gomme',
+  trouve:"J'ai trouvé un crayon avec une gomme. Un vrai truc de tricheur.",
   txt:"Un crayon de carte de score. Avec une gomme au bout. Un vrai truc de tricheur."},
  {id:'short',x:100,y:70,inside:null,n:'Short abandonné',
+  trouve:"J'ai trouvé le short d'Olivier. On n'en reparlera pas.",
   txt:"Un short de golf abandonné derrière un buisson. Olivier Bernardini n'est jamais revenu le chercher. On n'en reparlera pas."},
  {id:'velo',x:98,y:26,inside:null,n:'Vélo du hameau',
+  trouve:"J'ai trouvé un vélo. SELECT pour l'enfourcher.",
   txt:"Un vélo posé contre un mur, sans cadenas, comme toujours. SELECT pour l'enfourcher."},
  {id:'manette',x:12,y:9,inside:'lutreau',n:'Deuxième manette',
+  trouve:"J'ai trouvé la deuxième manette. Elle marche très bien.",
   txt:"La deuxième manette GameCube, derrière le canapé. Le fil est noué depuis 2003."},
  {id:'rolex',x:6,y:6,inside:'club',n:'Rolex',
+  trouve:"J'ai trouvé une Rolex. Je la garde ? Oui.",
   txt:"Une Rolex oubliée sur le banc du vestiaire hommes. Elle est encore chaude."}];
 /* aucun objet ne doit finir sous un arbre */
 ITEMS.forEach(it=>{if(it.inside===null&&SOLID.has(at(it.x,it.y)))put(it.x,it.y,T.ROUGH);});
@@ -2105,10 +2113,9 @@ function arrive(){
     const b=ballSpots.find(b=>!b.taken&&b.x===game.px&&b.y===game.py);
     if(b){b.taken=true;game.bag[b.k]++;
       mission('balle');
-      const bb=BALLS[b.k], prix=bb.v?' ('+String(bb.v).replace('.',',')+' €)':' (sans valeur)';
-      toast(t===T.DENSE
-        ?'Ton pied bute sur quelque chose. Une balle '+bb.n+prix
-        :'Vous trouvez une balle '+bb.n+prix);}
+      sfx('ramasse');
+      const bb=BALLS[b.k];
+      toast("J'ai trouvé une "+bb.n+(bb.v?' ('+String(bb.v).replace('.',',')+' €)':''));}
     for(const it of ITEMS) if(!game.items[it.id]&&!it.inside&&it.x===game.px&&it.y===game.py) takeItem(it);
     if(t===T.DIRT&&game.py<=30){
       askYN('On fait du grass board ? La planche est en haut.','CHARLES',()=>startPente(),
@@ -2142,7 +2149,8 @@ function takeItem(it){
   sfx('objet');
   game.items[it.id]=true;
   if(it.id==='rolex')game.rolex=true;
-  say([it.txt,'('+it.n+' rangé dans le sac.)']);
+  /* on ne coupe pas la marche pour ca : une ligne en bas d'ecran, et on continue */
+  toast(it.trouve||("J'ai trouvé "+it.n+"."));
 }
 const CLUB_SORTIES={'5,23':[57,52],'22,23':[63,52],'33,23':[69,52]};
 function goInside(id,d){
@@ -3351,6 +3359,7 @@ function sfx(kind,f){
     case 'page': blip(1500,t,0.035,'square',0.06,B); break;
     case 'objet': blip(NOTE(81),t,0.06,'square',0.11,B); blip(NOTE(85),t+0.05,0.06,'square',0.11,B);
       blip(NOTE(88),t+0.1,0.12,'square',0.11,B); break;
+    case 'ramasse': blip(NOTE(84),t,0.05,'square',0.09,B); blip(NOTE(91),t+0.05,0.09,'square',0.08,B); break;
     case 'porte': souffle(t,0.16,600,240,0.07,'bandpass'); blip(180,t+0.12,0.09,'square',0.08,B,120); break;
     case 'velo': blip(2600,t,0.02,'square',0.035,B); break;
   }
