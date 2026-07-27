@@ -67,15 +67,26 @@ node tests/harness.js
 
 ## Géographie
 
-Calée sur la vue aérienne. À l'ouest de la D 130 : le practice et les trois courts de tennis.
-La passerelle traverse en y=44, le passage clouté en y=57, et une voiture passe toutes les
-dix secondes. À l'est : le parking, le pro shop, le secrétariat, le club house avec son patio
-et son restaurant, la terrasse, la piscine au sud-est, le putting green et le départ du 1.
+Calée sur les croquis de Pierre. À l'ouest de la D 130 : le practice et les trois courts de
+tennis. Une passerelle traverse en y=44, mais **la route se traverse où on veut**, à ses
+risques et périls : une voiture toutes les dix secondes, et un avertissement s'affiche quand
+on s'engage. À l'est : le parking, long et bordé d'une rangée de platanes côté route, avec
+huit voitures nommées ; le secrétariat et le pro shop à l'entrée ; le club house avec son
+patio ; la terrasse ; la piscine dans son terrain clos, vestiaires à l'ouest formant le mur
+et transats sur la pelouse à l'est ; le putting green à trois trous et le départ du 1.
 
-Le hameau du Prieuré est au nord-est. Villas forestières au nord (les Lutreau, les Jungers),
-maison des Martin, pavillon des Robin, et la maison des Mamoumani avec ses vasistas et ses
-vitres. Les maisons de lisière descendent au sud-est : les Webb avec le jacuzzi, les Lebel
-avec le grand jardin et le portillon qui donne sur un départ, les Evenou au bord du 4.
+Le hameau du Prieuré est au nord-est : **huit villas forestières** éparpillées (Lutreau,
+Jungers, Molina, Gandibleu, Huet, Margulis, Dutreuil, Bernardini), chacune avec son bout de
+pelouse et des haies de sous-bois franchissables, plus la maison des Mamoumani au milieu.
+
+**Cinq maisons de lisière** alignées le long des trous 4 et 5, sur le flanc est. D'ouest en
+est : le parcours, une bande de bois, les jardins séparés par des haies avec un passage d'un
+jardin à l'autre, les maisons, et la voie du hameau qui les dessert par derrière. Du nord au
+sud : Webb (jacuzzi), Lebel (en bois, symétrique), Martin, Kuperfils, Godot.
+
+**Trois baraques Evenou** alignées au sud-est, pavillons blancs des années 70 à grands
+jardins, le long du 4. **Les Robin** sont coincés dans l'arc que dessine le parcours, plus
+près du club house, avec leur petite allée qui rejoint la route du club.
 
 Deux familles de maisons, à ne pas mélanger. Les **villas forestières** sont basses et
 modernes : une rangée de toit plat à débord bois sombre, une rangée de baies toute hauteur
@@ -85,6 +96,14 @@ fenêtres à volets bleu-gris (`idf()` et `idf70()`). Seuls les Lebel sont en bo
 Les fenêtres cassables sont `T.SWIN` et `T.HWIN`, voir `estVitre()` et `VITRE_CASSEE`.
 
 Les autres portes du hameau répondent mais ne s'ouvrent pas.
+
+## Fiches de golf
+
+Chaque personnage a une précision et une puissance de 1 à 5 dans `FICHES`. Plus on est
+précis, plus la jauge de précision oscille lentement et moins la balle part de travers.
+Plus on est puissant, plus la jauge de puissance oscille lentement et plus la balle va loin.
+Charles est le seul à rater des air shots. Les allures se composent par surcouches sur le
+corps de base : coupe de cheveux, lunettes, carrure, short, taille, couleurs.
 
 ## Personnages
 
@@ -139,6 +158,13 @@ Le vélo se range tout seul quand on rentre quelque part.
   portail des Mamoumani, puis glander.
 - Quand Antoine putte, il y en a toujours un pour dire « Antoine Zirimis, sur le green du 18,
   pour gagner l'US Open. Que se passe-t-il ? »
+- Le foyer est **froid en journée** : un cercle de pierres et du bois noirci. Il ne brûle
+  qu'à la nuit. Il n'y a rien pour s'asseoir, on est par terre, et les canettes finissent
+  dans les fougères derrière.
+- Chaque personnage a son intro, et **ce sont les parents qui parlent** : la mère de Pierre
+  qui exige dix-huit trous, la mère Lutreau qui laisse tout faire, les Martin très snob, la
+  mère d'Oscar qui se trompe de genre, les Robin tranquilles, les Zirimis qui repartent, et
+  les Kuperfils sur les chaussures et la collection de poules de Laurence.
 - Autour du feu, les dialogues défilent tout seuls, sans appuyer sur A. Quatrième argument
   de `say(lignes, callback, qui, auto)`. Une conversation part d'elle-même si on reste
   près du feu la nuit.

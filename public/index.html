@@ -104,8 +104,8 @@
     </div>
   </div>
   <div id="hint">Flèches pour marcher, <b>Z</b> ou Espace pour A, <b>X</b> pour B, <b>Entrée</b> pour START, <b>Échap</b> pour SELECT.
-  START ouvre le menu et la carte du domaine. Sur un départ, A lance le coup : A pour la puissance, A pour la précision.
-  Le passage clouté de la D 130 se traverse à ses risques et périls.</div>
+  START ouvre le menu et la carte du domaine, et saute les textes. Sur un départ, A lance le coup : A pour la puissance, A pour la précision.
+  La D 130 se traverse où on veut, à ses risques et périls.</div>
 </div>
 <script>
 (function(){
@@ -299,14 +299,14 @@ const T={FAIR:0,ROUGH:1,GREEN:2,SAND:3,WATER:4,PATH:5,TREE:6,DENSE:7,TEE:8,FLAG:
   DESK:69,CART:70,PLANT:71,BILL:72,WHITE:73,WROOF:74,
   PROOF:75,FTOP:76,FACADE:77,FWIN:78,FDOOR:79,FLOW:80,BDOOR:81,
   CHEM:82,TBAS:83,FAUT:84,BIBLI:85,FRIGO:86,EVIER:87,BUFFET:88,
-  HRIDGE:89,HEAVE:90,HWIN:91,HWINB:92,HBAIE:93,LUC:94,STORE:95};
+  HRIDGE:89,HEAVE:90,HWIN:91,HWINB:92,HBAIE:93,LUC:94,STORE:95,PLAT:96,TRANSAT:97,CANETTE:98};
 const SOLID=new Set([T.TREE,T.WATER,T.CAR,T.SWALL,T.SWIN,T.HEDGE,T.PARA,T.POOL,
-  T.HWALL,T.HROOF,T.SIGN,T.FLAG,T.STALL,T.FOUNT,T.LOCKER,T.BAR,T.TABLE,T.SHOP,T.WALLI,T.ROAD,T.LINE,T.SROOF,T.FIRE,T.LOG,
+  T.HWALL,T.HROOF,T.SIGN,T.FLAG,T.STALL,T.FOUNT,T.LOCKER,T.BAR,T.TABLE,T.SHOP,T.WALLI,T.SROOF,T.FIRE,T.LOG,
   T.SWINB,T.WOOD,T.BAIE,T.FLATR,T.BROOF,T.TNET,T.SOFA,T.TVGC,T.BED,T.KITCH,T.EASEL,T.JACU,
   T.GATE,T.STONEW,T.VASIS,T.DESK,T.CART,T.PLANT,T.BILL,T.WHITE,T.WROOF,
   T.PROOF,T.FTOP,T.FACADE,T.FWIN,T.FLOW,
   T.CHEM,T.TBAS,T.FAUT,T.BIBLI,T.FRIGO,T.EVIER,T.BUFFET,
-  T.HRIDGE,T.HEAVE,T.HWIN,T.HWINB,T.HBAIE,T.LUC,T.STORE]);
+  T.HRIDGE,T.HEAVE,T.HWIN,T.HWINB,T.HBAIE,T.LUC,T.STORE,T.PLAT]);
 const cache={};
 function tile(id,v,f){
   const key=id+':'+v+':'+(f||0); if(cache[key])return cache[key];
@@ -364,9 +364,20 @@ function tile(id,v,f){
     case T.DIRT: R('#a8875c',0,0,16,16);
       for(let i=0;i<12;i++) R(nr()>0.5?'#96774f':'#bb9a6c',(nr()*16)|0,(nr()*16)|0,3,1);
       R('#8a6b45',0,0,16,1); break;
-    case T.FIRE: R('#4e8a3e',0,0,16,16); R('#3a3128',2,10,12,5);
-      R('#5a4632',1,11,6,2);R('#5a4632',9,12,6,2);
-      R('#d8402f',5,4,6,8); R('#f2a03d',6,6,4,6); R('#f2d24a',7,8,2,4); break;
+    case T.FIRE: R('#4e8a3e',0,0,16,16);
+      R('#3f5c33',1,3,14,11);
+      R('#3a3128',3,5,10,9); R('#2b241d',4,6,8,7);
+      R('#a89b86',2,4,3,2);R('#9c9182',11,4,3,2);R('#a89b86',1,9,2,3);
+      R('#9c9182',13,9,2,3);R('#a89b86',4,13,3,2);R('#9c9182',9,13,3,2);
+      R('#33261b',5,8,6,4); R('#4a3d2e',6,7,4,2);
+      if(f){ R('#d8402f',5,(f===2)?4:3,6,9); R('#f2a03d',6,5,4,7);
+             R('#f2d24a',7,7,2,5); R('#fdf0a0',7,9,1,2); }
+      break;
+    case T.CANETTE: R('#4e8a3e',0,0,16,16);
+      for(let i=0;i<7;i++) R('#3f7332',(nr()*15)|0,(nr()*15)|0,2,1);
+      R('#2c5e2b',2,3,3,4); R('#3f7332',2,3,3,1);
+      R('#8a8f96',6,9,3,5); R('#c4c9d0',6,9,3,1); R('#d8402f',6,11,3,1);
+      R('#3a5a2a',10,5,3,5); R('#5a7a3a',10,5,3,1); R('#e8d79a',10,7,3,1); break;
     case T.LOG: R('#4e8a3e',0,0,16,16); R('#5a4632',0,5,16,6); R('#7a6244',0,5,16,2);
       R('#3d2f21',0,10,16,1); break;
     case T.PLANK: R('#5c9b45',0,0,16,16); R('#a37c4c',2,6,12,4); R('#8a6238',2,9,12,1); break;
@@ -614,6 +625,18 @@ function tile(id,v,f){
       R('#6b4a2c',8,5,1,7); R('#e0c88a',6,8,1,2); R('#e0c88a',10,8,1,2);
       R('#a37c4c',0,2,16,3); R('#b98b5a',0,2,16,1);
       R('#2c5e2b',2,0,3,2); R('#3f7332',2,0,2,1); R('#8a3f4a',11,0,2,2); break;
+    case T.PLAT: R('#6d6d78',0,0,16,16);
+      R('#4e8a3e',0,0,16,3);
+      R('#8a8272',5,9,6,7); R('#a39a86',6,9,3,7);
+      for(let i=0;i<6;i++) R('#6f6857',5+((nr()*6)|0),9+((nr()*7)|0),2,2);
+      R('#2f6b34',1,0,14,9); R('#3d8543',2,1,11,6); R('#4e9c52',4,2,6,3);
+      R('#23502a',0,3,4,5); R('#23502a',12,2,4,6); break;
+    case T.TRANSAT: R('#6fae54',0,0,16,16);
+      R('#5c9b45',0,0,16,1);
+      R('#e8e4d8',3,2,10,12); R('#f6f2e6',4,3,8,4);
+      R('#d8d3c6',3,7,10,1); R('#c9c4bb',4,11,8,2);
+      R('#8a8a92',3,2,1,12); R('#8a8a92',12,2,1,12);
+      R('#5a5a62',5,14,2,2); R('#5a5a62',9,14,2,2); break;
     case T.GATE: R('#4e8a3e',0,0,16,16); R('#5a4632',0,0,2,16); R('#5a4632',14,0,2,16);
       for(let x=3;x<14;x+=3) R('#7a6244',x,2,2,12); R('#7a6244',2,3,12,2); R('#7a6244',2,10,12,2); break;
     default: R('#7cb85c',0,0,16,16);
@@ -636,9 +659,9 @@ const HOLES=[
  {n:1,tx:52,ty:54,gx:50,gy:76,par:4},
  {n:2,tx:48,ty:80,gx:66,gy:88,par:4},
  {n:3,tx:70,ty:86,gx:90,gy:82,par:4},
- {n:4,tx:94,ty:80,gx:112,gy:60,par:5},
- {n:5,tx:112,ty:54,gx:106,gy:40,par:3},
- {n:6,tx:104,ty:36,gx:90,gy:24,par:4},
+ {n:4,tx:94,ty:84,gx:100,gy:58,par:5},
+ {n:5,tx:100,ty:50,gx:96,gy:40,par:3},
+ {n:6,tx:99,ty:36,gx:90,gy:24,par:4},
  {n:7,tx:86,ty:20,gx:66,gy:16,par:4},
  {n:8,tx:62,ty:14,gx:46,gy:20,par:4},
  {n:9,tx:44,ty:24,gx:56,gy:29,par:3}];
@@ -661,8 +684,55 @@ function carve(h){
   rect(Math.round(h.tx-1),Math.round(h.ty-1),3,2,T.TEE);
   put(h.gx,h.gy,T.FLAG);
 }
-const FEU={x:109,y:33}, MAMOU={x:95,y:15};
-const MAMOU_WIN=[[96,18],[98,18],[100,18],[96,19],[100,19]];
+/* ---------- les voitures du parking ---------- */
+const VOITURES=[
+ {x:38,y:48,c:'#22242c',n:'CHRYSLER 300C',
+  d:["La 300C de monsieur Molina, le directeur. Vitres teintées à fond.",
+     "On ne voit rien à l'intérieur. C'est peut-être le but."]},
+ {x:41,y:48,c:'#d9d4cc',n:'PORSCHE',
+  d:["La Porsche de Pierre Lebel. Un papier est glissé sous l'essuie-glace.",
+     "« RENDS L'ARGENT AUX FOYERS SURENDETTÉS »",
+     "L'écriture ressemble beaucoup à celle de Margaux."]},
+ {x:44,y:48,c:'#7a2f3c',n:'BM CUIR ROUGE',
+  d:["La BM d'Olivier Jungers. Intérieur cuir rouge, jantes chromées.",
+     "Un peu kéké, disent les autres pères. Ils la regardent quand même."]},
+ {x:38,y:53,c:'#8a8f7a',n:'CHRYSLER VOYAGER',
+  d:["Le Voyager des Webb. Trois sacs de golf, deux serviettes mouillées et un sandwich.",
+     "Duke a dû dormir sur la banquette. Duke dort partout."]},
+ {x:44,y:53,c:'#c8302a',n:'FERRARI',
+  d:["La Ferrari de Vincent Lutreau. Garée en travers, sur deux places.",
+     "Charles dit qu'il a le droit de la conduire. Charles dit beaucoup de choses."]},
+ {x:38,y:58,c:'#9aa0a8',n:'POLO',
+  d:["La Polo de Sophie Godot. Rincée, un enjoliveur en moins, pleine de balles de practice."]},
+ {x:41,y:58,c:'#6b6a62',n:'PORSCHE RINCÉE',
+  d:["La vieille Porsche d'Éric Gandibleu. Peinture terne, pot qui gronde.",
+     "C'est celle-là que tu veux. Pas l'autre. Celle-là."]},
+ {x:44,y:63,c:'#3f7a8a',n:'JUNGERS MOBILE',
+  d:["La Suzuki Ignis de Delphine Jungers. On l'appelle la Jungers mobile.",
+     "Elle a fait le trajet mille fois et elle le refera mille fois."]}];
+function voitureA(x,y){return VOITURES.find(v=>v.x===x&&v.y===y);}
+
+const FEU={x:109,y:36}, MAMOU={x:99,y:18};
+/* les huit villas forestieres du hameau, eparpillees */
+const VILLAS=[
+ {id:'lutreau',   x:89, y:4,  n:'CHEZ LES LUTREAU',   into:'lutreau'},
+ {id:'jungers',   x:99, y:3,  n:'CHEZ TOI',           into:'jungers'},
+ {id:'molina',    x:109,y:4,  n:'CHEZ MONSIEUR MOLINA'},
+ {id:'gandibleu', x:89, y:12, n:'CHEZ LES GANDIBLEU'},
+ {id:'huet',      x:99, y:11, n:'CHEZ HERVÉ HUET'},
+ {id:'margulis',  x:109,y:12, n:'CHEZ MAÎTRE MARGULIS'},
+ {id:'dutreuil',  x:89, y:20, n:'CHEZ PERRINE DUTREUIL'},
+ {id:'bernardini',x:109,y:20, n:'CHEZ LES BERNARDINI'}];
+/* les cinq maisons de lisiere, alignees le long des trous 4 et 5 */
+const LISIERE=[
+ {id:'webb',      y:42, n:'CHEZ LES WEBB',      into:'webb'},
+ {id:'lebel',     y:50, n:'CHEZ LES LEBEL',     into:'lebel', bois:1},
+ {id:'martin',    y:58, n:'CHEZ LES MARTIN'},
+ {id:'kuperfils', y:66, n:'CHEZ LES KUPERFILS'},
+ {id:'godot',     y:74, n:'CHEZ SOPHIE GODOT'}];
+/* les trois baraques Evenou, au sud-est */
+const EVENOU=[{y:76},{y:82},{y:88}];
+const MAMOU_WIN=[[100,21],[102,21],[104,21],[100,22],[104,22]];
 const DOORS=[];
 function door(x,y,to,tl){put(x,y,tl||T.SDOOR);DOORS.push({x:x,y:y,to:to});}
 function doorAt(x,y){return DOORS.find(d=>d.x===x&&d.y===y);}
@@ -688,6 +758,17 @@ function idf(x,y,w,opt){
   for(let i=1;i<w-1;i+=2){put(x+i,y+3,T.HWIN);put(x+i,y+4,T.HWIN);}
   if(o.sol!=='none') rect(x-1,y+5,w+2,1,T.GRAVEL);
 }
+/* la maison des Lebel : bois, symetrique, deux ailes, un corps central plus haut */
+function maisonBois(x,y,w){
+  rect(x,y,w,1,T.BROOF);
+  rect(x,y+1,w,1,T.BROOF);
+  rect(x,y+2,w,3,T.WOOD);
+  put(x+1,y+2,T.SWIN);put(x+w-2,y+2,T.SWIN);
+  put(x+1,y+3,T.SWIN);put(x+w-2,y+3,T.SWIN);
+  put(x,y+2,T.STONEW);put(x+w-1,y+2,T.STONEW);
+  put(x,y+3,T.STONEW);put(x+w-1,y+3,T.STONEW);
+  put(x+2,y+1,T.LUC);put(x+w-3,y+1,T.LUC);
+}
 /* pavillon de plain-pied, meme famille, avec son store banne au-dessus de la baie */
 function idf70(x,y,w){
   rect(x,y,w,1,T.HRIDGE);
@@ -700,7 +781,7 @@ function idf70(x,y,w){
 }
 function buildWorld(){
   map.fill(T.ROUGH);
-  for(let i=0;i<170;i++){
+  for(let i=0;i<150;i++){
     const cx=(rnd()*MW)|0, cy=(rnd()*MH)|0, r=1+((rnd()*3)|0);
     ell(cx,cy,r,r,T.TREE);
   }
@@ -710,39 +791,49 @@ function buildWorld(){
     if(d<3) put(x,y,T.TREE);
     else if(d<6&&rnd()<0.6) put(x,y,T.DENSE);
   }
-  for(let i=0;i<90;i++){const cx=92+((rnd()*26)|0), cy=26+((rnd()*26)|0);ell(cx,cy,1+((rnd()*2)|0),1+((rnd()*2)|0),T.DENSE);}
+  /* le bois qui remplit l est de la carte */
+  for(let i=0;i<70;i++){const cx=96+((rnd()*22)|0), cy=32+((rnd()*46)|0);
+    ell(cx,cy,1+((rnd()*2)|0),1+((rnd()*2)|0),T.DENSE);}
   HOLES.forEach(carve);
-  /* la departementale, la passerelle, le passage pietons */
+  /* un trou trace peut raboter le green du precedent : on repose les drapeaux a la fin */
+  HOLES.forEach(h=>{ell(h.gx,h.gy,3.4,3,T.GREEN);put(h.gx,h.gy,T.FLAG);});
+
+  /* ---------- la departementale ---------- */
   for(let y=0;y<MH;y++){ put(30,y,T.ROAD);put(31,y,T.LINE);put(32,y,T.ROAD);put(33,y,T.ROAD); }
   for(let x=27;x<=36;x++) put(x,44,T.BRIDGE);
-  for(let x=30;x<=33;x++) put(x,57,T.ZEBRA);
-  for(let x=26;x<=29;x++) put(x,57,T.PATH);
-  for(let x=34;x<=37;x++) put(x,57,T.PATH);
-  /* practice, cote ouest */
+
+  /* ---------- practice et tennis, a l ouest ---------- */
   rect(8,30,21,26,T.FAIR);
   rect(25,32,2,20,T.MAT);
   for(let y=32;y<45;y++) put(27,y,T.STALL);
   put(16,34,T.FLAG); put(12,42,T.FLAG); put(19,47,T.FLAG); put(10,52,T.FLAG);
   ell(14,53,3,2,T.GREEN); ell(11,52,1.4,1.2,T.SAND); ell(18,54,1.4,1.2,T.SAND);
-  /* les trois courts de tennis, en contrebas du practice */
   [[12,59],[21,59],[16,66]].forEach(([tx,ty])=>{
     rect(tx,ty,8,6,T.TENN);
     for(let i=0;i<8;i++) put(tx+i,ty+3,T.TNET);
     for(let i=-1;i<=8;i++){put(tx+i,ty-1,T.HEDGE);put(tx+i,ty+6,T.HEDGE);}
   });
-  ell(99,45,2,2,T.ROUGH);
-  /* parking, le long de la route */
-  rect(34,50,13,15,T.ASPH);
-  for(let y=51;y<64;y+=3) for(let x=36;x<46;x+=3) if(rnd()<0.72) put(x,y,T.CAR);
-  /* le prieure : toit de tuiles vu de dessus, facade de pierre vue de face */
+
+  /* ---------- le parking, long, entre la route et le trou 1 ---------- */
+  rect(36,46,11,26,T.ASPH);
+  for(let y=47;y<71;y+=3) put(35,y,T.PLAT);          /* la rangee de platanes */
+  for(let y=46;y<=71;y++) put(34,y,T.GRAVEL);
+  rect(36,45,11,1,T.GRAVEL);
+  VOITURES.forEach(v=>put(v.x,v.y,T.CAR));
+  for(let y=49;y<70;y+=4) for(let x=38;x<46;x+=3)
+    if(rnd()<0.45&&!VOITURES.some(v=>v.x===x&&v.y===y)) put(x,y,T.CAR);
+
+  /* ---------- secretariat et pro shop, a l entree ---------- */
+  rect(37,39,6,4,T.HWALL); rect(37,39,6,2,T.HROOF); put(39,42,T.SDOOR);
+  rect(44,39,6,4,T.HWALL); rect(44,39,6,2,T.HROOF); put(46,42,T.SDOOR); put(50,41,T.SIGN);
+
+  /* ---------- le prieure ---------- */
   rect(54,34,19,4,T.PROOF);
   for(let x=54;x<=72;x++) put(x,34,T.PROOF);
   rect(56,38,15,9,T.STONE);
   rect(60,39,7,6,T.PATIO); put(63,42,T.FOUNT);
   put(57,39,T.HEDGE);put(69,39,T.HEDGE);put(57,45,T.HEDGE);put(69,45,T.HEDGE);
-  /* les deux ailes basses, comme sur la photo */
   rect(54,38,2,9,T.PROOF); rect(71,38,2,9,T.PROOF);
-  /* pan sud du toit, puis bas de toit, puis deux rangees de facade */
   rect(54,47,19,2,T.PROOF);
   rect(54,49,19,1,T.FTOP);
   rect(54,50,19,2,T.FACADE);
@@ -750,90 +841,121 @@ function buildWorld(){
   [55,57,60,68,70,72].forEach(x=>put(x,51,T.FWIN));
   door(63,51,'club',T.FDOOR);door(64,51,'club',T.FDOOR);
   put(62,51,T.FACADE);put(65,51,T.FACADE);
-  /* la cour pavee et la terrasse aux parasols */
   rect(54,52,19,4,T.STONE);
   rect(54,56,19,1,T.PATIO);
   put(56,54,T.PARA);put(60,54,T.PARA);put(67,54,T.PARA);put(71,54,T.PARA);
   put(58,53,T.TABLE);put(66,53,T.TABLE);put(70,53,T.TABLE);
   put(54,52,T.FLOW);put(72,52,T.FLOW);put(54,55,T.FLOW);put(72,55,T.FLOW);
-  /* piscine, au sud-est du club house */
-  rect(76,44,15,13,T.PDECK); rect(78,46,11,9,T.POOL);
-  for(let x=76;x<=90;x++){put(x,43,T.HEDGE);put(x,57,T.HEDGE);}
-  for(let y=43;y<=57;y++)put(91,y,T.HEDGE);
-  put(77,45,T.PARA);put(89,45,T.PARA);put(77,55,T.PARA);put(89,55,T.PARA);
-  rect(76,39,6,3,T.HWALL); rect(76,39,6,2,T.HROOF); put(78,41,T.SDOOR);
-  /* putting green et depart 1, au sud de la terrasse */
-  ell(63,61,4,3,T.GREEN); put(63,61,T.FLAG);
-  ell(59,60,1.4,1.2,T.SAND); ell(67,62,1.4,1.2,T.SAND);
-  /* green d'entrainement au nord */
+
+  /* ---------- la piscine, dans son terrain clos ---------- */
+  /* les vestiaires forment le mur ouest et separent de la terrasse */
+  rect(74,43,3,14,T.HWALL); rect(74,43,3,2,T.HROOF);
+  put(75,56,T.SDOOR);
+  rect(77,42,15,16,T.PDECK);
+  rect(79,45,8,10,T.POOL);
+  for(let x=74;x<=92;x++){put(x,41,T.HEDGE);put(x,58,T.HEDGE);}
+  for(let y=41;y<=58;y++) put(92,y,T.HEDGE);
+  put(78,44,T.PARA);put(88,44,T.PARA);put(78,55,T.PARA);
+  /* la petite pelouse a transats, a droite du bassin */
+  rect(88,43,4,14,T.LAWN);
+  for(let y=44;y<=55;y+=2){put(89,y,T.TRANSAT);put(91,y,T.TRANSAT);}
+  put(90,49,T.PARA);
+
+  /* ---------- putting green a trois trous et depart 1 ---------- */
+  ell(63,62,7,4,T.GREEN);
+  put(58,61,T.FLAG); put(64,63,T.FLAG); put(68,60,T.FLAG);
+  ell(57,65,1.5,1.2,T.SAND); ell(69,64,1.4,1.2,T.SAND);
   ell(66,27,4,3,T.GREEN); put(66,27,T.FLAG);
   ell(74,27,1.4,1.2,T.SAND);
-  /* hameau du Prieure : villas forestieres au nord, maisons de lisiere au sud */
-  for(let i=0;i<70;i++){const cx=88+((rnd()*32)|0),cy=4+((rnd()*24)|0);
-    if(cx>92&&cx<116&&cy>3&&cy<24)continue; ell(cx,cy,1+((rnd()*2)|0),1,T.DENSE);}
-  villa(93,5,9); door(97,6,'lutreau',T.BDOOR);
-  villa(104,3,9); door(108,4,'jungers',T.BDOOR);
-  idf(110,9,6,{luc:2}); put(113,13,T.HBAIE);
-  idf70(105,16,6); put(107,19,T.STORE);
-  /* chez les Mamoumani : etage, vasistas, vitres */
+
+  /* ---------- la cabane du caddie master ---------- */
+  rect(47,58,5,4,T.HWALL); rect(47,58,5,2,T.HROOF); put(49,61,T.SDOOR); put(46,60,T.SIGN);
+  put(53,60,T.CART);
+
+  /* ---------- le hameau : huit villas forestieres ---------- */
+  VILLAS.forEach(v=>{
+    villa(v.x,v.y,7);
+    if(v.into)door(v.x+3,v.y+1,v.into,T.BDOOR);
+    else put(v.x+3,v.y+1,T.BDOOR);
+    rect(v.x-2,v.y+4,11,2,T.LAWN);
+    for(let i=-2;i<9;i++) put(v.x+i,v.y+6,T.DENSE);   /* haie franchissable */
+    put(v.x+3,v.y+6,T.LAWN);                           /* le passage */
+  });
+  /* chez les Mamoumani, au milieu du hameau, personne n'y est jamais */
   idf(MAMOU.x,MAMOU.y,7,{luc:1,velux:5});
   MAMOU_WIN.forEach(([wx,wy])=>put(wx,wy,T.HWIN));
   put(MAMOU.x+3,MAMOU.y+4,T.HBAIE);
-  for(let x=MAMOU.x-2;x<MAMOU.x+9;x++) put(x,MAMOU.y+7,T.HEDGE);
-  put(MAMOU.x+3,MAMOU.y+7,T.GRAVEL);
-  /* allees du hameau */
-  rect(93,12,23,1,T.GRAVEL); rect(102,4,2,20,T.GRAVEL); rect(94,23,10,1,T.GRAVEL);
-  rect(112,12,1,4,T.GRAVEL);
-  /* la pente en terre */
-  rect(106,25,7,6,T.DIRT); rect(105,31,9,1,T.DIRT);
-  /* le feu de camp, dans le rough du 6, au bord du hameau */
+  for(let x=MAMOU.x-2;x<MAMOU.x+9;x++) put(x,MAMOU.y+6,T.HEDGE);
+  put(MAMOU.x+3,MAMOU.y+6,T.GRAVEL);
+  /* les allees du hameau */
+  [8,16,26].forEach(y=>rect(88,y,29,1,T.GRAVEL));
+  rect(97,3,1,24,T.GRAVEL); rect(107,3,1,24,T.GRAVEL);
+  rect(88,3,1,24,T.GRAVEL);
+
+  /* la pente en terre, derriere le hameau */
+  rect(106,28,7,6,T.DIRT); rect(105,34,9,1,T.DIRT);
+
+  /* le feu de camp, au bord du 6 */
   ell(FEU.x,FEU.y,3,3,T.ROUGH);
   put(FEU.x,FEU.y,T.FIRE);
-  [[-2,0],[-1,-2],[1,-2],[2,0],[1,2],[-1,2]].forEach(([dx,dy])=>put(FEU.x+dx,FEU.y+dy,T.LOG));
-  /* maisons de lisiere, au bord du parcours */
-  /* les Webb, etage et jacuzzi sur la terrasse */
-  idf(92,58,8,{luc:2,velux:5,sol:'none'});
-  door(95,62,'webb',T.HBAIE);
-  rect(92,63,8,2,T.DECK);
-  put(97,63,T.JACU);put(98,63,T.JACU);
-  put(93,64,T.TABLE); put(92,63,T.PARA); put(99,64,T.PARA);
-  /* les Lebel, maison symetrique en bois a deux ailes, grand jardin */
-  rect(88,66,5,6,T.WOOD); rect(88,66,5,2,T.BROOF);
-  rect(84,67,4,5,T.WOOD); rect(84,67,4,2,T.BROOF);
-  rect(93,67,4,5,T.WOOD); rect(93,67,4,2,T.BROOF);
-  put(85,69,T.SWIN);put(86,69,T.SWIN);put(94,69,T.SWIN);put(95,69,T.SWIN);
-  put(89,68,T.SWIN);put(91,68,T.SWIN);
-  door(90,71,'lebel');
-  rect(84,72,13,6,T.LAWN);
-  for(let x=83;x<=97;x++) put(x,78,T.HEDGE);
-  for(let y=72;y<=78;y++){put(83,y,T.HEDGE);put(97,y,T.HEDGE);}
-  put(93,78,T.GATE);put(95,78,T.GATE);put(94,78,T.PATH);
-  put(90,72,T.PATH);put(90,73,T.PATH);
-  /* les Evenou, au bord du 4 */
-  idf70(108,68,7,5); put(111,72,T.SDOOR);
-  rect(107,73,9,1,T.GRAVEL);
-  /* la cabane du caddie master, le pro shop, le secretariat */
-  rect(47,58,5,4,T.HWALL); rect(47,58,5,2,T.HROOF); put(49,61,T.SDOOR); put(46,60,T.SIGN);
-  put(53,60,T.CART);
-  rect(43,45,6,4,T.HWALL); rect(43,45,6,2,T.HROOF); put(45,48,T.SDOOR); put(42,47,T.SIGN);
-  rect(43,52,6,4,T.HWALL); rect(43,52,6,2,T.HROOF); put(45,55,T.SDOOR);
-  /* chemins */
-  for(let x=36;x<=54;x++) put(x,49,T.PATH);
+  /* personne ne s'assoit sur rien, on est par terre. Les canettes finissent dans le bois derriere. */
+  [[-3,-2],[-4,1],[-2,3],[3,-3],[4,2],[2,4]].forEach(([dx,dy])=>put(FEU.x+dx,FEU.y+dy,T.CANETTE));
+
+  /* ---------- les maisons de lisiere ---------- */
+  /* de l ouest a l est : le parcours, une bande de bois, les jardins,
+     les maisons, et la voie du hameau qui les dessert par derriere */
+  rect(104,38,3,44,T.DENSE);
+  rect(107,38,3,44,T.LAWN);
+  rect(116,36,1,48,T.GRAVEL);
+  LISIERE.forEach(m=>{
+    if(m.bois)maisonBois(110,m.y,6);
+    else idf(110,m.y,6,{luc:2,sol:'none'});
+    if(m.into)door(112,m.y+4,m.into,m.bois?T.SDOOR:T.HBAIE);
+    else put(112,m.y+4,m.bois?T.SDOOR:T.HBAIE);
+    rect(109,m.y+5,8,1,T.GRAVEL);
+    put(112,m.y+5,T.GRAVEL);
+    if(m.id==='webb'){
+      rect(107,m.y+5,2,1,T.DECK);
+      put(107,m.y+4,T.DECK);put(108,m.y+4,T.JACU);put(107,m.y+3,T.PARA);
+    }
+    /* la haie qui separe du voisin, avec son passage */
+    for(let x=104;x<=109;x++) put(x,m.y+6,T.HEDGE);
+    put(107,m.y+6,T.LAWN);
+  });
+  for(let y=38;y<=82;y++) put(110,y,at(110,y)===T.LAWN?T.LAWN:at(110,y));
+
+  /* ---------- les Evenou, au sud-est, alignes le long du 4 ---------- */
+  EVENOU.forEach(e=>{
+    idf70(104,e.y,7);
+    put(107,e.y+3,T.STORE);
+    rect(97,e.y,7,5,T.LAWN);
+    for(let x=96;x<=112;x++) put(x,e.y+5,T.HEDGE);
+    put(107,e.y+5,T.GRAVEL);
+  });
+  rect(112,80,1,13,T.GRAVEL);
+
+  /* ---------- les Robin, coinces dans l arc du parcours ---------- */
+  idf70(76,66,6); put(78,69,T.STORE);
+  rect(75,70,8,1,T.GRAVEL);
+  rect(70,70,6,1,T.GRAVEL); rect(69,57,1,14,T.GRAVEL);
+
+  /* ---------- chemins ---------- */
+  for(let x=36;x<=54;x++) put(x,44,T.PATH);
   for(let y=44;y<=57;y++) put(36,y,T.PATH);
-  for(let x=36;x<=46;x++) put(x,44,T.PATH);
+  for(let x=36;x<=54;x++) put(x,49,T.PATH);
+  for(let y=43;y<=49;y++) put(39,y,T.PATH);
+  for(let y=43;y<=49;y++) put(46,y,T.PATH);
   for(let y=49;y<=57;y++) put(53,y,T.PATH);
   for(let x=53;x<=76;x++) put(x,57,T.PATH);
   for(let y=49;y<=57;y++) put(75,y,T.PATH);
-  for(let y=42;y<=44;y++) put(78,y,T.PATH);
+  for(let y=57;y<=62;y++) put(63,y,T.PATH);
+  for(let x=45;x<=53;x++) put(x,62,T.PATH);
+  for(let y=56;y<=62;y++) put(45,y,T.PATH);
   for(let x=44;x<=66;x++) put(x,31,T.PATH);
   for(let y=31;y<=34;y++) put(53,y,T.PATH);
   for(let x=66;x<=94;x++) put(x,31,T.PATH);
-  for(let y=24;y<=31;y++) put(94,y,T.PATH);
-  for(let y=13;y<=23;y++) put(94,y,T.GRAVEL);
-  for(let y=49;y<=52;y++) put(45,y,T.PATH);
-  for(let y=56;y<=62;y++) put(45,y,T.PATH);
-  for(let x=45;x<=53;x++) put(x,62,T.PATH);
-  for(let y=56;y<=58;y++) put(63,y,T.PATH);
+  for(let y=26;y<=31;y++) put(94,y,T.PATH);
+  for(let x=88;x<=94;x++) put(x,26,T.GRAVEL);
   put(52,49,T.SIGN);
 }
 buildWorld();
@@ -890,7 +1012,7 @@ makeInt('club',34,20,'CLUB HOUSE',17,18,63,52,function(){
 });
 
 /* chez les Lutreau : plain-pied en coco beige, trois chambres, salon ouvert sur le jardin */
-makeInt('lutreau',20,14,'CHEZ LES LUTREAU',9,12,97,7,function(){
+makeInt('lutreau',20,14,'CHEZ LES LUTREAU',9,12,92,6,function(){
   imap.fill(T.WOOD);
   irect(1,1,18,12,T.COCO);
   /* les trois chambres, au fond */
@@ -918,7 +1040,7 @@ makeInt('lutreau',20,14,'CHEZ LES LUTREAU',9,12,97,7,function(){
 });
 
 /* chez les Lebel : deux ailes, l atelier de Margaux d un cote, le salon de l autre */
-makeInt('lebel',18,12,'CHEZ LES LEBEL',8,10,90,72,function(){
+makeInt('lebel',18,12,'CHEZ LES LEBEL',8,10,112,55,function(){
   imap.fill(T.WOOD);
   irect(1,1,16,10,T.PARQ);
   /* aile ouest : l atelier */
@@ -948,7 +1070,7 @@ makeInt('lebel',18,12,'CHEZ LES LEBEL',8,10,90,72,function(){
 });
 
 /* chez les Webb : grand volume, cuisine ouverte, et Duke quelque part */
-makeInt('webb',16,12,'CHEZ LES WEBB',7,10,95,63,function(){
+makeInt('webb',16,12,'CHEZ LES WEBB',7,10,112,47,function(){
   imap.fill(T.WALLI);
   irect(1,1,14,10,T.PARQ);
   /* cuisine ouverte */
@@ -969,7 +1091,7 @@ makeInt('webb',16,12,'CHEZ LES WEBB',7,10,95,63,function(){
 });
 
 /* chez toi : villa forestiere, lambris, pierre, baies vitrees */
-makeInt('jungers',16,10,'CHEZ TOI',7,8,108,5,function(){
+makeInt('jungers',16,10,'CHEZ TOI',7,8,102,5,function(){
   imap.fill(T.WOOD);
   irect(1,1,14,8,T.COCO);
   for(let y=1;y<9;y++){iput(0,y,T.STONEW);iput(15,y,T.STONEW);}
@@ -1022,13 +1144,13 @@ const ITEMS=[
   txt:"Un putter Scotty Cameron posé contre un arbre. Quelqu'un va très mal le vivre."},
  {id:'fluo',x:89,y:31,inside:null,n:'Balle fluo',
   txt:"Une balle fluo au bord du chemin des hameaux. Elle brille encore un peu."},
- {id:'casquette',x:112,y:13,inside:null,n:'Casquette Tiger Woods Nike',
+ {id:'casquette',x:106,y:9,inside:null,n:'Casquette Tiger Woods Nike',
   txt:"Une casquette Nike, celle de Tiger. Tachée de gazon, donc authentique."},
  {id:'crayon',x:60,y:53,inside:null,n:'Crayon avec gomme',
   txt:"Un crayon de carte de score. Avec une gomme au bout. Un vrai truc de tricheur."},
- {id:'short',x:101,y:65,inside:null,n:'Short abandonné',
+ {id:'short',x:100,y:70,inside:null,n:'Short abandonné',
   txt:"Un short de golf abandonné derrière un buisson. Olivier Bernardini n'est jamais revenu le chercher. On n'en reparlera pas."},
- {id:'velo',x:103,y:20,inside:null,n:'Vélo du hameau',
+ {id:'velo',x:98,y:26,inside:null,n:'Vélo du hameau',
   txt:"Un vélo posé contre un mur, sans cadenas, comme toujours. SELECT pour l'enfourcher."},
  {id:'manette',x:12,y:9,inside:'lutreau',n:'Deuxième manette',
   txt:"La deuxième manette GameCube, derrière le canapé. Le fil est noué depuis 2003."},
@@ -1060,7 +1182,7 @@ const NPCS=[
      ["Ce trou il est very beautiful mais le green il est rapide comme du verre."],
      ["Duke il a mangé un gant. Encore une fois. Mon père il est furious."],
      ["Mon père il dit que le rough ici c'est un cauchemar. Moi je dis c'est un nightmare."]]},
- {id:'antoine',x:60,y:58,dir:0,inside:null,roam:1,name:'ANTOINE',
+ {id:'antoine',x:60,y:59,dir:0,inside:null,roam:1,name:'ANTOINE',
   pal:pal('#8a9e6e','#e8e0c8','#5a5b46','#33200f'),
   d:[["Ma mère m'a déposé ce matin. Elle vient me chercher dimanche soir."],
      ["J'ai déjeuné au club. Je dînerai au club. Je crois que je vais dormir au club."],
@@ -1077,7 +1199,7 @@ const NPCS=[
   d:[["Le prieuré date de 1170. Des moines grandmontains.","C'est écrit sur la plaque à l'entrée. Personne ne la lit jamais."],
      ["Ma grand-mère dit qu'avant, le 4 passait derrière la ferme.","Elle dit aussi qu'avant, tout était mieux."],
      ["Techniquement on n'a pas le droit d'être là sans licence. Techniquement."]]},
- {id:'paul',x:96,y:24,dir:0,inside:null,name:'PAUL',
+ {id:'paul',x:95,y:27,dir:0,inside:null,name:'PAUL',
   pal:pal('#5a5b46','#c9c4bb','#3b3c2b','#33200f'),
   d:[["..."],["Paul te regarde. Paul ne dit rien. Paul repart."],
      ["Paul hoche la tête. C'est déjà beaucoup."]]},
@@ -1086,7 +1208,7 @@ const NPCS=[
   d:[["Wesh alors, tu joues au golf toi ? C'est un sport de vieux."],
      ["Moi je fais du basket. J'ai le crossover. Tu connais même pas."],
      ["Touche pas à ma casquette. Je l'ai vue avant toi de toute façon."]]},
- {id:'margot',x:96,y:11,dir:0,inside:null,roam:1,name:'MARGOT',noplay:true,hameau:1,
+ {id:'margot',x:96,y:9,dir:0,inside:null,roam:1,name:'MARGOT',noplay:true,hameau:1,
   pal:pal('#e8749a','#f4f2ec','#e8749a','#8a6238'),
   d:[["J'ai mis un ver de terre dans le sac de Charles. Tu dis rien."],
      ["Je descends jamais au club house. Je reste ici, c'est mieux ici."],
@@ -1101,14 +1223,14 @@ const NPCS=[
      ["Le portillon du fond du jardin donne sur un départ. Vous passez, mais vous refermez."],
      ["Charles dit que la peinture c'est pas un sport. Charles perd au golf."]]},
  /* --- les Evenou, au bord du 4 --- */
- {id:'arthur',x:111,y:72,dir:1,inside:null,name:'ARTHUR',clopes:true,
+ {id:'arthur',x:107,y:80,dir:1,inside:null,name:'ARTHUR',clopes:true,
   pal:pal('#3a3a42','#e8c9a0','#5a3d22','#33200f'),
   d:[["Cette nuit j'ai cramé une souche entière. Elle a brûlé jusqu'au matin.","Enfin, presque le matin. Vingt minutes."]]},
- {id:'valentine',x:114,y:72,dir:0,inside:null,name:'VALENTINE',
+ {id:'valentine',x:109,y:80,dir:0,inside:null,name:'VALENTINE',
   pal:pal('#c98ab4','#f4f2ec','#8a3f4a','#5a3d22'),
   d:[["Mon frère raconte n'importe quoi. Il a mis le feu à une brindille."],
      ["Vous pouvez traverser le jardin. Mais vous refermez le portillon."]]},
- {id:'julien',x:108,y:72,dir:0,inside:null,name:'JULIEN',roam:1,
+ {id:'julien',x:105,y:80,dir:0,inside:null,name:'JULIEN',roam:1,
   pal:pal('#2b4a35','#e8e0c8','#3b3c2b','#33200f'),
   d:[["Les balles du 4 tombent dans notre haie. On en a un seau plein."],
      ["Camille arrive samedi. Elle joue mieux que nous tous, c'est vexant."]]},
@@ -1122,7 +1244,7 @@ const NPCS=[
   pal:pal('#3b4a5a','#c9c4bb','#3b3c2b','#5a4632'),
   d:[["Bonjour."],["Hervé sourit, regarde le 1, et ne dit rien de plus."],
      ["J'ai fait 82 ce matin. Je ne l'ai dit à personne. Voilà, maintenant si."]]},
- {id:'sophie',x:84,y:56,dir:1,inside:null,name:'SOPHIE',
+ {id:'sophie',x:90,y:52,dir:1,inside:null,name:'SOPHIE',
   pal:pal('#e8b83a','#f4d2a8','#e8749a','#8a6238'),
   d:[["Vous avez vu Sylvie ? Elle a repris trois rosés avant le 10."],
      ["Je remets mes lunettes pour lire la carte, et je les perds pour taper."],
@@ -1188,7 +1310,7 @@ const NPCS=[
   d:[["Oh peuchère, tu tapes comme si la balle t'avait insulté. Tempo !"],
      ["Plus lent. Le swing ce n'est pas de la vitesse, c'est du tempo."],
      ["Té, regarde Oscar. Il parle mal mais il swingue mieux que ton père."]]},
- {id:'cathy',x:45,y:49,dir:0,inside:null,name:'CATHY',shop:'balles',
+ {id:'cathy',x:46,y:43,dir:0,inside:null,name:'CATHY',shop:'balles',
   pal:pal('#8a3f4a','#c9a9b4','#5a3d4a','#8a6238'),
   d:[["On ne touche pas aux gants. Ils sont neufs."],
      ["Tu me rapportes encore des balles ? Fais voir ça."]]},
@@ -1202,7 +1324,7 @@ const NPCS=[
      ["Panique te suit dans le couloir, s'assoit, et attend. Elle attend quoi, personne ne sait."],
      ["Panique remue la queue si fort qu'elle se cogne dans la baie vitrée."],
      ["Panique t'a choisi. Elle a décidé ça en trois secondes et elle ne reviendra pas dessus."]]},
- {id:'duke',x:97,y:66,dir:2,inside:null,name:'DUKE',dog:1,roam:1,
+ {id:'duke',x:109,y:47,dir:2,inside:null,name:'DUKE',dog:1,roam:1,
   pal:PAL_DUKE,
   d:[["Duke te fonce dessus, freine à trois centimètres, repart en hurlant."],
      ["Duke a une balle dans la gueule. Ce n'est pas la sienne. Ce n'est plus une balle non plus."],
@@ -1213,20 +1335,30 @@ const NPCS=[
   d:[["T'es du club toi ? Ça se voit à ta gueule.","File-moi tes balles et tu passes."]]}
 ];
 const LOCKED=[
- {x:113,y:13,who:'CHEZ LES MARTIN',d:["La maison des grands-parents de Louis. Deux sonnettes, aucune ne marche.","On n'entre pas chez les Martin. On attend Louis dehors, c'est comme ça."]},
- {x:107,y:19,who:'CHEZ LES ROBIN',d:["Volets mi-clos, une baie vitrée, une chaise longue vide.","Paul est déjà dehors de toute façon. Paul est toujours déjà dehors."]},
- {x:98,y:19,who:'CHEZ LES MAMOUMANI',d:["Personne. Il n'y a jamais personne.","Une maison à étage, des vasistas, et huit vitres qui n'ont jamais rien demandé."]},
- {x:111,y:71,who:'CHEZ LES EVENOU',d:["Ça sent le barbecue et le briquet. Arthur traîne devant, comme toujours."]},
- {x:45,y:48,who:'PRO SHOP',d:["Le pro shop. Cathy est devant, elle te voit venir de loin."]},
- {x:45,y:55,who:'SECRÉTARIAT',d:["Le secrétariat. Deux personnes derrière le comptoir, jamais les mêmes."]},
+ {x:112,y:62,who:'CHEZ LES MARTIN',d:["La maison des grands-parents de Louis. Deux sonnettes, aucune ne marche.","On n'entre pas chez les Martin. On attend Louis dehors, c'est comme ça."]},
+ {x:112,y:70,who:'CHEZ LES KUPERFILS',d:["On enlève ses chaussures avant la porte. Avant, pas après.","Et on ne touche pas à la collection de poules de Laurence. Jamais."]},
+ {x:112,y:78,who:'CHEZ SOPHIE GODOT',d:["Trois seaux de balles de practice dans l'entrée et un chat qui te fixe."]},
+ {x:78,y:69,who:'CHEZ LES ROBIN',d:["Volets mi-clos, grande baie, une chaise longue vide.","Paul est déjà dehors de toute façon. Paul est toujours déjà dehors."]},
+ {x:102,y:22,who:'CHEZ LES MAMOUMANI',d:["Personne. Il n'y a jamais personne.","Une maison à étage, des vasistas, et six vitres qui n'ont jamais rien demandé."]},
+ {x:107,y:79,who:'CHEZ LES EVENOU',d:["Ça sent le barbecue et le briquet. Arthur traîne devant, comme toujours."]},
+ {x:107,y:85,who:'CHEZ LES EVENOU',d:["La deuxième maison. C'est celle de l'oncle, celui qui a la piscine hors sol."]},
+ {x:107,y:91,who:'CHEZ LES EVENOU',d:["La troisième. Camille dort là quand elle vient. Elle vient rarement."]},
+ {x:112,y:5,who:'CHEZ MONSIEUR MOLINA',d:["Le directeur du golf habite là. On ne sonne pas chez le directeur."]},
+ {x:92,y:13,who:'CHEZ LES GANDIBLEU',d:["Le garage est ouvert. Il n'y a rien dedans, la Porsche est au parking."]},
+ {x:102,y:12,who:'CHEZ HERVÉ HUET',d:["Tout est parfaitement rangé et parfaitement silencieux. Comme lui."]},
+ {x:112,y:13,who:'CHEZ MAÎTRE MARGULIS',d:["Une plaque en cuivre : avocat au barreau de Versailles. On ne sonne pas non plus."]},
+ {x:92,y:21,who:'CHEZ PERRINE DUTREUIL',d:["La grand-mère des Lutreau. Ça sent le gâteau depuis l'allée."]},
+ {x:112,y:21,who:'CHEZ LES BERNARDINI',d:["Un panier de basket vissé au-dessus du garage. Le filet est en lambeaux."]},
+ {x:46,y:42,who:'PRO SHOP',d:["Le pro shop. Cathy est devant, elle te voit venir de loin."]},
+ {x:39,y:42,who:'SECRÉTARIAT',d:["Le secrétariat. Deux personnes derrière le comptoir, jamais les mêmes."]},
  {x:49,y:61,who:'LA CABANE',d:["La cabane du caddie master. Des sacs jusqu'au plafond et une odeur de gazon coupé."]},
- {x:78,y:41,who:'VESTIAIRES PISCINE',d:["Vestiaires de la piscine. Un banc mouillé, trois serviettes, aucune à toi."]}
+ {x:75,y:56,who:'VESTIAIRES PISCINE',d:["Vestiaires de la piscine. Un banc mouillé, trois serviettes, aucune à toi."]}
 ];
 const SPOTS={
- charles:{h:[16,8],hin:'lutreau',f:[107,33]}, victor:{h:[99,9],f:[108,31]},
- oscar:{h:[94,65],f:[110,31]},   antoine:{h:[105,9],f:[111,33]},
- kuperfils:{h:[102,16],f:[110,35]}, louis:{h:[112,15],f:[108,35]},
- paul:{h:[107,21],f:[109,30]}};
+ charles:{h:[16,8],hin:'lutreau',f:[107,36]}, victor:{h:[95,9],f:[108,34]},
+ oscar:{h:[109,48],f:[110,34]},  antoine:{h:[105,9],f:[111,36]},
+ kuperfils:{h:[102,17],f:[110,38]}, louis:{h:[112,63],f:[108,38]},
+ paul:{h:[107,25],f:[109,39]}};
 const FEU_TALK=[
  ["VICTOR : Si on dort là, personne ne vient nous chercher avant demain midi.","ANTOINE : Moi personne ne vient me chercher avant dimanche de toute façon."],
  ["KUPERFILS : Vous sentez ? C'est le feu je crois.","CHARLES : Non Kupi. Ce n'est pas le feu."],
@@ -1356,7 +1488,9 @@ function drawScene(cx,cy){
   for(let j=-1;j<=11;j++)for(let i=-1;i<=16;i++){
     const x=t0x+i,y=t0y+j;if(x<0||y<0||x>=mw||y>=mh)continue;
     const t=src[y*mw+x];
-    ctx.drawImage(tile(t,tv(x,y,t),(t===T.WATER||t===T.POOL)?f:0),x*TS-cx,y*TS-cy);
+    const anim=(t===T.WATER||t===T.POOL)?f
+      :(t===T.FIRE)?(game.phase==='f'?(1+((game.tick>>4)&1)):0):0;
+    ctx.drawImage(tile(t,tv(x,y,t),anim),x*TS-cx,y*TS-cy);
   }
   if(!game.inside)for(const b of ballSpots){
     if(!ballVisible(b))continue;
@@ -1433,15 +1567,16 @@ function drawScene(cx,cy){
 function ballVisible(b){ return !b.taken && at(b.x,b.y)!==T.DENSE; }
 
 /* ---------- zones ---------- */
-const ZONES=[{x:34,y:49,w:14,h:17,n:'PARKING'},{x:53,y:33,w:21,h:19,n:'LE PRIEURÉ'},
- {x:53,y:52,w:21,h:5,n:'LA TERRASSE'},{x:75,y:42,w:17,h:17,n:'LA PISCINE'},
+const ZONES=[{x:34,y:45,w:14,h:28,n:'PARKING'},{x:53,y:33,w:21,h:19,n:'LE PRIEURÉ'},
+ {x:53,y:52,w:21,h:5,n:'LA TERRASSE'},{x:73,y:41,w:20,h:18,n:'LA PISCINE'},
  {x:6,y:28,w:24,h:29,n:'LE PRACTICE'},{x:9,y:57,w:22,h:16,n:'LES TENNIS'},
- {x:41,y:44,w:11,h:20,n:"L'ENTRÉE DU CLUB"},
- {x:56,y:57,w:14,h:9,n:'PUTTING GREEN'},{x:60,y:23,w:20,h:8,n:"GREEN D'ENTRAÎNEMENT"},
- {x:104,y:2,w:14,h:9,n:'VILLAS FORESTIÈRES'},{x:92,y:2,w:12,h:9,n:'VILLAS FORESTIÈRES'},
- {x:92,y:11,w:26,h:15,n:'HAMEAU DU PRIEURÉ'},
- {x:82,y:56,w:36,h:24,n:'MAISONS DE LISIÈRE'},
- {x:90,y:26,w:28,h:28,n:'FORÊT DES HAMEAUX'},
+ {x:36,y:36,w:16,h:9,n:"L'ENTRÉE DU CLUB"},
+ {x:55,y:57,w:16,h:10,n:'PUTTING GREEN'},{x:60,y:23,w:20,h:8,n:"GREEN D'ENTRAÎNEMENT"},
+ {x:70,y:62,w:16,h:10,n:'CHEZ LES ROBIN'},
+ {x:88,y:2,w:30,h:26,n:'HAMEAU DU PRIEURÉ'},
+ {x:103,y:36,w:15,h:48,n:'MAISONS DE LISIÈRE'},
+ {x:94,y:74,w:24,h:20,n:'LES EVENOU'},
+ {x:88,y:28,w:20,h:20,n:'FORÊT DES HAMEAUX'},
  {x:28,y:0,w:8,h:96,n:'ROUTE DE SAILLY'}];
 function zoneAt(x,y){
   for(const h of HOLES) if(Math.hypot(x-h.tx,y-h.ty)<7||Math.hypot(x-h.gx,y-h.gy)<7) return 'TROU N°'+h.n;
@@ -1461,6 +1596,15 @@ function tryMove(){
   if(keys.down)d=0;else if(keys.up)d=1;else if(keys.left)d=2;else if(keys.right)d=3;
   if(d<0){game.frame=0;game.step=0;return;}
   game.dir=d;const[dx,dy]=DV[d],nx=game.px+dx,ny=game.py+dy;
+  /* on previent une fois quand on s'engage sur la departementale */
+  if(!game.inside){
+    const ici=at(game.px,game.py), la=at(nx,ny);
+    const surRoute=(ici===T.ROAD||ici===T.LINE), versRoute=(la===T.ROAD||la===T.LINE);
+    if(versRoute&&!surRoute&&(!game.routeT||game.tick-game.routeT>900)){
+      game.routeT=game.tick;
+      toast('La D 130. Une voiture toutes les dix secondes, et personne ne freine.');
+    }
+  }
   if(solidAt(nx,ny)){
     game.frame=0;
     if(!game.inside){
@@ -1492,7 +1636,7 @@ function arrive(){
         ?'Ton pied bute sur quelque chose. Une balle '+bb.n+prix
         :'Vous trouvez une balle '+bb.n+prix);}
     for(const it of ITEMS) if(!game.items[it.id]&&!it.inside&&it.x===game.px&&it.y===game.py) takeItem(it);
-    if(t===T.DIRT&&game.py<=27){
+    if(t===T.DIRT&&game.py<=30){
       askYN('Charles remonte avec une planche. Tu descends ?','CHARLES',()=>startPente(),
         ()=>say(['Alors pousse-toi.'],null,'CHARLES'));
       return;}
@@ -1573,8 +1717,8 @@ function interact(){
   if(t===T.CAR)     {say(["Une Volvo break. Le coffre est ouvert, plein de sacs de golf."]);return;}
   if(t===T.LOCKER)  {say(["Des casiers en bois, alignés. Certains ne ferment plus depuis les années 80."]);return;}
   if(t===T.BAR)     {say(["Le comptoir sent la cire, le citron et le rosé de midi."]);return;}
-  if(t===T.ROAD||t===T.LINE){say(["La départementale. Il y a la passerelle, et il y a le passage clouté.","Le passage clouté, c'est pour ceux qui savent compter jusqu'à dix."]);return;}
-  if(t===T.ZEBRA){say(["Un passage clouté au milieu de rien. Une voiture toutes les dix secondes.","Tu regardes à gauche. Tu regardes à droite. Tu regardes encore à gauche."]);return;}
+  if(t===T.ROAD||t===T.LINE){say(["La départementale. On la traverse où on veut, quand on veut.",
+    "Il y a une passerelle un peu plus haut. Personne ne la prend jamais."]);return;}
   if(t===T.BRIDGE){say(["La passerelle. Deux planches qui claquent et on est de l'autre côté."]);return;}
   if(estCassee(t)){say(["Une vitre en moins chez les Mamoumani. Les éclats sont encore dans l'herbe."]);return;}
   if(t===T.HWIN){say(["Une fenêtre à volets bleus. Fermés au premier coup de soleil, comme partout ici."]);return;}
@@ -1602,6 +1746,13 @@ function interact(){
   if(t===T.DESK){say(["Le comptoir. Une feuille de départs, un crayon, et deux paires d'yeux."]);return;}
   if(t===T.GATE){say(["Le portillon du fond du jardin. Il donne directement sur un départ.","Les Lebel n'ont jamais eu besoin du parking."]);return;}
   if(t===T.PLANT){say(["Une plante verte. Elle survit à tout, comme tout ce qui est ici depuis longtemps."]);return;}
+  if(t===T.FIRE){say(game.phase==='f'
+    ?["Le feu. On s'assoit par terre autour, il n'y a rien pour s'asseoir et il n'y en a jamais eu."]
+    :["Le foyer est froid. Un cercle de pierres et du bois noirci.","Ça brûlera ce soir. Ça brûle tous les soirs."]);return;}
+  if(t===T.CANETTE){say(["Des canettes et deux bouteilles, jetées dans les fougères.",
+    "Personne ne les ramassera. Personne ne les a jamais ramassées."]);return;}
+  if(t===T.TRANSAT){say(["Un transat au bord du bassin. Une serviette dessus, donc il est pris."]);return;}
+  if(t===T.PLAT){say(["Un platane du parking. L'écorce part en plaques, comme du camouflage."]);return;}
   if(t===T.HWALL||t===T.HROOF||t===T.HRIDGE||t===T.HEAVE||t===T.WHITE||t===T.WOOD||t===T.STONEW||t===T.FLATR||t===T.BROOF){
     say(["Un mur de maison du hameau. On n'entre pas, on tourne autour."]);return;}
 }
@@ -2386,7 +2537,7 @@ function updateCars(){
     if(c.y<-4||c.y>MH+4){cars.splice(i,1);continue;}
     if(game.inside||game.state!==S.WORLD)continue;
     const t=at(game.px,game.py);
-    if(t!==T.ZEBRA&&t!==T.ROAD&&t!==T.LINE)continue;
+    if(t!==T.ROAD&&t!==T.LINE)continue;
     if(!c.honk&&Math.abs(c.y-game.py)<9){c.honk=1;sfx('klaxon');}
     if(Math.abs(c.y-game.py)<0.9&&Math.abs(c.x-game.px)<=1.2){cars.splice(i,1);carHit();return;}
   }
@@ -2617,10 +2768,10 @@ function drawFade(){
 }
 /* Charles ne fait jamais deux fois la même chose au même moment */
 const CHARLES_ACTS=[
- {id:'mamou',x:98,y:23,inside:null},
+ {id:'mamou',x:102,y:25,inside:null},
  {id:'gamecube',x:16,y:8,inside:'lutreau'},
- {id:'pente',x:109,y:26,inside:null},
- {id:'hameau',x:99,y:9,inside:null}];
+ {id:'pente',x:109,y:29,inside:null},
+ {id:'hameau',x:95,y:9,inside:null}];
 function placeGang(){
   if(velo.on)return;
   placeAccueil();
@@ -2630,7 +2781,7 @@ function placeGang(){
     /* Margot ne descend jamais au club house, elle reste au hameau */
     if(n.hameau){
       n.inside=null;
-      const sp=[[96,11],[99,12],[95,13],[101,11]][(Math.random()*4)|0];
+      const sp=[[96,9],[97,18],[96,25],[98,9]][(Math.random()*4)|0];
       n.x=sp[0];n.y=sp[1];
       continue;
     }
@@ -2655,7 +2806,7 @@ function placeAccueil(){
     const n=NPCS.find(x=>x.id===id); if(!n)return;
     n.gone=(id===off);
     if(!n.gone){const k=ACCUEIL.filter(a=>a!==off).indexOf(id);
-      n.x=44+k*2;n.y=56;n.dir=0;}
+      n.x=38+k*2;n.y=43;n.dir=0;}
   });
 }
 function nightTint(cx,cy){
@@ -2743,7 +2894,7 @@ function gangTalk(n){
 }
 
 /* ---------- à vélo dans le hameau, ils finissent toujours par rappliquer ---------- */
-const VELO_BUT={x:98,y:23};
+const VELO_BUT={x:102,y:25};
 const VELO_LOL=[
  ["VICTOR : Sans les mains. Regarde. Regarde bien. Sans les mains."],
  ["CHARLES : On descend la pente à vélo. Personne ne l'a jamais fait.","KUPERFILS : Si. Toi. Trois fois. Tu es tombé trois fois."],
@@ -3189,26 +3340,25 @@ function drawTitle(){
 
 /* ---------- choix du personnage ---------- */
 const PICKS=[
- {id:'moi',n:'PIERRE',npc:null,sp:[108,7,null],tag:"Grand, brun. Très précis, longueur moyenne.",
-  intro:"Ta mère crie quelque chose depuis la cuisine. Tu es déjà dans l'allée."},
- {id:'charles',n:'CHARLES',npc:'charles',sp:[97,8,null],tag:"Seize ans. Tape énorme, air shots fréquents.",
-  intro:"Tu poses la manette. Tu la reprends. Tu la reposes. Bon. Dehors."},
- {id:'victor',n:'VICTOR',npc:'victor',sp:[99,8,null],tag:"Petit, peau mate. Régulier partout.",
-  intro:"Tu as un plan pour l'après-midi. Tu l'as déjà changé deux fois."},
- {id:'oscar',n:'OSCAR',npc:'oscar',sp:[95,65,null],tag:"Grand blond. Une force de la nature.",
-  intro:"Duke a encore ouvert le portail tout seul. Duke est déjà loin."},
+ {id:'moi',n:'PIERRE',npc:null,sp:[102,6,null],tag:"Grand, brun. Très précis, longueur moyenne.",
+  intro:["TA MÈRE : Je descends au practice. Tu me fais dix-huit trous aujourd'hui.","TA MÈRE : Et si tu rentres après neuf, ton père va gueuler. Moi je dis rien, mais il va gueuler."]},
+ {id:'charles',n:'CHARLES',npc:'charles',sp:[92,7,null],tag:"Seize ans. Tape énorme, air shots fréquents.",
+  intro:["TA MÈRE : Faites ce que vous voulez mes petits chéris. Rentrez quand vous voulez.","Tu poses la manette. Tu la reprends. Tu la reposes. Bon. Dehors."]},
+ {id:'victor',n:'VICTOR',npc:'victor',sp:[94,7,null],tag:"Petit, peau mate. Régulier partout.",
+  intro:["TA MÈRE : Faites ce que vous voulez mes petits chéris, il fait beau.","Tu as déjà un plan pour l'après-midi. Tu l'as déjà changé deux fois."]},
+ {id:'oscar',n:'OSCAR',npc:'oscar',sp:[110,47,null],tag:"Grand blond. Une force de la nature.",
+  intro:["TA MÈRE : Amuse toi bien sur la parcours ! Et prends ton casquette, il fait un grand soleil.","Duke a encore ouvert le portail. Duke est déjà loin."]},
  {id:'antoine',n:'ANTOINE',npc:'antoine',sp:[12,11,'lutreau'],tag:"Pull orange, grosses lunettes. Il aligne longtemps.",
-  intro:"Tu te réveilles chez les Lutreau. Ta mère revient dimanche. On est mardi."},
- {id:'kuperfils',n:'KUPERFILS',npc:'kuperfils',sp:[102,16,null],tag:"Grand. Tape aussi fort qu'Oscar.",
-  intro:"Tu as remis le maillot d'hier. Il est encore très bien. Sens, tu verras."},
- {id:'louis',n:'LOUIS',npc:'louis',sp:[113,14,null],tag:"Petit. Le plus précis de la bande.",
-  intro:"Tes grands-parents attaquent le fromage. Tu t'éclipses entre deux phrases."},
- {id:'paul',n:'PAUL',npc:'paul',sp:[107,21,null],tag:"Musclé, silencieux. Une puissance rare.",
-  intro:"Tu sors. Tu ne dis rien à personne. C'est très bien comme ça."}
+  intro:["TA MÈRE : Bon. On te récupère dimanche soir. Sois sage, ne dérange personne.","La voiture fait demi-tour dans l'allée et repart. On est mardi."]},
+ {id:'kuperfils',n:'KUPERFILS',npc:'kuperfils',sp:[110,71,null],tag:"Grand. Tape aussi fort qu'Oscar.",
+  intro:["TA MÈRE : Personne n'entre dans la maison avec ses chaussures. Personne. Tu me le répètes.","TA MÈRE : Et on ne touche pas à la collection de poules de la salle à manger. Jamais."]},
+ {id:'louis',n:'LOUIS',npc:'louis',sp:[110,63,null],tag:"Petit. Le plus précis de la bande.",
+  intro:["TON PÈRE : Tu as bien ton polo ? Nous déjeunons au club à treize heures précises.","TA MÈRE : Et tu ne joues pas avec n'importe qui, Louis. Tu vois ce que je veux dire."]},
+ {id:'paul',n:'PAUL',npc:'paul',sp:[78,70,null],tag:"Musclé, silencieux. Une puissance rare.",
+  intro:["TON PÈRE : Prends ton temps. On mangera quand tu rentreras.","Tu sors. Tu ne dis rien. C'est très bien comme ça."]}
 ];
 const INTRO=[
- "Hameau du Prieuré, été 2005. Il est une heure et demie et personne ne t'attend nulle part.",
- "Les parents sont sur le parcours jusqu'à la nuit. C'est la seule information utile de la journée.",
+ "Hameau du Prieuré, été 2005. Il est une heure et demie.",
  "Trouve les autres, prends un vélo, fouille le rough. Ce soir il y aura un feu au bord du 6.",
  "(START pour passer les textes.)"];
 function pickPal(p){ return palFiche(fiche(p.id)); }
@@ -3266,7 +3416,7 @@ function updatePick(){
     game.state=S.WORLD;
     game.zone=game.inside?INT[game.inside].name:zoneAt(game.px,game.py);
     game.banner=game.zone;game.bannerT=0;
-    say(INTRO.concat([p.intro]));
+    say(INTRO.concat(p.intro));
   }
 }
 

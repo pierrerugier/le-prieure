@@ -13,7 +13,7 @@ if (src.indexOf('load().finally(loop);') < 0) throw new Error('point de sortie i
 src = src.replace('load().finally(loop);', `globalThis.__t={game,golf,net,update,render,map,MW,MH,T,at,put,NPCS,ITEMS,
   HOLES,PICKS,INT,DOORS,LOCKED,cars,shards,keys,press,release,consume,MAMOU,MAMOU_WIN,FEU,
   players,P_:()=>players,goInside,goOutside,zoneAt,menuList,buildMini,SOLID,getTile,S,ballSpots,updatePick,
-  startHole,save,load,solidAt,placeGang,phaseOf,BALLS,updateCars,timeStep,breakWindow,velo,updateVelo,leaves,inBrush,ballVisible,estVitre,estCassee,FICHES,fiche,skillDe,vitPuissance,vitPrecision,longueurDe,cours,startCours,INVITES,inviteRecue,FEU,
+  startHole,save,load,solidAt,placeGang,phaseOf,BALLS,updateCars,timeStep,breakWindow,velo,updateVelo,leaves,inBrush,ballVisible,estVitre,estCassee,VILLAS,LISIERE,EVENOU,VOITURES,FICHES,fiche,skillDe,vitPuissance,vitPrecision,longueurDe,cours,startCours,INVITES,inviteRecue,FEU,
   pers,dogSpr,BODY_SIDE,DOG_SIDE};`);
 
 /* ---------- faux canvas ---------- */
@@ -93,18 +93,35 @@ const { game, T, at, MW, MH } = t;
 check('carte batie', t.map.length === MW * MH);
 check('route en x=31', at(31, 20) === T.LINE);
 check('passerelle en y=44', at(30, 44) === T.BRIDGE);
-check('passage cloute en y=57', at(31, 57) === T.ZEBRA && at(33, 57) === T.ZEBRA);
+check('la route se traverse partout', !t.SOLID.has(T.ROAD) && !t.SOLID.has(T.LINE));
+check('pas de passage cloute', !t.map.includes(T.ZEBRA));
 check('trois courts de tennis', at(14, 60) === T.TENN && at(23, 60) === T.TENN && at(18, 67) === T.TENN);
 check('piscine au sud-est', at(83, 50) === T.POOL);
-check('putting green au sud', at(63, 61) === T.FLAG);
+check('putting green a plusieurs trous',
+  [[58,61],[64,63],[68,60]].filter(f => at(f[0],f[1]) === T.FLAG).length === 3,
+  [[58,61],[64,63],[68,60]].map(f => at(f[0],f[1])).join(','));
 check('portes du club house', !!t.DOORS.find(d => d.to === 'club'));
 const noms = ['club', 'lutreau', 'lebel', 'webb', 'jungers'];
 noms.forEach(n => check('interieur ' + n, !!t.INT[n]));
 noms.forEach(n => check('porte vers ' + n, n === 'club' || !!t.DOORS.find(d => d.to === n)));
 check('vitres Mamoumani', t.MAMOU_WIN.every(w => t.estVitre(at(w[0], w[1]))));
-check('portillon du jardin Lebel', at(94, 78) === T.PATH && at(94, 79) === T.TEE);
-check('jacuzzi des Webb', at(97, 63) === T.JACU);
-check('villa forestiere en lambris', at(96, 6) === T.WOOD || at(96, 6) === T.BAIE || at(96, 6) === T.STONEW);
+check('cinq maisons de lisiere alignees', t.LISIERE.length === 5 && t.LISIERE.every(m => at(112, m.y + 4) === T.HBAIE || at(112, m.y + 4) === T.SDOOR),
+  t.LISIERE.map(m => m.id + ':' + at(112, m.y + 4)).join(' '));
+check('la voie du hameau passe derriere la lisiere', at(116, 60) === T.GRAVEL, 'tuile ' + at(116,60));
+check('un jardin entre les maisons et le bois', at(108, 60) === T.LAWN, 'tuile ' + at(108,60));
+check('une bande de bois avant le parcours', at(105, 60) === T.DENSE, 'tuile ' + at(105,60));
+check('des passages entre les haies', at(107, 48) === T.LAWN && at(105, 48) === T.HEDGE,
+  at(107,48) + ' / ' + at(105,48));
+check('huit villas forestieres', t.VILLAS.length === 8);
+check('trois baraques Evenou', t.EVENOU.length === 3 && t.EVENOU.every(e => at(107, e.y + 3) === T.STORE));
+check('la rangee de platanes borde le parking', at(35, 47) === T.PLAT && at(35, 59) === T.PLAT);
+check('huit voitures nommees au parking', t.VOITURES.length === 8 && t.VOITURES.every(v => at(v.x, v.y) === T.CAR));
+check('les transats au bord de la piscine', at(89, 44) === T.TRANSAT);
+check('les vestiaires ferment la piscine a l ouest', t.SOLID.has(at(74, 50)));
+check('jacuzzi des Webb', at(108, 46) === T.JACU, 'tuile ' + at(108,46));
+check('villa forestiere en lambris',
+  t.VILLAS.every(v => { const tl = at(v.x + 1, v.y + 1); return tl === T.BAIE || tl === T.STONEW || tl === T.WOOD; }),
+  t.VILLAS.map(v => v.id + ':' + at(v.x + 1, v.y + 1)).join(' '));
 
 /* les objets doivent tous etre ramassables */
 t.ITEMS.forEach(it => {
@@ -207,7 +224,7 @@ function entre(dx, dy, id) {
   clear();
 }
 /* on ne rentre pas a velo : il doit se ranger tout seul */
-clear(); tp(97, 7); game.bike = true; game.dir = 1;
+clear(); tp(92, 6); game.bike = true; game.dir = 1;
 for (let i = 0; i < 6 && game.inside !== 'lutreau'; i++) { hold('up', 20); clear(); }
 check('le velo se range en entrant', game.inside === 'lutreau' && game.bike === false,
   'inside=' + game.inside + ' velo=' + game.bike);
@@ -318,17 +335,21 @@ clear(); tp(52, 54); game.state = t.S.WORLD; game.party = [];
 tap('a', 3);
 check('depart du 1', t.golf.on, 'phase ' + t.golf.phase);
 let garde = 0;
+let botPhase = '', botAttente = 0;
 function golfBot() {
   const g = t.golf, p = t.P_()[g.cur];
+  if (g.phase !== botPhase) { botPhase = g.phase; botAttente = 0; }
+  botAttente++;
+  const patience = botAttente > 400;   /* si la jauge nous echappe, on tape quand meme */
   if (game.state === t.S.DIALOG) { tap('a', 1); return; }
   if (g.phase === 'aim' || g.phase === 'putt' || g.phase === 'result' || g.phase === 'card') { tap('a', 1); return; }
-  if (g.phase === 'power') { if (g.gT > 0.72 && g.dirg > 0) tap('a', 1); else frames(1); return; }
+  if (g.phase === 'power') { if (patience || (g.gT > 0.7 && g.dirg > 0)) tap('a', 1); else frames(1); return; }
   if (g.phase === 'putpow') {
     const d = Math.hypot(t.HOLES[g.hole].gx + 0.5 - p.bx, t.HOLES[g.hole].gy + 0.5 - p.by);
     const vise = Math.max(0.12, Math.min(0.95, (d - 0.32) / 3.1 + 0.12));
-    if (Math.abs(g.gT - vise) < 0.03) tap('a', 1); else frames(1); return;
+    if (patience || Math.abs(g.gT - vise) < 0.05) tap('a', 1); else frames(1); return;
   }
-  if (g.phase === 'acc') { if (Math.abs(g.gT - 0.5) < 0.02) tap('a', 1); else frames(1); return; }
+  if (g.phase === 'acc') { if (patience || Math.abs(g.gT - 0.5) < 0.04) tap('a', 1); else frames(1); return; }
   frames(1);
 }
 while (t.golf.on && garde++ < 200000) golfBot();
@@ -341,11 +362,11 @@ clear();
 
 /* ---------- 5. les voitures de la departementale ---------- */
 t.cars.length = 0;
-tp(31, 57); game.state = t.S.WORLD;
+tp(31, 60); game.state = t.S.WORLD;
 let vues = 0;
 for (let i = 0; i < 1400; i++) { t.updateCars(); if (t.cars.length) vues++; if (game.state !== t.S.WORLD) break; }
 check('une voiture est passee', vues > 0);
-check('la voiture renverse au passage cloute', game.state === t.S.DIALOG || game.px === 28 || game.px === 35,
+check('la voiture renverse sur la chaussee', game.state === t.S.DIALOG || game.px === 28 || game.px === 35,
   'px=' + game.px + ' etat=' + game.state);
 clear();
 
