@@ -474,8 +474,23 @@ t.HOLES.forEach(h => {
   check('le ' + h.n + ' fait une longueur jouable', h.len > 120 && h.len < 700, h.len + ' m');
 });
 /* les obstacles d'eau penalisent, qu'ils soient en mare ou en eau vive */
-check('la mare compte comme de l eau pour la balle', t.lieAt(39, 42) === 'eau', t.lieAt(39, 42));
-check('la mare a droite du 7 est bien la', at(39, 42) === T.MARE, '' + at(39, 42));
+const casesEau = [];
+for (let y = 0; y < t.MH; y++) for (let x = 0; x < t.MW; x++) {
+  const v = at(x, y);
+  if (v === T.MARE || v === T.WATER) casesEau.push([x, y]);
+}
+check('il y a de vrais obstacles d eau sur le domaine', casesEau.length >= 20,
+  casesEau.length + ' cases');
+check('toute case d eau compte comme de l eau pour la balle',
+  casesEau.every(([x, y]) => t.lieAt(x + 0.5, y + 0.5) === 'eau'),
+  casesEau.filter(([x, y]) => t.lieAt(x + 0.5, y + 0.5) !== 'eau').slice(0, 4)
+    .map(q => q.join(',')).join(' '));
+check('mare et eau vive se paient pareil',
+  t.sanction(T.MARE) === 'eau' && t.sanction(T.WATER) === 'eau');
+check('au moins un trou a son obstacle d eau', t.HOLES.some(h =>
+  casesEau.some(([x, y]) => Math.hypot(x - h.gx, y - h.gy) < 14 ||
+    Math.hypot(x - h.tx, y - h.ty) < 14)),
+  t.HOLES.filter(h => casesEau.some(([x, y]) => Math.hypot(x - h.gx, y - h.gy) < 14)).map(h => h.n).join(' '));
 check('l eau au bord du green du 2 est bien la', at(85, 83) === T.MARE, '' + at(85, 83));
 check('l eau du 1 est bien la', at(51, 92) === T.MARE, '' + at(51, 92));
 /* et aucune balle a trouver ne se retrouve dans un tronc */
