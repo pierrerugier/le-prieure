@@ -195,7 +195,11 @@ function tuileA(nom,x,y){
   const c=A.carteDe(nom); return c.m[y*c.w+x];
 }
 function poseTuile(nom,x,y,t){
-  const c=A.carteDe(nom); c.m[y*c.w+x]=t;
+  const c=A.carteDe(nom), i=y*c.w+x;
+  /* un objet sans sol a lui se pose sur ce qui est deja la */
+  const perso=A.BLOCS_PERSO[A.baseT(t)];
+  const transp=A.TRANSP.has(A.baseT(t))||(perso&&perso.transp);
+  c.m[i]=transp?A.compose(c.m[i],t):t;
 }
 function batPlanche(){
   const d=dims(ed.carte);
@@ -245,16 +249,6 @@ function dessine(){
       if(A.SOLID.has(tuileA(ed.carte,x,y)))
         cx.fillRect(Math.round((x-ed.camx)*z),Math.round((y-ed.camy)*z),Math.ceil(z),Math.ceil(z));
   }
-  /* ce qui a ete retouche depuis le dessin d'origine */
-  const base=A.BASE[ed.carte];
-  if(base){
-    const x0=Math.max(0,Math.floor(ed.camx)), x1=Math.min(d.w,Math.ceil(ed.camx+cv.width/z));
-    const y0=Math.max(0,Math.floor(ed.camy)), y1=Math.min(d.h,Math.ceil(ed.camy+cv.height/z));
-    cx.strokeStyle='rgba(244,226,168,.75)';cx.lineWidth=1;
-    for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++)
-      if(base[y*d.w+x]!==tuileA(ed.carte,x,y))
-        cx.strokeRect(Math.round((x-ed.camx)*z)+.5,Math.round((y-ed.camy)*z)+.5,Math.ceil(z)-1,Math.ceil(z)-1);
-  }
   dessineReperes();
   /* la tranche decoupee */
   if(ed.selRect){
@@ -272,10 +266,14 @@ function dessine(){
     const p=enMain();
     if(p&&ed.enMain&&ed.outil!=='select'&&(p.w>1||p.h>1)){
       const pw=p.w, ph=p.h, src=p.t;
-      cx.globalAlpha=0.75;
-      for(let j=0;j<ph;j++)for(let i=0;i<pw;i++)
-        cx.drawImage(A.tile(src[j*pw+i],0,0),
-          Math.round((ed.sx+i-ed.camx)*z),Math.round((ed.sy+j-ed.camy)*z),Math.ceil(z),Math.ceil(z));
+      cx.globalAlpha=0.8;
+      for(let j=0;j<ph;j++)for(let i=0;i<pw;i++){
+        const id=src[j*pw+i];
+        const X=Math.round((ed.sx+i-ed.camx)*z), Y=Math.round((ed.sy+j-ed.camy)*z);
+        if(!A.TRANSP.has(A.baseT(id)))
+          cx.drawImage(A.tile(id,0,0),X,Y,Math.ceil(z),Math.ceil(z));
+        else cx.drawImage(A.tile(id,0,0),X,Y,Math.ceil(z),Math.ceil(z));
+      }
       cx.globalAlpha=1;
       cx.strokeStyle='#f4e2a8';cx.lineWidth=2;
       cx.strokeRect(Math.round((ed.sx-ed.camx)*z)+1,Math.round((ed.sy-ed.camy)*z)+1,z*pw-2,z*ph-2);
@@ -368,38 +366,30 @@ function prendEnMain(w,h,cases,nom,src){
   ed.bloc=cases[0];
   ed.enMain=true;
 }
-/* une case qui fait partie d'un dessin de plusieurs cases et qui n'a pas de
-   correspondance : la tourner melangerait le dessin, on refuse et on le dit */
-function bloquant(t,table){
-  for(const id of t)
-    if(A.ART_MULTI.has(id)&&table[id]===undefined)return id;
-  return -1;
-}
+/* Tourner une case, c'est la reposer d'un quart de tour : si le jeu a un dessin
+   fait expres pour ce sens on le prend, sinon on calcule le dessin tourne. Comme ca
+   tout se tourne, meme un simple carre d'herbe. */
+function caseTournee(id){return (A.ROT[id]!==undefined)?A.ROT[id]:A.tourneCase(id);}
+function caseMiroir(id){return (A.MIROIR[id]!==undefined)?A.MIROIR[id]:A.miroirCase(id);}
 function tourneMain(){
   const p=enMain(); if(!p)return;
-  const ko=bloquant(p.t,A.ROT);
-  if(ko>=0){dit('Ce dessin ne se tourne pas. Il ne tient que dans ce sens.');return;}
   const t=new Array(p.w*p.h);
-  for(let y=0;y<p.h;y++)for(let x=0;x<p.w;x++){
-    const src=p.t[y*p.w+x];
-    t[x*p.h+(p.h-1-y)]=(A.ROT[src]!==undefined)?A.ROT[src]:src;
-  }
+  for(let y=0;y<p.h;y++)for(let x=0;x<p.w;x++)
+    t[x*p.h+(p.h-1-y)]=caseTournee(p.t[y*p.w+x]);
   ed.main={w:p.h,h:p.w,t:t,n:p.n,src:p.src};
   if(p.src==='presse')ed.presse={w:p.h,h:p.w,t:t};
   ed.bloc=t[0]; majOutils();
+  dit('Tourné d\'un quart de tour.');
 }
 function miroirMain(){
   const p=enMain(); if(!p)return;
-  const ko=bloquant(p.t,A.MIROIR);
-  if(ko>=0){dit('Ce dessin ne se retourne pas.');return;}
   const t=new Array(p.w*p.h);
-  for(let y=0;y<p.h;y++)for(let x=0;x<p.w;x++){
-    const src=p.t[y*p.w+x];
-    t[y*p.w+(p.w-1-x)]=(A.MIROIR[src]!==undefined)?A.MIROIR[src]:src;
-  }
+  for(let y=0;y<p.h;y++)for(let x=0;x<p.w;x++)
+    t[y*p.w+(p.w-1-x)]=caseMiroir(p.t[y*p.w+x]);
   ed.main={w:p.w,h:p.h,t:t,n:p.n,src:p.src};
   if(p.src==='presse')ed.presse={w:p.w,h:p.h,t:t};
   ed.bloc=t[0]; majOutils();
+  dit('Retourné.');
 }
 function poseMain(x,y,garde){
   const p=enMain(); if(!p)return;
@@ -550,7 +540,7 @@ function majOutils(){
       <button id="tR" class="${ed.reperes?'on':''}">Départs, portes</button>
       <button id="tC" ${ed.selRect?'':'disabled'}>Désélectionner</button>
     </div>
-    <h4>La tranche découpée</h4>
+    <h4>Ce qu'on tient en main</h4>
     <div class="o">
       <button id="bCopie" ${ed.selRect?'':'disabled'}>Copier</button>
       <button id="bCoupe" ${ed.selRect?'':'disabled'}>Couper</button>
@@ -580,7 +570,8 @@ function majOutils(){
       <b>Deux doigts</b> déplacent la carte.<br>
       <kbd>⌘+</kbd> et <kbd>⌘-</kbd> zooment.<br>
       <b>Découper</b> puis <kbd>⌘C</kbd> ou <kbd>⌘X</kbd>, <kbd>⌘V</kbd> pour coller.<br>
-      <kbd>T</kbd> tourne la tranche, <kbd>M</kbd> la retourne.<br>
+      <kbd>T</kbd> tourne ce qu'on tient, <kbd>M</kbd> le retourne. Tout se tourne,
+      même une seule case.<br>
       <kbd>⌘Z</kbd> annule, <kbd>⌘S</kbd> enregistre.
     </div>`;
   $('#selCarte').onchange=e=>{ed.carte=e.target.value;batPlanche();cadre();};
@@ -675,8 +666,11 @@ function vignetteMotif(e){
   const w=e.m?e.w:1, h=e.m?e.h:1;
   const c=document.createElement('canvas'); c.width=w*TS; c.height=h*TS;
   const g=c.getContext('2d'); g.imageSmoothingEnabled=false;
-  if(e.m){for(let j=0;j<h;j++)for(let i=0;i<w;i++)g.drawImage(A.tile(e.m[j*w+i],0,0),i*TS,j*TS);}
-  else g.drawImage(A.tile(e.t,0,0),0,0);
+  const cases=e.m||[e.t];
+  /* un objet sans sol se montre pose sur de l'herbe, sinon on ne voit rien */
+  if(A.TRANSP.has(A.baseT(cases[0])))
+    for(let j=0;j<h;j++)for(let i=0;i<w;i++)g.drawImage(A.tile(A.T.ROUGH,(i+j)%3,0),i*TS,j*TS);
+  for(let j=0;j<h;j++)for(let i=0;i<w;i++)g.drawImage(A.tile(cases[j*w+i],0,0),i*TS,j*TS);
   return c;
 }
 function panneauBlocs(){
@@ -726,6 +720,8 @@ function panneauBlocs(){
       d.appendChild(vignetteMotif(e));
       const i=document.createElement('i'); i.textContent=e.n; d.appendChild(i);
       d.onclick=()=>{
+        /* on rend le clavier au dessin : sinon T et M tapent dans la case de recherche */
+        if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
         if(ed.ong==='blocs'&&e.perso){
           const b=blocsPerso().find(x=>x.id===(e.m?e.m[0]:e.t));
           if(b){ed.blocPerso=Object.assign({},b,{px:(b.px||[]).slice(),tirade:(b.tirade||[]).slice()});
@@ -890,8 +886,9 @@ function dupliqueEnMain(){
   const p=enMain();
   if(!p){dit('Choisis d\'abord un bloc, ou découpe une tranche.');return;}
   if(p.w>6||p.h>6){dit('Trop grand pour être repris : six cases de côté au maximum.');return;}
-  const src=blocsPerso().find(b=>b.id===p.t[0]);
-  const e=A.BIBLI.find(x=>(x.m?x.m[0]:x.t)===p.t[0]);
+  const t0=A.baseT(p.t[0]);
+  const src=blocsPerso().find(b=>b.id===t0);
+  const e=A.BIBLI.find(x=>(x.m?x.m[0]:x.t)===t0);
   const b=nouveauBloc(p.w,p.h);
   b.n=(p.n||(e&&e.n)||'Tranche')+' (copie)';
   b.cat=(src&&src.cat)||(e&&e.cat)||'terrain';
@@ -925,7 +922,7 @@ function blocEnCases(b){
 }
 function enregistreBloc(b){
   const l=blocsPerso().filter(x=>x.id!==b.id);
-  l.push({id:b.id,n:b.n,cat:b.cat,w:b.w,h:b.h,solide:b.solide?1:0,saut:b.saut?1:0,
+  l.push({id:b.id,n:b.n,cat:b.cat,w:b.w,h:b.h,solide:b.solide?1:0,saut:b.saut?1:0,transp:b.transp?1:0,
     qui:b.qui||'',tirade:b.tirade||[],cases:blocEnCases(b),px:b.px});
   l.sort((x,y)=>x.id-y.id);
   const m=Object.assign({},A.monde,{blocs:l});
@@ -1046,6 +1043,14 @@ function panneauFabrique(){
     if(o[0]===cur)op.selected=true;sp.appendChild(op);});
   sp.onchange=()=>{b.saut=(sp.value==='saut')?1:0;b.solide=(sp.value!=='libre')?1:0;};
   ps.appendChild(sp); d.appendChild(ps);
+  const tr=document.createElement('button'); tr.className='b';
+  tr.style.cssText='width:100%;margin-top:6px';
+  const majTr=()=>{tr.textContent=b.transp?'Sans sol à lui : oui':'Sans sol à lui : non';
+    tr.style.background=b.transp?'#2f6b45':'';};
+  majTr();
+  tr.title='Un objet sans sol se pose sur ce qui est déjà là, comme un arbre sur l\'herbe.';
+  tr.onclick=()=>{b.transp=b.transp?0:1;majTr();};
+  d.appendChild(tr);
   d.appendChild(champ('Qui parle (le cadre du haut)',b.qui||'',false,v=>{b.qui=v;}));
   const t=document.createElement('div'); t.className='champ';
   t.innerHTML='<span>Ce qu\'il raconte quand on lui parle</span>';

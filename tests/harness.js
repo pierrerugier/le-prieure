@@ -17,7 +17,7 @@ src = src.replace('chargeMonde().then(load).finally(loop);', `globalThis.__t={ga
   pers,dogSpr,BODY_SIDE,DOG_SIDE,sfx,ambiances,piscineOuverte,baignade,entreDansLeau,proposePartie,updateAttente,departDu1,hNow,AU_FEU,FEU_RING,FEU_TALK,feuMenu,eteindreLeFeu,bikeSpr,BIKE_DOWN,BIKE_UP,BIKE_SIDE,MISSIONS,ACTES,mission,missionCourante,niveau,chaparde,voleVoiturette,updateVoiturette,BUTIN,
   BASE,appliqueMonde,carteDe,TUILE_OVR,CORPS,CORPS_BASE,FICHES_BASE,tile,cache,MW_:MW,
   BIBLI,MIROIR,ROT,SAUT,MODELES,HOLES_BASE,DOORS_BASE,estDepart,VILLAS_:VILLAS,
-  PERSO0,BLOCS_PERSO,TIRADES,ART_MULTI,MIR_ART,mondeVide,
+  PERSO0,BLOCS_PERSO,TIRADES,ART_MULTI,MIR_ART,mondeVide,VAR0,baseT,tourneCase,miroirCase,COMPO,compose,fondDe,motifDe,TRANSP,lieAt,map,
   ITEMS_BASE,NPCS_BASE,MISSIONS_BASE,ACTES_BASE,LOCKED_BASE,EVENTS};`);
 
 /* ---------- faux canvas ---------- */
@@ -277,7 +277,7 @@ game.bike = false; clear();
 
 /* chaque salon doit etre meuble : canape, table basse, television, cheminee, cuisine */
 ['lutreau', 'lebel', 'webb', 'jungers'].forEach(id => {
-  const C = t.INT[id], vus = new Set(C.map);
+  const C = t.INT[id], vus = new Set([...C.map].map(t.baseT));
   [['canape', T.SOFA], ['table basse', T.TBAS], ['television', T.TVGC],
    ['cheminee', T.CHEM], ['cuisine', T.KITCH], ['frigo', T.FRIGO],
    ['evier', T.EVIER], ['fauteuil', T.FAUT]].forEach(([nom, tuile]) => {
@@ -307,7 +307,7 @@ portesClub.forEach(d => {
 });
 /* les pieces du plan doivent toutes exister */
 const club = t.INT.club;
-const dedans = new Set(club.map);
+const dedans = new Set([...club.map].map(t.baseT));
 [['vitrines du couloir', T.VITRINE], ['escaliers', T.ESCAL], ['toilettes', T.WC],
  ['billard', T.BILL], ['cheminee', T.CHEM], ['fauteuils clubs', T.FAUT],
  ['tables basses', T.TBAS], ['fontaine du patio', T.FOUNT], ['bar', T.BAR],
@@ -315,9 +315,9 @@ const dedans = new Set(club.map);
   check('le club house a ses ' + nom, dedans.has(tuile));
 });
 check('trois groupes de fauteuils dans la salle cheminee',
-  [13, 18, 23].every(x => club.map[18 * club.w + x] === T.FAUT));
+  [13, 18, 23].every(x => t.baseT(club.map[18 * club.w + x]) === T.FAUT));
 check('la cheminee est a droite de la salle',
-  club.map[17 * club.w + 26] === T.CHEM && club.map[17 * club.w + 27] === T.CHEM);
+  t.baseT(club.map[17 * club.w + 26]) === T.CHEM && t.baseT(club.map[17 * club.w + 27]) === T.CHEM);
 
 /* portes fermees : elles parlent, elles n ouvrent pas */
 t.LOCKED.forEach(L => {
@@ -567,7 +567,22 @@ check('le billard sait se retourner', [T.BIL1,T.BIL2,T.BIL3,T.BIL4,T.BIL5,T.BIL6
   .every(id => t.MIROIR[id] !== undefined));
 check('le canape sait se coucher', t.ROT[T.CANH1] === T.CANV1 && t.ROT[T.CANV1] === T.CANH1);
 check('une voiture est marquee comme dessin de plusieurs cases', t.ART_MULTI.has(T.VOIT0));
-check('une voiture ne se tourne pas d un quart de tour', t.ROT[T.VOIT0] === undefined);
+/* n'importe quelle case se tourne, meme celles que le code n'avait pas prevues */
+const q1 = t.tourneCase(T.ARB1);
+check('une case sans correspondance se tourne quand meme', q1 !== T.ARB1 && q1 >= t.VAR0);
+check('quatre quarts de tour ramenent la case d origine',
+  t.tourneCase(t.tourneCase(t.tourneCase(q1))) === T.ARB1);
+check('deux miroirs ramenent la case d origine', t.miroirCase(t.miroirCase(T.ARB1)) === T.ARB1);
+check('une case tournee se dessine', !!t.tile(q1, 0, 0));
+check('une case tournee arrete toujours le joueur', t.SOLID.has(q1));
+check('une barriere tournee se saute toujours', t.SAUT.has(t.tourneCase(T.CLOH)));
+check('un depart tourne reste un depart', t.estDepart(t.tourneCase(T.DEPTL)));
+check('un arbre tourne reste un bois pour la balle',
+  t.baseT(t.tourneCase(T.ARB1)) === T.ARB1);
+/* et une case tournee posee sur la carte se comporte comme l originale */
+clear(); tp(60, 30); t.put(61, 30, q1);
+check('on ne traverse pas une case tournee', t.solidAt(61, 30));
+t.put(61, 30, T.ROUGH); clear();
 check('le quart de tour redresse la cloture', t.ROT[T.CLOH] === T.CLOV && t.ROT[T.CLOV] === T.CLOH);
 check('les neuf departs sont des reperes deplacables',
   t.HOLES.length === 9 && t.HOLES_BASE.length === 9);
@@ -612,6 +627,31 @@ check('un monde sans rien dedans est reconnu comme vide',
 check('un monde avec une seule case retouchee n est pas vide',
   !t.mondeVide({v:1,carte:{domaine:[[1,1,3]]}}));
 check('un monde avec un bloc maison n est pas vide', !t.mondeVide({v:1,carte:{},blocs:[{id:400}]}));
+/* les objets se posent sur ce qui est deja la, ils n'ont pas de sol a eux */
+check('un arbre n a pas de sol a lui', t.TRANSP.has(T.CHN1));
+check('un transat non plus', t.TRANSP.has(T.TRANSAT) && t.TRANSP.has(T.TRANPG));
+check('le feu de camp non plus', t.TRANSP.has(T.FIRE));
+check('le lampadaire non plus', t.TRANSP.has(T.LAMPH) && t.TRANSP.has(T.LAMPB));
+check('la voiturette non plus', t.TRANSP.has(T.GOLFTL));
+check('le barbecue non plus', t.TRANSP.has(T.BARBEC));
+check('un canape non plus', t.TRANSP.has(T.CANH1) && t.TRANSP.has(T.SOFA));
+check('mais l herbe et les murs gardent le leur',
+  !t.TRANSP.has(T.ROUGH) && !t.TRANSP.has(T.FAIR) && !t.TRANSP.has(T.HWALL) && !t.TRANSP.has(T.HROOF));
+/* poser un arbre sur du fairway garde le fairway dessous */
+clear();
+t.put(62, 24, T.FAIR);
+t.put(62, 24, T.CHN1);
+const pose = t.map[24 * MW + 62];
+check('poser un objet compose la case', pose >= t.COMPO, 'case ' + pose);
+check('le sol dessous est bien celui qui y etait', t.fondDe(pose) === T.FAIR);
+check('et la case reste un arbre pour le jeu', at(62, 24) === T.CHN1);
+check('elle arrete toujours le joueur', t.solidAt(62, 24));
+check('la balle s y perd comme dans un bois', t.lieAt(62, 24) === 'bois');
+check('la case composee se dessine', !!t.tile(pose, 0, 0));
+/* et on peut la reposer sur autre chose sans empiler a l infini */
+t.put(62, 24, T.PET1);
+check('un objet remplace l objet, pas le sol', t.fondDe(t.map[24 * MW + 62]) === T.FAIR);
+t.put(62, 24, T.FAIR); clear();
 check('la maison des Molina existe hors du hameau', !!t.INT.molina);
 check('les Molina ne sont plus au hameau', !t.VILLAS.some(v => v.id === 'molina'));
 clear();

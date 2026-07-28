@@ -147,6 +147,33 @@ la pose **et la lâche**. Alt + clic pour en poser plusieurs. `Reprendre` ou ⌘
 `Lâcher` ou Échap la lâche, et changer d'outil la lâche aussi. Sans ça elle collait au curseur
 sans qu'on sache comment s'en débarrasser.
 
+### Une case posée sur une autre
+
+Un transat, un arbre, un feu de camp : ça ne remplace pas le sol, ça se **pose dessus**. Ces
+cases-là sont dans `TRANSP` et **ne peignent aucun fond**. `put()` et `iput()` s'en aperçoivent
+et fabriquent un numéro composé : le sol dans les bits du haut, l'objet dans ceux du bas
+(`compose`, `fondDe`, `motifDe`). Aucune table à tenir, rien à enregistrer de plus, et un arbre
+posé sur du fairway garde le fairway dessous.
+
+- `map` est un `Uint32Array` : un numéro composé ne tient pas sur seize bits.
+- `at()` et `getTile()` rendent la case **d'origine** : tout le jeu continue de raisonner sur
+  ce qu'une case *est*. Pour lire la case brute, c'est `map[]` directement, et c'est ce que
+  fait le dessin.
+- `SOLID`, `SAUT`, `ARBRES`, `DEPARTS` résolvent aussi : leur `.has` passe par `baseT`.
+- Une carte enregistrée avant tout ça peut contenir un objet sans sol ; `drawScene` lui en
+  pose un par défaut plutôt que de laisser un trou.
+
+⚠️ Un terrain, un mur, un toit, un sol d'intérieur **ne sont pas** dans `TRANSP` : ils sont ce
+sur quoi on pose. Un bloc fabriqué dans l'atelier peut l'être, il le dit lui-même (`transp`).
+
+### La gamme d'arbres
+
+Dessinés sur du vide, avec de vraies silhouettes rondes : `boule()` trace un disque en pixels,
+`couronne()` empile plusieurs boules qui se chevauchent, les cerne de sombre, éclaire en haut à
+gauche et creuse deux trous en bas à droite. Deux, pas plus : au-delà ça fait des griffures et
+non du feuillage. Petit arbre, arbre, bouleau, chêne, hêtre roux, saule, chêne majestueux,
+grand pin, buissons, massif.
+
 ### La bibliothèque
 
 `BIBLI` (dans `index.html`) est la liste rangée : chaque entrée a une famille, un nom, et soit
