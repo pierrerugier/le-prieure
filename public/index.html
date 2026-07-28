@@ -201,7 +201,7 @@ const FICHES={
  victor:   {n:'VICTOR',   haut:'#7a2f3c',bas:'#e2d6b8',chev:'#3a2412',coupe:'court',peau:'#c98a56',taille:-1,corps:0,short:0,lunettes:0,prec:3,puis:3},
  oscar:    {n:'OSCAR',    haut:'#f2d24a',bas:'#e2d6b8',chev:'#e8d79a',coupe:'court',peau:'#f7d2a8',taille:1, corps:1,short:1,lunettes:0,prec:3,puis:5},
  antoine:  {n:'ANTOINE',  haut:'#e08a2f',bas:'#e6dcc0',chev:'#7a5433',coupe:'court',peau:'#f5c99b',taille:0, corps:0,short:0,lunettes:1,prec:2,puis:4},
- kuperfils:{n:'KUPERFILS',haut:'#8fc6e8',bas:'#c9c4a8',chev:'#7a5433',coupe:'court',peau:'#f5c99b',taille:1, corps:0,short:1,lunettes:0,prec:3,puis:5},
+ kuperfils:{n:'KUPI',haut:'#8fc6e8',bas:'#c9c4a8',chev:'#7a5433',coupe:'court',peau:'#f5c99b',taille:1, corps:0,short:1,lunettes:0,prec:3,puis:5},
  louis:    {n:'LOUIS',    haut:'#1e2f4a',bas:'#ddd0ae',chev:'#1b1512',coupe:'mi',   peau:'#f5c99b',taille:-1,corps:0,short:0,lunettes:0,prec:5,puis:2},
  paul:     {n:'PAUL',     haut:'#5a5b46',bas:'#3b3c2b',chev:'#4a2f18',coupe:'court',peau:'#e8b98a',taille:0, corps:2,short:0,lunettes:0,prec:3,puis:5},
  margot:   {n:'MARGOT',   haut:'#e8749a',bas:'#4a6b9e',chev:'#e8cf7a',coupe:'boucle',peau:'#f7d2a8',taille:0,corps:0,short:1,lunettes:0,prec:3,puis:2},
@@ -410,7 +410,7 @@ function miroirCase(t){
 const SOLID=new Set([T.TREE,T.WATER,T.CAR,T.SWALL,T.SWIN,T.HEDGE,T.PARA,T.POOL,
   T.HWALL,T.HROOF,T.SIGN,T.FLAG,T.STALL,T.FOUNT,T.LOCKER,T.BAR,T.TABLE,T.SHOP,T.WALLI,T.SROOF,T.FIRE,T.LOG,
   T.SWINB,T.WOOD,T.BAIE,T.FLATR,T.BROOF,T.TNET,T.SOFA,T.TVGC,T.BED,T.KITCH,T.EASEL,T.JACU,
-  T.GATE,T.STONEW,T.VASIS,T.DESK,T.CART,T.PLANT,T.BILL,T.WHITE,T.WROOF,
+  T.STONEW,T.VASIS,T.DESK,T.CART,T.PLANT,T.BILL,T.WHITE,T.WROOF,
   T.PROOF,T.FTOP,T.FACADE,T.FWIN,T.FLOW,
   T.CHEM,T.TBAS,T.FAUT,T.BIBLI,T.FRIGO,T.EVIER,T.BUFFET,
   T.HRIDGE,T.HEAVE,T.HWIN,T.HWINB,T.HBAIE,T.LUC,T.STORE,T.PLAT,T.VITRINE,T.WC,T.CABW,T.CABR,
@@ -593,11 +593,16 @@ const ARBRES=new Set([T.ARB1,T.ARB2,T.ARB3,T.ARBH1,T.ARBH2,T.ARBH3,T.ARBB1,T.ARB
 
 /* toutes les cases qui font un depart de trou : l'ancien tapis et les quatre
    cases du vrai depart, dans les deux orientations */
+/* ce qui roule et qui se vole : le pick-up du greenkeeper et la voiturette */
+const VOLABLE=new Set([T.CART,T.PICKUP,
+  T.PICKTL,T.PICKTR,T.PICKBL,T.PICKBR,T.GOLFTL,T.GOLFTR,T.GOLFBL,T.GOLFBR]);
+/* la porte de la cabane du caddie master, sur la carte de Pierre */
+const PORTES_CADDIE=[39,61];
 const DEPARTS=new Set([T.TEE,T.DEPTL,T.DEPTR,T.DEPBL,T.DEPBR,T.DEPVTL,T.DEPVTR,T.DEPVBL,T.DEPVBR]);
 const estDepart=t=>DEPARTS.has(t);
 
 /* ce par-dessus quoi on peut sauter avec A : les haies et toute la cloture blanche */
-const SAUT=new Set([T.HEDGE,T.GATE,T.CLOH,T.CLOV,T.CLONO,T.CLONE,T.CLOSO,T.CLOSE,T.CLOP]);
+const SAUT=new Set([T.HEDGE,T.CLOH,T.CLOV,T.CLONO,T.CLONE,T.CLOSO,T.CLOSE,T.CLOP]);
 /* la quatrieme rangee de chaque court, c'est le filet : on ne passe pas, on saute */
 for(let i=12;i<16;i++){
   SOLID.add(T.TENQ+i); SAUT.add(T.TENQ+i);
@@ -1772,7 +1777,7 @@ const LISIERE=[
  {id:'webb',      y:42, n:'CHEZ LES WEBB',      into:'webb'},
  {id:'lebel',     y:50, n:'CHEZ LES LEBEL',     into:'lebel', bois:1},
  {id:'martin',    y:58, n:'CHEZ LES MARTIN'},
- {id:'kuperfils', y:66, n:'CHEZ LES KUPERFILS'},
+ {id:'kuperfils', y:66, n:'CHEZ KUPI'},
  {id:'secte',     y:74, n:'LA MAISON DU BOUT'}];
 /* les trois baraques Evenou, au sud-est */
 const EVENOU=[{x:98},{x:105},{x:112}];
@@ -2278,6 +2283,24 @@ makeInt('molina',18,12,'CHEZ LES MOLINA',9,10,63,44,function(){
 });
 Object.keys(INT).forEach(k=>{BASE[k]=INT[k].map.slice();});
 
+/* ---------- ou sont les portes, sur la carte de Pierre ----------
+   buildWorld a peint les portes d'origine et on n'y touche pas : ses retouches
+   sont notees comme un ecart avec ce terrain-la. Mais la LOGIQUE des portes, elle,
+   suit son domaine. On remplace donc la liste, pas la peinture. */
+const PORTES=[
+  {x:57,y:51,to:'club',sx:3,sy:22},{x:63,y:51,to:'club',sx:20,sy:22},
+  {x:64,y:51,to:'club',sx:20,sy:22},{x:69,y:51,to:'club',sx:34,sy:22},
+  {x:113,y:7, to:'lutreau'},   /* chez les Lutreau, tout en haut du hameau */
+  {x:95, y:20,to:'jungers'},   /* chez toi */
+  {x:81, y:25,to:'lebel'},     /* chez les Lebel, au bord du 6 */
+  {x:109,y:37,to:'webb'},      /* chez les Webb */
+  {x:45, y:55,to:'molina'}     /* la maison Molina, derriere le pro shop */
+];
+DOORS.length=0; PORTES.forEach(d=>DOORS.push(Object.assign({},d)));
+/* et on ressort devant la porte, pas la ou elle etait avant */
+[['lutreau',113,8],['jungers',95,21],['lebel',81,26],['webb',109,38],['molina',45,56]]
+  .forEach(([id,x,y])=>{if(INT[id]){INT[id].ox=x;INT[id].oy=y;}});
+
 /* ---------- les retouches de l'editeur ----------
    Un monde = trois choses : des cases repeintes, des blocs redessines, et des
    personnages retouches. Tout est un ecart par rapport a ce que le code fabrique,
@@ -2373,8 +2396,36 @@ function appliqueMonde(mo){
   if(game.mission>MISSIONS.length)game.mission=MISSIONS.length;
   if(typeof placeGang==='function'){try{placeGang();}catch(e){}}
   recaleBalles();
+  recalePersonnages();
   if(typeof buildMini==='function'){try{buildMini();}catch(e){}}
 }
+/* Personne ne reste plante dans un arbre, dans un mur ou dans une mare : on
+   cherche la case libre la plus proche, en tournant autour. */
+function caseLibrePres(x,y,r0){
+  for(let r=r0||0;r<=6;r++)
+    for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){
+      if(Math.max(Math.abs(dx),Math.abs(dy))!==r)continue;
+      const a=x+dx,b=y+dy;
+      if(a<2||b<2||a>MW-3||b>MH-3)continue;
+      if(!SOLID.has(at(a,b)))return [a,b];
+    }
+  return null;
+}
+function recalePersonnages(){
+  NPCS.forEach(n=>{
+    if(n.inside)return;
+    if(!SOLID.has(at(n.x,n.y)))return;
+    const p=caseLibrePres(n.x,n.y,1);
+    if(p){n.x=p[0];n.y=p[1];}
+  });
+  ITEMS.forEach(o=>{
+    if(o.inside)return;
+    if(!SOLID.has(at(o.x,o.y)))return;
+    const p=caseLibrePres(o.x,o.y,1);
+    if(p){o.x=p[0];o.y=p[1];}
+  });
+}
+
 /* Une balle semee par le code peut se retrouver dans un arbre que Pierre a
    plante depuis. On la deplace sur la case libre la plus proche, et si le coin
    est entierement bouche, on la retire : une balle dans un tronc, ca n'existe pas. */
@@ -2519,7 +2570,7 @@ const NPCS=[
      ["J'ai déjeuné au club. Je dînerai au club. Je crois que je vais dormir au club."],
      ["J'aligne mon putt depuis tout à l'heure. Laisse-moi finir, il me reste deux mètres."],
      ["Tu peux me prêter 2 euros ? Je te rends dimanche. Enfin, ma mère te rend."]]},
- {id:'kuperfils',x:45,y:48,dir:0,inside:null,roam:1,name:'KUPERFILS',
+ {id:'kuperfils',x:45,y:48,dir:0,inside:null,roam:1,name:'KUPI',
   pal:pal('#6b6250','#c9c4a8','#4a4a3a','#33200f'),
   d:[["Nan mais je me suis lavé mardi. On est quel jour là ?"],
      ["Chez moi on s'essuie les pieds trois fois. Trois. Ma mère compte."],
@@ -2738,7 +2789,7 @@ const LOCKED=[
  {x:6,y:27,who:'LA CABANE',d:["Une cabane en planches, au fond du bois du 712.","Les petits racontent qu'il y a un mort dedans. Il y a trois raquettes et un ballon crevé."]},
  {x:25,y:15,who:'CHEZ LES MAMOUMANI',d:["Personne. Il n'y a jamais personne.","Une maison à étage, des vasistas, et six vitres qui n'ont jamais rien demandé."]},
  {x:112,y:62,who:'CHEZ LES MARTIN',d:["La maison des grands-parents de Louis. Deux sonnettes, aucune ne marche.","On n'entre pas chez les Martin. On attend Louis dehors, c'est comme ça."]},
- {x:112,y:70,who:'CHEZ LES KUPERFILS',d:["On enlève ses chaussures avant la porte. Avant, pas après.","Et on ne touche pas à la collection de poules de Laurence. Jamais."]},
+ {x:112,y:70,who:'CHEZ KUPI',d:["On enlève ses chaussures avant la porte. Avant, pas après.","Et on ne touche pas à la collection de poules de Laurence. Jamais."]},
  {x:112,y:78,who:'LA MAISON DU BOUT',d:["La dernière maison de la rangée. On l'appelle la secte.",
    "Une famille de cathos avec dix enfants, tous en polo rentré, tous très polis.",
    "Ils ne jouent pas au golf. Ils ne paient pas la cotisation.",
@@ -2780,22 +2831,22 @@ const SPOTS={
  paul:{h:[107,25],f:[105,36]}};
 const FEU_TALK=[
  ["VICTOR : Si on dort là, personne ne vient nous chercher avant demain midi.","ANTOINE : Moi personne ne vient me chercher avant dimanche de toute façon."],
- ["KUPERFILS : Vous sentez ? C'est le feu je crois.","CHARLES : Non Kupi. Ce n'est pas le feu."],
+ ["KUPI : Vous sentez ? C'est le feu je crois.","CHARLES : Non Kupi. Ce n'est pas le feu."],
  ["LOUIS : À cet endroit exact, en 1180, il y avait un moine.","VICTOR : Et il faisait quoi le moine ?","LOUIS : Il se taisait. Tu devrais essayer."],
  ["OSCAR : Cette nuit elle est very belle. Ma père il dit que les étoiles c'est des vieux soleils.","VICTOR : Ton père il dit beaucoup de choses."],
  ["PAUL : Les étoiles sont belles ce soir.","Personne ne répond. Personne n'ose.","CHARLES : Bon. Qui a les chamallows."],
  ["CHARLES : Celui qui va toucher la porte des Mamoumani gagne 10 euros.","ANTOINE : Tu n'as pas 10 euros.","CHARLES : Toi non plus. Donc c'est équilibré."],
  ["ARTHUR : J'ai déjà fait brûler un chêne entier ici.","LOUIS : Le chêne est là. Derrière toi.","ARTHUR : Un autre chêne."],
- ["KUPERFILS : J'ai ramené des chamallows. Ils étaient dans ma poche depuis mardi.","CHARLES : Garde-les Kupi. Garde-les bien."],
+ ["KUPI : J'ai ramené des chamallows. Ils étaient dans ma poche depuis mardi.","CHARLES : Garde-les Kupi. Garde-les bien."],
  ["MARGOT : Je le dirai pas à maman.","CHARLES : Tu le diras dans dix minutes.","MARGOT : Oui."],
  ["ALEX : Moi j'ai le droit d'être là.","OSCAR : Tu as le droit. Mais tu ne dis rien."],
  ["VALENTINE : Mon frère a dit qu'il avait cramé un chêne.","LOUIS : Il a cramé une brindille.","ARTHUR : C'était un jeune chêne."],
  ["MARGAUX : Je suis sortie. Une fois. Voilà, c'est fait.","VICTOR : On applaudit ?","MARGAUX : Non."],
- ["ANTOINE : Ma mère vient dimanche.","KUPERFILS : On sait.","ANTOINE : Je disais ça comme ça."],
+ ["ANTOINE : Ma mère vient dimanche.","KUPI : On sait.","ANTOINE : Je disais ça comme ça."],
  ["CHARLES : L'année prochaine on aura quatorze ans.","PAUL : Et alors ?","CHARLES : Et alors rien. Je disais."],
  ["OSCAR : Cette été il est le meilleur été.","LOUIS : Ce. Cet été.","OSCAR : C'est ce que j'ai dit."],
  ["VICTOR : Si on se perd de vue, on se retrouve ici. Même heure, dans vingt ans.","Personne ne répond. Tout le monde a entendu."],
- ["KUPERFILS : Il y a un truc qui bouge dans les fougères.","ARTHUR : C'est le sanglier.","KUPERFILS : Arthur, il n'y a pas de sanglier.","ARTHUR : Il y a un sanglier."],
+ ["KUPI : Il y a un truc qui bouge dans les fougères.","ARTHUR : C'est le sanglier.","KUPI : Arthur, il n'y a pas de sanglier.","ARTHUR : Il y a un sanglier."],
  ["PAUL : Les étoiles sont belles ce soir.","Un silence. Puis Charles crache dans le feu, et ça repart."],
  ["MARGOT : Qui a jeté une canette dans les fougères ?","VICTOR : Tout le monde.","MARGOT : Ah. D'accord."],
  ["ARTHUR : J'ai encore des clopes.","LOUIS : On a vu.","ARTHUR : Je disais ça pour ceux qui en veulent."],
@@ -2900,7 +2951,27 @@ const ACTES=['','ON N\'A PLUS L\'ÂGE','LE KING AND JACK','LE GOLF POUR DE VRAI'
   'L\'ÉMANCIPATION','LES CONNERIES','LA FIN DE L\'ENFANCE'];
 /* les textes tels que le code les ecrit : on n'en garde que ce qui s'edite,
    pas les positions que les personnages bougent tout seuls en jouant */
-const NPCS_BASE={}; NPCS.forEach(n=>{NPCS_BASE[n.id]={name:n.name,x:n.x,y:n.y,inside:n.inside||null,d:clone(n.d||[])};});
+/* ---------- ou se tiennent les gens, sur la carte de Pierre ----------
+   Le caddie master devant sa cabane, Cathy devant le pro shop, l'accueil devant
+   le secretariat, les pros au bout des tapis de practice. */
+const POSTES={
+  alain:[39,62], cathy:[45,48],
+  william:[44,62], philippe:[45,62], helene:[43,62],
+  gilles:[10,57], pascal:[18,57],
+  daniel:[41,72], georgie:[59,55], sylvie:[60,54], sorin:[62,55],
+  fabrice:[70,30], jardinier1:[86,44], jardinier2:[62,72],
+  laetitia:[13,15], cyril:[11,15], petit:[10,20],
+  charles:[95,22], victor:[62,55], oscar:[52,66], antoine:[46,63],
+  kuperfils:[91,38], louis:[83,35], paul:[112,63], olivier:[24,58],
+  margot:[113,9], margaux:[81,26], alex:[110,38],
+  arthur:[112,71], valentine:[112,79], julien:[110,79],
+  sophieg:[100,38], secte1:[100,38], secte2:[101,38],
+  duke:[113,10], panique:[95,21], sanglier:[70,20]
+};
+const NPCS_BASE={}; NPCS.forEach(n=>{
+  const p=POSTES[n.id];
+  if(p&&!n.inside){n.x=p[0];n.y=p[1];}
+  NPCS_BASE[n.id]={name:n.name,x:n.x,y:n.y,inside:n.inside||null,d:clone(n.d||[])};});
 const ITEMS_BASE={}; ITEMS.forEach(o=>{ITEMS_BASE[o.id]={n:o.n,trouve:o.trouve,txt:o.txt,x:o.x,y:o.y,inside:o.inside||null};});
 const MISSIONS_BASE=clone(MISSIONS), ACTES_BASE=ACTES.slice(), LOCKED_BASE=clone(LOCKED);
 /* les reperes : ce qui est de la logique et pas de la peinture. Deplacer un depart
@@ -3298,7 +3369,9 @@ function arrive(){
       const bb=BALLS[b.k];
       toast("J'ai trouvé une "+bb.n+(bb.v?' ('+String(bb.v).replace('.',',')+' €)':''));}
     for(const it of ITEMS) if(!game.items[it.id]&&!it.inside&&it.x===game.px&&it.y===game.py) takeItem(it);
-    if(t===T.DIRT&&game.py<=30){
+    /* la pente du grass board : derriere le hameau, en terre, qu'elle soit
+       battue ou abimee. Ailleurs un chemin de terre reste un chemin. */
+    if((t===T.DIRT||t===T.TERRE)&&game.px>=95&&game.py<=34){
       askYN('On fait du grass board ? La planche est en haut.','CHARLES',()=>startPente(),
         ()=>say(['Alors pousse-toi, moi je descends.'],null,'CHARLES'));
       return;}
@@ -3425,10 +3498,12 @@ function interact(){
   if(estDepart(t)||estDepart(under)){departDu1();return;}
   if(t===T.MAT||under===T.MAT){startPractice();return;}
   if(t===T.TVGC){gamecube();return;}
-  if(tx===49&&ty===61){chaparde();return;}
-  if(t===T.CART){
-    askYN('La voiturette de Daniel. Tu la prends ?','LE PARKING',
-      ()=>voleVoiturette(),()=>say(['Tu la regardes encore un peu. Un jour.']));
+  /* la cabane du caddie master : on y chaparde par la porte */
+  if(tx===PORTES_CADDIE[0]&&ty===PORTES_CADDIE[1]){chaparde();return;}
+  /* le pick-up du greenkeeper, ou la vieille voiturette : ca se vole pareil */
+  if(t===T.CART||VOLABLE.has(t)||VOLABLE.has(under)){
+    askYN('Le pick-up du greenkeeper. La clé est dessus. Tu le prends ?','LE DOMAINE',
+      ()=>voleVoiturette(),()=>say(['Tu le regardes encore un peu. Un jour.']));
     return;}
   if(t===T.SDOOR||t===T.FDOOR||t===T.BDOOR||t===T.HBAIE||t===T.STORE){
     const L=LOCKED.find(l=>l.x===tx&&l.y===ty);
@@ -3562,7 +3637,13 @@ function chaparde(){
 function voleVoiturette(){
   if(game.voiturette){say(["Tu es déjà dessus. Descends d'abord."]);return;}
   game.voiturette=true;game.bike=false;
-  game.chasse={on:true,x:49,y:62,t:0};
+  /* Alain part de sa cabane. Si le pick-up est a l'autre bout du domaine, il
+     coupe par les bois : sinon il court une heure et personne ne le voit. */
+  const al=NPCS.find(n=>n.id==='alain');
+  let ax=al?al.x:POSTES.alain[0], ay=al?al.y:POSTES.alain[1];
+  const loin=Math.hypot(ax-game.px,ay-game.py);
+  if(loin>28){ax=game.px+(ax-game.px)/loin*24; ay=game.py+(ay-game.py)/loin*24; }
+  game.chasse={on:true,x:Math.round(ax),y:Math.round(ay),t:0};
   mission('voiturette');
   sfx('klaxon');
   say(["La clé est sur le contact. Elle est toujours sur le contact.",
@@ -3799,7 +3880,7 @@ function turn(){
 const USOPEN=[
  "VICTOR : Antoine Zirimis, sur le green du 18, pour gagner l'US Open. Que se passe-t-il ?",
  "CHARLES : Antoine Zirimis, sur le green du 18, pour l'US Open. Le monde entier retient son souffle.",
- "KUPERFILS : Antoine Zirimis, pour l'US Open, sur le green du 18. Silence sur le parcours.",
+ "KUPI : Antoine Zirimis, pour l'US Open, sur le green du 18. Silence sur le parcours.",
  "OSCAR : Antoine Zirimis, on the green of the 18, for the US Open. What is happening ?"];
 function autoClub(d,tee){
   let bi=1,bd=1e9;
@@ -4864,7 +4945,7 @@ function feuMenu(){
       "C'est tiède et c'est amer. Tu finis quand même.",
       game.bieres===1?"CHARLES : Tu fais la grimace.":
       game.bieres===2?"VICTOR : Deuxième. On te surveille.":
-        "KUPERFILS : Trois. Tu vas dormir dans le rough."],()=>{
+        "KUPI : Trois. Tu vas dormir dans le rough."],()=>{
       askYN('Tu la lances dans les bois derrière ?','LE FEU',()=>{
         const dx=FEU.x+3+((Math.random()*4)|0), dy=FEU.y-3+((Math.random()*7)|0);
         if(!SOLID.has(at(dx,dy)))put(dx,dy,T.CANETTE);
@@ -4968,7 +5049,8 @@ function placeAccueil(){
     const n=NPCS.find(x=>x.id===id); if(!n)return;
     n.gone=(id===off);
     if(!n.gone){const k=ACCUEIL.filter(a=>a!==off).indexOf(id);
-      n.x=38+k*2;n.y=43;n.dir=0;}
+      /* devant le secretariat, sur la carte de Pierre */
+      n.x=POSTES.william[0]+k;n.y=POSTES.william[1];n.dir=0;}
   });
 }
 /* ---------- la nuit et ses lumieres ----------
@@ -5124,7 +5206,7 @@ function gangTalk(n){
 const VELO_BUT={x:109,y:27};
 const VELO_LOL=[
  ["VICTOR : Sans les mains. Regarde. Regarde bien. Sans les mains."],
- ["CHARLES : On descend la pente à vélo. Personne ne l'a jamais fait.","KUPERFILS : Si. Toi. Trois fois. Tu es tombé trois fois."],
+ ["CHARLES : On descend la pente à vélo. Personne ne l'a jamais fait.","KUPI : Si. Toi. Trois fois. Tu es tombé trois fois."],
  ["ANTOINE : Moi je freine avant le virage.","VICTOR : Personne ne freine avant le virage, Antoine."],
  ["MARGOT : Je vous suis mais je vous double au portail."],
  ["OSCAR : My bike il fait un bruit very bizarre depuis le trottoir."],
@@ -5790,7 +5872,7 @@ const PICKS=[
   intro:["TA MÈRE : Amuse toi bien sur la parcours ! Et prends ton casquette, il fait un grand soleil.","Duke a encore ouvert le portail. Duke est déjà loin."]},
  {id:'antoine',n:'ANTOINE',npc:'antoine',sp:[12,11,'lutreau'],tag:"Pull orange, grosses lunettes. Il aligne longtemps.",
   intro:["TA MÈRE : Bon. On te récupère dimanche soir. Sois sage, ne dérange personne.","La voiture fait demi-tour dans l'allée et repart. On est mardi."]},
- {id:'kuperfils',n:'KUPERFILS',npc:'kuperfils',sp:[110,71,null],tag:"Grand. Tape aussi fort qu'Oscar.",
+ {id:'kuperfils',n:'KUPI',npc:'kuperfils',sp:[110,71,null],tag:"Grand. Tape aussi fort qu'Oscar.",
   intro:["TA MÈRE : Personne n'entre dans la maison avec ses chaussures. Personne. Tu me le répètes.","TA MÈRE : Et on ne touche pas à la collection de poules de la salle à manger. Jamais."]},
  {id:'louis',n:'LOUIS',npc:'louis',sp:[110,63,null],tag:"Petit. Le plus précis de la bande.",
   intro:["TON PÈRE : Tu as bien ton polo ? Nous déjeunons au club à treize heures précises.","TA MÈRE : Et tu ne joues pas avec n'importe qui, Louis. Tu vois ce que je veux dire."]},
@@ -6271,7 +6353,7 @@ if(MODE_EDIT){
     NPCS_BASE:NPCS_BASE,ITEMS_BASE:ITEMS_BASE,MISSIONS_BASE:MISSIONS_BASE,
     ACTES_BASE:ACTES_BASE,LOCKED_BASE:LOCKED_BASE,
     BIBLI:BIBLI,MIROIR:MIROIR,ROT:ROT,SAUT:SAUT,MODELES:MODELES,ART_MULTI:ART_MULTI,
-    PERSO0:PERSO0,BLOCS_PERSO:BLOCS_PERSO,PERSO_CASE:PERSO_CASE,TIRADES:TIRADES,
+    PERSO0:PERSO0,BLOCS_PERSO:BLOCS_PERSO,PERSO_CASE:PERSO_CASE,TIRADES:TIRADES,VOLABLE:VOLABLE,
     VAR0:VAR0,baseT:baseT,poseDe:poseDe,tourneCase:tourneCase,miroirCase:miroirCase,
     COMPO:COMPO,compose:compose,fondDe:fondDe,motifDe:motifDe,TRANSP:TRANSP,
     HOLES:HOLES,DOORS:DOORS,HOLES_BASE:HOLES_BASE,DOORS_BASE:DOORS_BASE,estDepart:estDepart,

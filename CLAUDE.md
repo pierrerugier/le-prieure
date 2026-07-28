@@ -63,6 +63,25 @@ Les balles à trouver sont semées par le code sur le terrain d'origine. Une d'e
 retrouver dans un arbre planté depuis : `recaleBalles()` la déplace sur la case libre la plus
 proche, ou la retire si le coin est bouché.
 
+## Les gens et les portes
+
+`POSTES` dit où se tient chacun sur le domaine de Pierre : Alain devant sa cabane (39,62),
+Cathy devant le pro shop (45,48), l'accueil devant le secrétariat (43-45,62), Gilles et Pascal
+au bout des tapis de practice (y=56), Daniel au parking. `recalePersonnages()` rattrape le
+reste après le chargement de la carte : personne ne reste planté dans un arbre, un mur ou une
+mare.
+
+`PORTES` remplace la liste `DOORS` après `buildWorld`. **La peinture des portes d'origine ne
+bouge pas** (les retouches de Pierre sont un écart avec ce terrain-là), seule la logique suit
+son domaine : Lutreau 113,7 — chez toi 95,20 — Lebel 81,25 — Webb 109,37 — Molina 45,55 — et
+les quatre portes du club house, dont les points de chute tombent sur ses sorties.
+
+Le **pick-up du greenkeeper** se vole comme la voiturette (`VOLABLE`), et Alain part de sa
+cabane. S'il est à l'autre bout du domaine il coupe par les bois, sinon il court une heure et
+personne ne le voit.
+
+Victor Kuperfils s'appelle **Kupi**. Partout.
+
 ## L'atelier
 
 `/editeur` ouvre un éditeur dans la même page que le jeu, avec les mêmes objets en mémoire :

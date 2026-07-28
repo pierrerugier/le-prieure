@@ -38,7 +38,7 @@ const BANDE = [
   { id: 'victor', nom: 'VICTOR', jour: [50, 50], hameau: [99, 9], feu: [108, 31] },
   { id: 'oscar', nom: 'OSCAR', jour: [24, 42], hameau: [94, 65], feu: [110, 31] },
   { id: 'antoine', nom: 'ANTOINE', jour: [60, 58], hameau: [105, 9], feu: [111, 33] },
-  { id: 'kuperfils', nom: 'KUPERFILS', jour: [45, 48], hameau: [102, 16], feu: [110, 35] },
+  { id: 'kuperfils', nom: 'KUPI', jour: [45, 48], hameau: [102, 16], feu: [110, 35] },
   { id: 'louis', nom: 'LOUIS', jour: [70, 29], hameau: [112, 15], feu: [108, 35] },
   { id: 'paul', nom: 'PAUL', jour: [96, 24], hameau: [107, 21], feu: [109, 30] }
 ];

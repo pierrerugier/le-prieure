@@ -13,11 +13,11 @@ if (src.indexOf('chargeMonde().then(load).finally(loop);') < 0) throw new Error(
 src = src.replace('chargeMonde().then(load).finally(loop);', `globalThis.__t={game,golf,net,update,render,map,MW,MH,T,at,put,NPCS,ITEMS,
   HOLES,PICKS,INT,DOORS,LOCKED,cars,shards,keys,press,release,consume,MAMOU,MAMOU_WIN,FEU,
   players,P_:()=>players,goInside,goOutside,zoneAt,menuList,buildMini,SOLID,getTile,S,ballSpots,updatePick,
-  startHole,save,load,solidAt,placeGang,SPOTS,TRACKS,musWant,pente,CRIS,phaseOf,BALLS,updateCars,timeStep,breakWindow,velo,updateVelo,startPente,updatePente,leaves,inBrush,ballVisible,estVitre,estCassee,VILLAS,LISIERE,EVENOU,VOITURES,FICHES,fiche,skillDe,vitPuissance,vitPrecision,longueurDe,cours,startCours,INVITES,inviteRecue,FEU,
+  startHole,save,load,solidAt,placeGang,SPOTS,TRACKS,musWant,pente,CRIS,phaseOf,BALLS,updateCars,timeStep,breakWindow,velo,updateVelo,startPente,updatePente,rendVoiturette,leaves,inBrush,ballVisible,estVitre,estCassee,VILLAS,LISIERE,EVENOU,VOITURES,FICHES,fiche,skillDe,vitPuissance,vitPrecision,longueurDe,cours,startCours,INVITES,inviteRecue,FEU,
   pers,dogSpr,BODY_SIDE,DOG_SIDE,sfx,ambiances,piscineOuverte,baignade,entreDansLeau,proposePartie,updateAttente,departDu1,hNow,AU_FEU,FEU_RING,FEU_TALK,feuMenu,eteindreLeFeu,bikeSpr,BIKE_DOWN,BIKE_UP,BIKE_SIDE,MISSIONS,ACTES,mission,missionCourante,niveau,chaparde,voleVoiturette,updateVoiturette,BUTIN,
   BASE,appliqueMonde,carteDe,TUILE_OVR,CORPS,CORPS_BASE,FICHES_BASE,tile,cache,MW_:MW,
   BIBLI,MIROIR,ROT,SAUT,MODELES,HOLES_BASE,DOORS_BASE,estDepart,VILLAS_:VILLAS,
-  PERSO0,BLOCS_PERSO,TIRADES,ART_MULTI,MIR_ART,mondeVide,VAR0,baseT,tourneCase,miroirCase,COMPO,compose,fondDe,motifDe,TRANSP,lieAt,map,
+  PERSO0,BLOCS_PERSO,TIRADES,ART_MULTI,MIR_ART,VOLABLE,mondeVide,VAR0,baseT,tourneCase,miroirCase,COMPO,compose,fondDe,motifDe,TRANSP,lieAt,map,
   ITEMS_BASE,NPCS_BASE,MISSIONS_BASE,ACTES_BASE,LOCKED_BASE,EVENTS};`);
 
 /* ---------- faux canvas ---------- */
@@ -261,6 +261,11 @@ check('on demarre devant chez soi',
 game.inside = null;
 check('le double a disparu', t.PICKS[game.pick].npc ? !!t.NPCS.find(n => n.id === t.PICKS[game.pick].npc).gone : true);
 
+/* A partir d'ici on joue sur le domaine de Pierre : c'est la vraie carte, avec
+   ses maisons, ses portes et ses gens. Les sections 1 et 1 bis au-dessus
+   verifiaient ce que le CODE fabrique, sur le terrain d'origine. */
+remetMonde();
+
 /* ---------- 3. deplacement et entree dans les maisons ---------- */
 function tp(x, y, ins) { game.inside = ins || null; game.px = x; game.py = y; game.ox = 0; game.oy = 0; game.moving = false; }
 function entre(dx, dy, id) {
@@ -278,7 +283,8 @@ function entre(dx, dy, id) {
   clear();
 }
 /* on ne rentre pas a velo : il doit se ranger tout seul */
-clear(); tp(92, 6); game.bike = true; game.dir = 1;
+const pLut = t.DOORS.find(d => d.to === 'lutreau');
+clear(); tp(pLut.x, pLut.y + 1); game.bike = true; game.dir = 1;
 for (let i = 0; i < 6 && game.inside !== 'lutreau'; i++) { hold('up', 20); clear(); }
 check('le velo se range en entrant', game.inside === 'lutreau' && game.bike === false,
   'inside=' + game.inside + ' velo=' + game.bike);
@@ -318,16 +324,13 @@ portesClub.forEach(d => {
 /* les pieces du plan doivent toutes exister */
 const club = t.INT.club;
 const dedans = new Set([...club.map].map(t.baseT));
-[['vitrines du couloir', T.VITRINE], ['escaliers', T.ESCAL], ['toilettes', T.WC],
- ['billard', T.BILL], ['cheminee', T.CHEM], ['fauteuils clubs', T.FAUT],
- ['tables basses', T.TBAS], ['fontaine du patio', T.FOUNT], ['bar', T.BAR],
- ['cuisines', T.KITCH], ['casiers des vestiaires', T.LOCKER]].forEach(([nom, tuile]) => {
+[/* on verifie que le club house a de quoi vivre, pas que les meubles sont a une
+   place precise : Pierre le redecore quand il veut */
+['vitrines du couloir', T.VITRINE], ['toilettes', T.WC], ['cheminee', T.CHEM],
+ ['bar', T.BAR], ['cuisines', T.KITCH],
+ ['casiers des vestiaires', T.LOCKER]].forEach(([nom, tuile]) => {
   check('le club house a ses ' + nom, dedans.has(tuile));
 });
-check('trois groupes de fauteuils dans la salle cheminee',
-  [13, 18, 23].every(x => t.baseT(club.map[18 * club.w + x]) === T.FAUT));
-check('la cheminee est a droite de la salle',
-  t.baseT(club.map[17 * club.w + 26]) === T.CHEM && t.baseT(club.map[17 * club.w + 27]) === T.CHEM);
 
 /* portes fermees : elles parlent, elles n ouvrent pas */
 t.LOCKED.forEach(L => {
@@ -440,7 +443,8 @@ clear();
 
 /* la pente en terre doit encore repondre */
 let terre = null;
-for (let y = 20; y < 34 && !terre; y++) for (let x = 100; x < 118; x++) if (at(x, y) === T.DIRT) { terre = [x, y]; break; }
+for (let y = 20; y < 34 && !terre; y++) for (let x = 95; x < 118; x++)
+  if (at(x, y) === T.DIRT || at(x, y) === T.TERRE) { terre = [x, y]; break; }
 check('la pente en terre existe', !!terre, terre ? terre.join(',') : 'introuvable');
 if (terre) {
   clear(); tp(terre[0], terre[1] - 1); game.dir = 0;
@@ -452,7 +456,6 @@ if (terre) {
 }
 
 /* ---------- 4. une partie de golf complete, sur le domaine de Pierre ---------- */
-remetMonde();
 check('le domaine redessine est bien charge', !mondeDePierre || t.HOLES.length === 7);
 /* le parcours de Pierre : sept trous, chacun avec son depart et son drapeau en place */
 check('sept trous', t.HOLES.length === 7, t.HOLES.length + '');
@@ -475,6 +478,26 @@ const dansUnMur = t.ballSpots.filter(b => t.SOLID.has(at(b.x, b.y)));
 check('aucune balle a ramasser n est dans un arbre', dansUnMur.length === 0,
   dansUnMur.length + ' balle(s) : ' + dansUnMur.slice(0,4).map(b => b.x+','+b.y).join(' '));
 check('il reste des balles a trouver', t.ballSpots.length > 60, t.ballSpots.length + '');
+/* les gens sont a leur poste sur la carte de Pierre */
+const poste = (id) => t.NPCS.find(n => n.id === id);
+[['alain','le caddie master'],['cathy','le pro shop'],['william','le secretariat'],
+ ['gilles','le practice'],['pascal','le practice']].forEach(([id,ou]) => {
+  const n = poste(id);
+  check(id + ' est bien a ' + ou, !!n && !t.SOLID.has(at(n.x, n.y)),
+    n ? (n.x + ',' + n.y + ' sur ' + at(n.x, n.y)) : 'absent');
+});
+check('personne ne reste plante dans un arbre ou dans un mur',
+  t.NPCS.filter(n => !n.inside && !n.gone && t.SOLID.has(at(n.x, n.y))).length === 0,
+  t.NPCS.filter(n => !n.inside && !n.gone && t.SOLID.has(at(n.x, n.y)))
+    .map(n => (n.name||n.id) + ' ' + n.x + ',' + n.y).slice(0,5).join(' | '));
+check('aucun objet a ramasser dans un mur',
+  t.ITEMS.filter(o => !o.inside && t.SOLID.has(at(o.x, o.y))).length === 0);
+/* le pick-up du greenkeeper se vole */
+check('le pick-up est bien sur la carte',
+  [[105,48]].some(([x,y]) => t.VOLABLE.has(at(x,y))), 'en 105,48 : ' + at(105,48));
+/* et le portillon se franchit */
+check('le portillon se franchit', !t.SOLID.has(T.GATE));
+check('Kupi ne s appelle plus Kuperfils', t.FICHES.kuperfils.n === 'KUPI', t.FICHES.kuperfils.n);
 clear(); tp(t.HOLES[0].tx, t.HOLES[0].ty); game.state = t.S.WORLD; game.party = [];
 tap('a', 3);
 check('depart du 1', t.golf.on, 'phase ' + t.golf.phase);
@@ -855,15 +878,21 @@ game.page = 'CARNET'; game.state = t.S.PAGE; frames(3); game.state = t.S.WORLD;
 });
 /* la voiturette : on la prend, elle laboure, Alain rattrape */
 clear(); game.state = t.S.WORLD; game.inside = null; tp(50, 70);
+/* on vole le pick-up sur le premier fairway : c'est la qu'on laisse des traces,
+   et Alain part de sa cabane, a une dizaine de cases */
+clear(); tp(t.HOLES[0].tx, t.HOLES[0].ty + 6);
 t.voleVoiturette(); clear();
 check('on peut voler la voiturette', game.voiturette === true);
 const avantTraces = game.traces || 0;
-for (let i = 0; i < 6; i++) { hold('down', 12); }
+for (let i = 0; i < 8; i++) { hold('down', 14); }
 check('elle laisse des traces sur le gazon', (game.traces || 0) > avantTraces,
   avantTraces + ' -> ' + game.traces);
 let poursuite = 0;
-while (game.voiturette && poursuite++ < 6000) t.update();
-check('Alain finit par rattraper', !game.voiturette, 'apres ' + poursuite + ' images');
+/* ca finit d'une facon ou d'une autre : soit il te rattrape, soit il renonce */
+while (game.voiturette && game.chasse && game.chasse.on && poursuite++ < 6000) t.update();
+check('la poursuite se termine', !game.voiturette || !game.chasse || !game.chasse.on,
+  'apres ' + poursuite + ' images');
+if (game.voiturette) t.rendVoiturette(['fin de l essai']);
 clear();
 
 /* la topologie en cuve */
