@@ -363,7 +363,9 @@ const T={FAIR:0,ROUGH:1,GREEN:2,SAND:3,WATER:4,PATH:5,TREE:6,DENSE:7,TEE:8,FLAG:
   BUIT1:335,BUIT2:336,BUIT3:337,MASS1:338,MASS2:339,
   /* Deux courts de tennis entiers, quatre cases de large sur six de haut. Les
      numeros se suivent dans l'ordre de lecture, la rangee du filet est la 4e. */
-  TENQ:340,TENT:364};
+  TENQ:340,TENT:364,
+  /* les panneaux de distance du practice, poses sur le fairway sans sol a eux */
+  PAN50:388,PAN100:389,PAN150:390,PAN200:391};
 /* Sept voitures de profil, quatre cases chacune, a partir de VOIT0 :
    quatre identifiants d'affilee par modele, dans l'ordre haut-gauche, haut-droit,
    bas-gauche, bas-droit. */
@@ -441,7 +443,9 @@ bib('terrain',[[T.FAIR,'Fairway'],[T.ROUGH,'Rough'],[T.GREEN,'Green'],[T.SAND,'B
  [T.PATH,'Allée sablée'],[T.GRAVEL,'Gravier'],[T.CHAMP,'Champ'],[T.TALUS,'Talus'],[T.TALUH,'Haut de talus'],
  [T.TRACE,'Trace de pneu'],[T.CARRP,'Carrelage de piscine'],[T.MINIG,'Mini-golf']]);
 bib('golf',[[T.FLAG,'Drapeau'],[T.MAT,'Tapis de practice'],[T.STALL,'Séparation de practice'],
- [T.CART,'Voiturette'],[T.CHARIOT,'Chariot'],[T.PICKUP,'Pick-up']]);
+ [T.CART,'Voiturette'],[T.CHARIOT,'Chariot'],[T.PICKUP,'Pick-up'],
+ [T.PAN50,'Panneau 50 mètres'],[T.PAN100,'Panneau 100 mètres'],
+ [T.PAN150,'Panneau 150 mètres'],[T.PAN200,'Panneau 200 mètres']]);
 motif('golf','Départ, trou vers le bas',2,2,[T.DEPTL,T.DEPTR,T.DEPBL,T.DEPBR]);
 motif('golf','Départ, trou sur le côté',2,2,[T.DEPVTL,T.DEPVTR,T.DEPVBL,T.DEPVBR]);
 motif('golf','Voiturette de golf',2,2,[T.GOLFTL,T.GOLFTR,T.GOLFBL,T.GOLFBR]);
@@ -981,6 +985,29 @@ function dessineCanape(g,vert){
     for(let x=7;x<44;x+=14)R('#cdbd9a',x,4,1,9);
   }
 }
+/* ---------- les panneaux de distance du practice ----------
+   Un piquet, une plaque jaune, un nombre. Les chiffres font trois pixels de large
+   sur cinq de haut, comme sur les vrais panneaux qu'on lit de loin. */
+const CHIFFRES={
+ '0':['111','101','101','101','111'], '1':['010','110','010','010','111'],
+ '2':['111','001','111','100','111'], '3':['111','001','111','001','111'],
+ '4':['101','101','111','001','001'], '5':['111','100','111','001','111'],
+ '6':['111','100','111','101','111'], '7':['111','001','010','010','010'],
+ '8':['111','101','111','101','111'], '9':['111','101','111','001','111']};
+function chiffre(g,c,x,y,col){
+  const m=CHIFFRES[c]; if(!m)return;
+  g.fillStyle=col;
+  for(let j=0;j<5;j++)for(let i=0;i<3;i++) if(m[j][i]==='1')g.fillRect(x+i,y+j,1,1);
+}
+function panneau(g,n){
+  const s=String(n), l=s.length*4-1, x0=Math.round((16-l)/2);
+  g.fillStyle='#6b6250'; g.fillRect(7,10,2,6);
+  g.fillStyle='#4a4436'; g.fillRect(7,15,2,1);
+  g.fillStyle='#3a3a2a'; g.fillRect(1,2,14,9);
+  g.fillStyle='#e8b83a'; g.fillRect(2,3,12,7);
+  g.fillStyle='#f2d26a'; g.fillRect(2,3,12,1);
+  for(let k=0;k<s.length;k++) chiffre(g,s[k],x0+k*4,4,'#2b2b33');
+}
 /* ---------- ce qui se pose sans sol a soi ----------
    Tout ce qui est un objet et pas un terrain : ca laisse voir ce qu'il y a dessous.
    Un terrain, un mur, un toit, un sol d'interieur n'en font pas partie. */
@@ -1004,7 +1031,8 @@ const TRANSP=new Set([
   T.MAJ1,T.MAJ2,T.MAJ3,T.MAJ4,T.MAJ5,T.MAJ6,
   T.PINT1,T.PINT2,T.PINT3,T.PINT4,T.PINT5,T.PINT6,
   T.BUIT1,T.BUIT2,T.BUIT3,T.MASS1,T.MASS2,
-  T.GOLFTL,T.GOLFTR,T.GOLFBL,T.GOLFBR,T.PICKTL,T.PICKTR,T.PICKBL,T.PICKBR]);
+  T.GOLFTL,T.GOLFTR,T.GOLFBL,T.GOLFBR,T.PICKTL,T.PICKTR,T.PICKBL,T.PICKBR,
+  T.PAN50,T.PAN100,T.PAN150,T.PAN200]);
 for(let i=0;i<MODELES.length*4;i++)TRANSP.add(T.VOIT0+i);
 for(let i=0;i<9*4;i++)TRANSP.add(T.MIR0+i);
 /* les blocs fabriques dans l'atelier peuvent l'etre aussi, ils le disent eux-memes */
@@ -1477,6 +1505,11 @@ function tile(id,v,f){
     case T.BUIT3: buisson(g,16,16,OLIVE); break;
     case T.MASS1: grand(g,0,2,gg=>buisson(gg,32,16,SAULE)); break;
     case T.MASS2: grand(g,1,2,gg=>buisson(gg,32,16,SAULE)); break;
+    /* ---------- les panneaux de distance du practice ---------- */
+    case T.PAN50: panneau(g,50); break;
+    case T.PAN100: panneau(g,100); break;
+    case T.PAN150: panneau(g,150); break;
+    case T.PAN200: panneau(g,200); break;
     /* ---------- les deux courts de tennis ---------- */
     case T.TENQ: case T.TENT: break;   /* jamais atteint, traite avant le switch */
     /* ---------- ce que l'atelier a ajoute ---------- */
@@ -2081,6 +2114,19 @@ function buildWorld(){
   put(52,49,T.SIGN);
 }
 buildWorld();
+/* ---------- les panneaux de distance du practice ----------
+   On tape vers le nord depuis les tapis, alors les panneaux remontent la ligne
+   de tir. Une case vaut quatorze metres : 50, 100, 150 et 200 tombent la. */
+const PANNEAUX=[[T.PAN50,52],[T.PAN100,49],[T.PAN150,45],[T.PAN200,42]];
+function poseLesPanneaux(){
+  PANNEAUX.forEach(([t,y])=>{ [8,22].forEach(x=>{
+    if(x<1||y<1||x>=MW-1||y>=MH-1)return;
+    if(SOLID.has(at(x,y))||EAUX_PAN.has(at(x,y)))return;
+    put(x,y,t);
+  });});
+}
+const EAUX_PAN=new Set([T.WATER,T.MARE,T.POOL]);
+poseLesPanneaux();
 /* la carte telle que le code la fabrique : sert de reference a l'editeur */
 const BASE={domaine:map.slice()};
 
@@ -2347,10 +2393,12 @@ function appliqueMonde(mo){
   /* les textes : on repart de ce que le code ecrit, puis on repose les retouches */
   NPCS.forEach(n=>{
     const b=NPCS_BASE[n.id]; if(!b)return;
-    n.name=b.name;n.x=b.x;n.y=b.y;n.inside=b.inside;n.d=clone(b.d);
+    n.name=b.name;n.x=b.x;n.y=b.y;n.inside=b.inside;n.d=clone(b.d);n.dFixe=false;
     const r=(MONDE.pnj||{})[n.id];
     if(r){if(r.name!=null)n.name=r.name;if(r.x!=null)n.x=r.x;if(r.y!=null)n.y=r.y;
-      if(r.inside!==undefined)n.inside=r.inside||null;if(r.d)n.d=clone(r.d);}
+      if(r.inside!==undefined)n.inside=r.inside||null;
+      /* une replique ecrite dans l'atelier gagne toujours sur l'agenda */
+      if(r.d){n.d=clone(r.d);n.dFixe=true;}}
   });
   ITEMS.forEach(o=>{
     const b=ITEMS_BASE[o.id]; if(!b)return;
@@ -2396,6 +2444,9 @@ function appliqueMonde(mo){
   if(game.mission>MISSIONS.length)game.mission=MISSIONS.length;
   if(typeof placeGang==='function'){try{placeGang();}catch(e){}}
   recaleBalles();
+  poseLesPanneaux();
+  centrePiscine();
+  trouveLeFeu();
   recalePersonnages();
   if(typeof buildMini==='function'){try{buildMini();}catch(e){}}
 }
@@ -2469,8 +2520,21 @@ async function chargeMonde(){
     }
   }catch(e){}
   try{const raw=localStorage.getItem(MONDEKEY); if(raw)loc=JSON.parse(raw);}catch(e){}
+  /* dernier recours : la copie du domaine commitee a cote du jeu. C'est elle qui
+     sauve la mise quand le disque du serveur a ete efface, et c'est elle qui fait
+     tourner la version hors ligne. */
+  let fic=null;
+  if(mondeVide(srv)&&mondeVide(loc)){
+    try{
+      if(typeof fetch==='function'&&location.protocol!=='file:'){
+        const r=await fetch('monde.json',{cache:'no-store'});
+        if(r.ok)fic=await r.json();
+      }
+    }catch(e){}
+  }
   let mo=srv;
   if(mondeVide(srv)&&!mondeVide(loc)){mo=loc;MONDE_SECOURS=true;}
+  else if(mondeVide(srv)&&mondeVide(loc)&&!mondeVide(fic))mo=fic;
   if(!mondeVide(mo))appliqueMonde(mo);
 }
 
@@ -2808,18 +2872,49 @@ const LOCKED=[
  {x:39,y:42,who:'SECRÉTARIAT',d:["Le secrétariat. Deux personnes derrière le comptoir, jamais les mêmes."]},
  {x:75,y:56,who:'VESTIAIRES PISCINE',d:["Vestiaires de la piscine. Un banc mouillé, trois serviettes, aucune à toi."]}
 ];
-/* Le cercle du feu : douze places, et une treizieme laissee au joueur au sud.
-   Il y a tout le monde, pas seulement la bande qui joue au golf. */
-const FEU_RING=[[109,33],[111,33],[112,35],[113,36],[112,38],[110,39],
-                [107,39],[105,38],[105,36],[106,34],[107,33],[111,39]];
+/* ---------- le cercle du feu ----------
+   Le foyer est la ou il est peint sur la carte : si Pierre le deplace dans
+   l'atelier, le cercle, la lumiere et les gens suivent tout seuls.
+   Les places sont les cases libres a deux pas du feu, rangees par angle. On
+   laisse celle du sud au joueur, c'est par la qu'il arrive. */
 const AU_FEU=['charles','victor','oscar','antoine','kuperfils','louis','paul',
               'margot','margaux','valentine','arthur','alex'];
+function trouveLeFeu(){
+  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++)
+    if(getTile(x,y)===T.FIRE){FEU.x=x;FEU.y=y;return true;}
+  return false;
+}
+function placesDuFeu(rmax){
+  const places=[];
+  const R=rmax||3.0;
+  for(let dy=-4;dy<=4;dy++)for(let dx=-4;dx<=4;dx++){
+    const r=Math.hypot(dx,dy); if(r<1.9||r>R)continue;
+    const x=FEU.x+dx,y=FEU.y+dy;
+    if(x<1||y<1||x>=MW-1||y>=MH-1)continue;
+    if(SOLID.has(at(x,y)))continue;
+    places.push({x:x,y:y,a:Math.atan2(dy,dx)});
+  }
+  /* range par angle, en partant du nord : le cercle se lit dans le sens des aiguilles */
+  places.sort((p,q)=>((p.a+7.854)%6.283)-((q.a+7.854)%6.283));
+  return places;
+}
 function placeAutourDuFeu(){
-  AU_FEU.forEach((id,i)=>{
-    const n=NPCS.find(x=>x.id===id);
-    if(!n||n.gone||game.party.includes(n.id))return;
-    const q=FEU_RING[i%FEU_RING.length];
-    n.inside=null;n.x=q[0];n.y=q[1];n.bike=false;
+  const gens=AU_FEU.map(id=>NPCS.find(x=>x.id===id))
+    .filter(n=>n&&!n.gone&&!game.party.includes(n.id));
+  if(!gens.length)return;
+  let places=placesDuFeu(3.0);
+  if(places.length<gens.length+1)places=placesDuFeu(3.9);
+  if(!places.length)return;
+  /* la place du sud reste vide : c'est celle du joueur */
+  let mienne=-1,best=9;
+  places.forEach((p,i)=>{const e=Math.abs(p.a-Math.PI/2);if(e<best){best=e;mienne=i;}});
+  const pris=new Set([mienne]);
+  gens.forEach((n,i)=>{
+    let k=Math.round(i*places.length/gens.length)%places.length;
+    let g=0; while(pris.has(k)&&g++<places.length)k=(k+1)%places.length;
+    pris.add(k);
+    const q=places[k];
+    n.inside=null;n.x=q.x;n.y=q.y;n.bike=false;
     const ex=FEU.x-n.x, ey=FEU.y-n.y;
     n.dir=(Math.abs(ex)>Math.abs(ey))?(ex>0?3:2):(ey>0?0:1);
   });
@@ -3017,7 +3112,7 @@ function mission(ev,qui){
 const S={TITLE:0,WORLD:1,DIALOG:2,MENU:3,PAGE:4,SHOP:5,GOLF:6,BATTLE:7,TRANS:8,ASK:9,PENTE:10,CLOPE:11,PICK:12};
 const game={state:S.TITLE,tick:0,inside:null,mute:false,clopes:0,shake:0,hop:null,hopH:0,
   voiturette:false,chasse:null,vols:0,traces:0,mission:0,missionN:0,bieres:0,feuEteint:0,nage:false,attente:null,
-  pick:0,heroId:'moi',heroPal:null,fade:null,feuCall:false,
+  pick:0,heroId:'moi',heroPal:null,fade:null,feuCall:false,jour:0,
   px:40,py:57,dir:1,frame:0,step:0,moving:false,ox:0,oy:0,
   banner:null,bannerT:0,zone:'',toast:null,toastT:0,
   dlg:[],dl:0,dc:0,dcb:null,ret:S.WORLD,
@@ -3027,7 +3122,9 @@ const game={state:S.TITLE,tick:0,inside:null,mute:false,clopes:0,shake:0,hop:nul
   hero:{name:'PIERRE',lv:5,hp:34,hpMax:34,atk:16}};
 const golf={on:false,hole:-1,stroke:0,phase:'',club:0,aim:0,power:0,acc:0,gT:0,dirg:1,
   bx:0,by:0,sx:0,sy:0,ex:0,ey:0,lx:0,ly:0,t:0,dur:1,hgt:0,apex:0,curve:0,
-  rollv:0,practice:false,res:'',resT:0,lie:'tee',dist:0};
+  rollv:0,practice:false,res:'',resT:0,lie:'tee',dist:0,
+  /* les regles : le dernier point sec survole, la sanction en cours, l'option injouable */
+  secx:0,secy:0,lost:false,chute:null,injouable:false,penal:'',stime:0};
 const velo={t:0,off:0,on:false,team:[],race:null};
 /* un joueur precis a une jauge de precision plus lente, un joueur puissant a une
    jauge de puissance plus lente et une balle qui part plus loin */
@@ -3036,8 +3133,12 @@ function vitPuissance(id){return 0.021-fiche(id).puis*0.0024;}
 function vitPrecision(id){return 0.030-fiche(id).prec*0.0036;}
 function longueurDe(id){return 1+(fiche(id).puis-3)*0.06;}
 const M=14; /* metres par case */
-const CLUBS=[{n:'DRIVER',m:150,a:44,teeOnly:true},{n:'BOIS 3',m:140,a:46},{n:'FER 5',m:130,a:48},
-  {n:'FER 7',m:115,a:52},{n:'FER 9',m:95,a:56},{n:'WEDGE',m:70,a:62},{n:'PUTTER',m:0,a:0}];
+/* Le driver se joue partout, comme un vrai driver, et il envoie a 180 metres.
+   Le chiffre affiche est la VRAIE distance a pleine puissance sur un bon lie :
+   ce que le HUD annonce, la balle le fait. */
+const CLUBS=[{n:'DRIVER',m:190,a:46},{n:'BOIS 3',m:163,a:48},{n:'FER 5',m:142,a:50},
+  {n:'FER 7',m:121,a:54},{n:'FER 9',m:100,a:58},{n:'WEDGE',m:74,a:64},{n:'LOB',m:47,a:70},
+  {n:'PUTTER',m:0,a:0}];
 CLUBS.forEach(c=>c.d=c.m/M);
 const PUTTER=CLUBS.length-1;
 
@@ -3093,8 +3194,10 @@ function drawToast(){
   ctx.save();ctx.globalAlpha=t;
   const lines=wrap(game.toast,196);
   const h=18+lines.length*13;
-  box(10,H-h-6,220,h);
-  for(let i=0;i<lines.length;i++)text(lines[i],20,H-h+3+i*13);
+  /* pendant une partie le bas de l'ecran appartient au tableau de bord */
+  const y0=(golf.on&&!game.hudOff)?(105-h-4):(H-h-6);
+  box(10,y0,220,h);
+  for(let i=0;i<lines.length;i++)text(lines[i],20,y0+9+i*13);
   ctx.restore();
 }
 
@@ -3167,7 +3270,9 @@ function drawScene(cx,cy){
   if(!C){drawCars(cx,cy);drawShards(cx,cy);drawLeaves(cx,cy);drawChasse(cx,cy);}
   if(golf.on&&golf.phase!=='search'){
     for(const p of players){
-      if(!(golf.phase==='fly'&&players[golf.cur]===p)){
+      /* une balle rentree n'est plus sur le parcours : on ne la redessine jamais */
+      if(!p.done&&!(golf.phase==='fly'&&players[golf.cur]===p)
+         &&!(golf.phase==='drop'&&golf.chute&&golf.chute.p===p)){
         const bx=Math.round(p.bx*TS-cx),by=Math.round(p.by*TS-cy);
         if(bx>-6&&bx<W+6&&by>-6&&by<H+6){
           ctx.fillStyle='rgba(0,0,0,.25)';ctx.beginPath();ctx.ellipse(bx,by+1,2.2,1,0,0,7);ctx.fill();
@@ -3220,7 +3325,7 @@ function drawScene(cx,cy){
     else drawActeur(game.heroId,game.heroPal,game.dir,game.frame,hx,hy-saut,1,game.dir===2);
     if(buis)brushOver(hx,hy+9,game.px+game.py);
   }
-  if(golf.on&&golf.phase!=='result'){
+  if(golf.on&&(golf.phase==='fly'||golf.phase==='roll')){
     const bx=golf.bx*TS-cx,by=golf.by*TS-cy,h=golf.hgt;
     ctx.fillStyle='rgba(0,0,0,.25)';ctx.beginPath();ctx.ellipse(bx,by,2.5,1.2,0,0,7);ctx.fill();
     const r=1.6+h*0.055;
@@ -3794,19 +3899,94 @@ function updateShop(){
 }
 
 /* ---------- golf ---------- */
+/* La balle vit en coordonnees fractionnaires : la case qui la porte est celle
+   du plancher, jamais celle de l'arrondi. Une balle en 50.5 est sur la case 50. */
+function caseDe(v){return Math.floor(v);}
 function lieAt(x,y){
-  const t=getTile(Math.round(x),Math.round(y));
-  if(t===T.GREEN)return 'green';
+  const t=getTile(caseDe(x),caseDe(y));
+  if(t===T.GREEN||t===T.FLAG)return 'green';
   if(t===T.SAND)return 'bunker';
   if(t===T.FAIR||estDepart(t)||t===T.MAT)return 'fairway';
   if(t===T.TREE||t===T.DENSE||ARBRES.has(t))return 'bois';
   if(t===T.WATER||t===T.MARE)return 'eau';
   return 'rough';
 }
-const LIEF={tee:1,fairway:1,green:1,rough:0.76,bunker:0.6,bois:0.45,eau:0.5};
+const LIEF={tee:1,fairway:1,green:1,rough:0.76,bunker:0.6,bois:0.45};
+/* ---------- les regles ----------
+   Trois sanctions, pas une de plus, et chacune dit d'ou on rejoue.
+
+   COUP ET DISTANCE : un coup de penalite, et on rejoue de l'endroit d'ou on venait.
+     C'est la sanction du hors limites et de la balle perdue. Regle 18.
+   ZONE A PENALITE : un coup de penalite, et on repart du dernier point sec
+     survole avant l'eau. C'est le degagement lateral d'une zone rouge. Regle 17.
+   DEGAGEMENT GRATUIT : aucun coup. La balle retombe au pied de l'obstacle.
+     Un mur, un piquet, une machine, ce n'est pas la faute du joueur. Regle 16.
+   INJOUABLE : le joueur le declare lui-meme, un coup, il se degage. Regle 19. */
+const EAUX=new Set([T.WATER,T.MARE,T.POOL,T.JACU]);
+/* ce qui n'appartient pas au parcours : la route, le parking, les courts, les jardins */
+/* Les pelouses, les terrasses et les champs restent jouables : le parcours de
+   Pierre passe entre les maisons, et on a toujours joue dans les jardins. */
+const HORS=new Set([T.ROAD,T.LINE,T.ZEBRA,T.ASPH,T.CAR,T.TENN,T.TNET,T.PDECK,T.CARRP,T.MINIG,
+  T.FLOOR,T.COCO,T.PARQ,T.RUG,T.ESCAL,T.WC,T.SDOOR,T.FDOOR,T.BDOOR,T.EXIT,T.PORTMOL]);
+/* les deux courts de tennis, vingt-quatre cases chacun */
+for(let i=0;i<24;i++){HORS.add(T.TENQ+i);HORS.add(T.TENT+i);}
+/* les vitres et les toits : la balle disparait dedans, on ne la revoit pas */
+const AVALE=new Set([T.SWIN,T.SWINB,T.HWIN,T.HWINB,T.HBAIE,T.BAIE,T.FWIN,T.VASIS,T.LUC,
+  T.SROOF,T.HROOF,T.HRIDGE,T.HEAVE,T.PROOF,T.FTOP,T.BROOF,T.FLATR,T.WROOF,T.TOITP,T.STORE,T.HANGR]);
+function sanction(t){
+  /* le mat du drapeau et l'aire de depart ne sont pas des obstacles */
+  if(t===T.FLAG||estDepart(t))return '';
+  /* un arbre n'est pas un mur : la balle y reste, et c'est la qu'on la cherche */
+  if(t===T.TREE||t===T.DENSE||ARBRES.has(t))return 'bois';
+  if(EAUX.has(t))return 'eau';
+  if(HORS.has(t))return 'hors';
+  if(AVALE.has(t))return 'avale';
+  if(SOLID.has(t))return 'dur';
+  return '';
+}
+/* combien de pixels un obstacle bloque en hauteur. Zero, il ne bloque rien. */
+const BAS=new Set([T.HEDGE,T.BUIS1,T.BUIS2,T.BUIS3,T.BUIT1,T.BUIT2,T.BUIT3,T.MASS1,T.MASS2,
+  T.CLOH,T.CLOV,T.CLONO,T.CLONE,T.CLOSO,T.CLOSE,T.CLOP,T.ROSEAU,T.JONC,T.FLOW,T.CANETTE,
+  T.FLEUR1,T.FLEUR2,T.FLEUR3,T.BENCH,T.TRANSAT,T.TRANSB,T.PLANT]);
+function hauteurObstacle(t){
+  if(t===T.FLAG||estDepart(t))return 0;
+  if(BAS.has(t))return 9;
+  if(t===T.DENSE)return 12;
+  if(t===T.TREE||ARBRES.has(t))return 22;
+  if(AVALE.has(t))return 30;
+  if(SOLID.has(t))return 16;
+  return 0;
+}
+/* On recule sur la ligne qui joint le trou au point de franchissement, jusqu'a
+   trouver une case d'ou l'on peut vraiment rejouer. Regle 17.1d(2). */
+function reculeSurLaLigne(ex,ey,h){
+  const gx=(h?h.gx:ex)+0.5, gy=(h?h.gy:ey)+0.5;
+  let vx=ex-gx, vy=ey-gy;
+  const n=Math.hypot(vx,vy)||1; vx/=n; vy/=n;
+  for(let k=0;k<=16;k++){
+    const x=ex+vx*k, y=ey+vy*k;
+    if(x<1||y<1||x>=MW-1||y>=MH-1)break;
+    const t=getTile(caseDe(x),caseDe(y));
+    if(!EAUX.has(t)&&!HORS.has(t)&&!SOLID.has(t)&&!AVALE.has(t)&&t!==T.DENSE)
+      return [caseDe(x)+0.5,caseDe(y)+0.5];
+  }
+  const q=caseLibrePres(caseDe(ex),caseDe(ey),1);
+  return q?[q[0]+0.5,q[1]+0.5]:[ex,ey];
+}
+/* le dernier endroit ou l'on pouvait poser un pied, en revenant vers le joueur */
+function pointSec(x,y,vx,vy){
+  for(let k=1;k<=14;k++){
+    const px=caseDe(x-vx*k*0.5), py=caseDe(y-vy*k*0.5);
+    if(px<0||py<0||px>=MW||py>=MH)continue;
+    const t=getTile(px,py);
+    if(!EAUX.has(t)&&!SOLID.has(t)&&!HORS.has(t))return [px+0.5,py+0.5];
+  }
+  return null;
+}
 let players=[];
 function mkP(id,name,pal,human,skill,fid){return{id,name,pal,human,skill,fid:fid||id,bx:0,by:0,px:0,py:0,
   stroke:0,done:false,card:new Array(HOLES.length).fill(0),lie:'tee',dir:0,fr:0,wt:0,wd:0,wx:0,wy:0,say:''};}
+function longueurTrou(h){return h.len||Math.round(Math.hypot(h.gx-h.tx,h.gy-h.ty)*M);}
 function slopeOf(h){return{a:(h*2.3+0.6)%(Math.PI*2),s:0.6+((h*5)%4)*0.22};}
 function distM(p){const h=HOLES[golf.hole];return Math.round(Math.hypot(h.gx+0.5-p.bx,h.gy+0.5-p.by)*M);}
 
@@ -3829,17 +4009,19 @@ function updateAttente(){
     toast('Départ dans '+Math.ceil((300-a.t)/60)+'... '+(a.pk.length+1)+' joueur(s)');
   if(a.pk.length>=3||a.t>=300){
     game.attente=null;
-    game.party=a.pk.slice(0,3).filter(id=>NPCS.some(n=>n.id===id));
-    game.party.forEach((id,k)=>{const n=NPCS.find(x=>x.id===id);
+    const invites=a.pk.slice(0,3).filter(id=>NPCS.some(n=>n.id===id));
+    game.party=invites;
+    invites.forEach((id,k)=>{const n=NPCS.find(x=>x.id===id);
       if(n){n.gone=false;n.inside=null;n.x=TEE1[k][0];n.y=TEE1[k][1];n.dir=1;}});
-    toast(game.party.length?('Partie à '+(game.party.length+1)+'. On y va.'):'Personne. Tu joues seul.');
-    startHole();
+    /* si on n'est plus sur un depart, on ne monte pas une partie fantome */
+    if(!startHole()){game.party=[];toast('Trop loin du départ. La partie ne se fait pas.');return;}
+    toast(invites.length?('Partie à '+(invites.length+1)+'. On y va.'):'Personne. Tu joues seul.');
   }
 }
 function startHole(){
   let best=null,bd=99;
   for(const h of HOLES){const d=Math.hypot(h.tx-game.px,h.ty-game.py);if(d<bd){bd=d;best=h;}}
-  if(!best||bd>4)return;
+  if(!best||bd>4)return false;
   players=[mkP('moi',game.hero.name,game.heroPal,true,0,game.heroId)];
   for(const id of game.party){
     const n=NPCS.find(x=>x.id===id);
@@ -3847,6 +4029,7 @@ function startHole(){
   }
   golf.on=true;golf.practice=false;golf.cible=null;game.state=S.GOLF;
   beginHole(best.n-1);
+  return true;
 }
 function beginHole(idx){
   golf.hole=idx;golf.slope=slopeOf(idx);
@@ -3856,19 +4039,28 @@ function beginHole(idx){
     p.px=p.bx;p.py=p.by;p.stroke=0;p.done=false;p.lie='tee';
   });
   golf.club=0;golf.hgt=0;
-  toast('Trou n°'+h.n+' , par '+h.par+' , '+h.len+' m');
+  toast('Trou n°'+h.n+' , par '+h.par+' , '+longueurTrou(h)+' m');
   turn();
 }
 function turn(){
   let best=-1,bd=-1;const h=HOLES[golf.hole];
   players.forEach((p,i)=>{if(p.done)return;
     const d=Math.hypot(h.gx-p.bx,h.gy-p.by);if(d>bd){bd=d;best=i;}});
+  /* l'honneur : tant que personne n'a joue, c'est le meilleur du trou precedent
+     qui part le premier. Ensuite c'est le plus loin du drapeau, comme partout. */
+  if(best>=0&&players.every(p=>p.done||p.stroke===0)){
+    let ho=-1,hb=1e9;
+    players.forEach((p,i)=>{if(p.done)return;
+      const r=(golf.hole>0)?(p.card[golf.hole-1]||99):i*0.001;
+      if(r<hb){hb=r;ho=i;}});
+    if(ho>=0)best=ho;
+  }
   if(best<0){endHole();return;}
   golf.cur=best;
   const p=players[best];
   golf.aim=Math.atan2(h.gy+0.5-p.by,h.gx+0.5-p.bx);
   if(p.human){
-    golf.club=(p.lie==='green')?PUTTER:autoClub(distM(p),p.lie==='tee');
+    golf.club=(p.lie==='green')?PUTTER:autoClub(distM(p),p.lie==='tee',p.lie,p.fid||p.id);
     golf.phase=(p.lie==='green')?'putt':'aim';
   } else {
     golf.phase='ia';golf.gene=false;
@@ -3882,12 +4074,22 @@ const USOPEN=[
  "CHARLES : Antoine Zirimis, sur le green du 18, pour l'US Open. Le monde entier retient son souffle.",
  "KUPI : Antoine Zirimis, pour l'US Open, sur le green du 18. Silence sur le parcours.",
  "OSCAR : Antoine Zirimis, on the green of the 18, for the US Open. What is happening ?"];
-function autoClub(d,tee){
-  let bi=1,bd=1e9;
-  CLUBS.forEach((c,i)=>{if(i===PUTTER)return;if(c.teeOnly&&!tee)return;
-    const e=Math.abs(c.m-d);if(e<bd){bd=e;bi=i;}});
-  if(tee&&d>240)bi=0;
-  return bi;
+/* ce que le club envoie VRAIMENT depuis ce lie, avec ce joueur, a pleine puissance */
+function porteeDe(club,lie,id){
+  const c=CLUBS[club]; if(!c||!c.m)return 0;
+  return c.m*(LIEF[lie]||1)*longueurDe(id)*((club===0&&lie!=='tee')?0.9:1);
+}
+/* le club qu'on prendrait vraiment : le plus court qui atteint encore le drapeau,
+   joue autour de quatre-vingts pour cent de sa puissance */
+function autoClub(d,tee,lie,id){
+  for(let i=CLUBS.length-2;i>=0;i--) if(porteeDe(i,lie||'fairway',id)>=d) return i;
+  return 0;
+}
+/* la puissance qu'il faut pour faire d metres avec ce club depuis ce lie */
+function puissancePour(d,club,lie,id){
+  const c=CLUBS[club], f=(LIEF[lie]||1)*longueurDe(id);
+  if(!c.m)return 0.6;
+  return ((d/(c.m*f))-0.30)/0.70;
 }
 function swing(pow,acc,who){
   const p=players[golf.cur],c=CLUBS[golf.club];
@@ -3895,12 +4097,14 @@ function swing(pow,acc,who){
   golf.sx=p.bx;golf.sy=p.by;golf.lx=p.bx;golf.ly=p.by;
   const dev=(acc-0.5)*2;
   const F=fiche(p.fid||p.id);
-  let d=(c.m/M)*(0.42+pow*0.66)*(LIEF[p.lie]||1)*longueurDe(p.fid||p.id);
+  /* a pleine puissance et sur un bon lie, la balle fait exactement ce que le club annonce */
+  let d=(c.m/M)*(0.30+pow*0.70)*(LIEF[p.lie]||1)*longueurDe(p.fid||p.id);
   let apex=c.a*(0.4+pow*0.65);
   let curve=dev*(2.6+c.m*0.012)*(1.35-F.prec*0.07);
+  /* un driver joue au sol, ca part plus volontiers de travers. Mais ca part. */
+  if(golf.club===0&&p.lie!=='tee'){curve*=1.7;apex*=0.82;}
   golf.top=false;golf.airshot=false;
-  if(c.teeOnly&&p.lie!=='tee'){d=0.15+Math.random()*0.12;apex=3;curve=0;golf.top=true;}
-  else if(F.airshot&&Math.random()<F.airshot){
+  if(F.airshot&&Math.random()<F.airshot){
     d=0.12+Math.random()*0.2;apex=2;curve=0;golf.airshot=true;
   }
   if(p.lie==='bois'){apex*=0.4;d*=0.8;}
@@ -3908,21 +4112,42 @@ function swing(pow,acc,who){
   golf.ex=p.bx+Math.cos(golf.aim)*d;golf.ey=p.by+Math.sin(golf.aim)*d;
   golf.apex=apex;golf.curve=curve;
   golf.dur=Math.max(18,Math.round(20+d*2.2));golf.t=0;golf.phase='fly';
+  /* on note d'ou on part : c'est de la que l'on rejouera en cas de hors limites */
+  golf.secx=p.bx;golf.secy=p.by;golf.penal='';golf.injouable=false;
   sfx(p.human?(golf.club<=1?'drive':'fer'):'coupautre');
-  if(golf.practice){game.seau--;mission('practice');}
+  if(golf.practice&&!cours.on&&!golf.cible&&p.human){game.seau=Math.max(0,game.seau-1);mission('practice');}
 }
 function puttGo(pow){
   const p=players[golf.cur];p.stroke++;
-  golf.lx=p.bx;golf.ly=p.by;
-  const sp=0.024+pow*0.075;
+  golf.lx=p.bx;golf.ly=p.by;golf.secx=p.bx;golf.secy=p.by;golf.penal='';
+  const sp=0.008+pow*0.091;
   golf.vx=Math.cos(golf.aim)*sp;golf.vy=Math.sin(golf.aim)*sp;
   golf.phase='roll';golf.rt=0;
   sfx(players[golf.cur].human?'putt':'coupautre');
+}
+/* Une balle qui tombe ne s'arrete pas net : elle court. Sur le fairway et sur
+   le green elle roule longtemps, dans le rough a peine, dans le sable pas du tout.
+   On avance par quarts de case et on s'arrete au premier obstacle. */
+const ROULE={green:0.20,fairway:0.14,tee:0.14,rough:0.05,bunker:0,bois:0,eau:0};
+function rouleAuSol(p,port){
+  const l=lieAt(p.bx,p.by);
+  let reste=port*(ROULE[l]!==undefined?ROULE[l]:0.05);
+  if(reste<=0.05)return;
+  const cx=Math.cos(golf.aim)*0.25, cy=Math.sin(golf.aim)*0.25;
+  while(reste>0){
+    const nx=p.bx+cx, ny=p.by+cy;
+    const t=getTile(caseDe(nx),caseDe(ny));
+    if(t===T.FLAG){p.bx=nx;p.by=ny;break;}
+    if(SOLID.has(t)||AVALE.has(t))break;
+    p.bx=nx;p.by=ny;reste-=0.25;
+    if(EAUX.has(t)||HORS.has(t))break;
+  }
 }
 function land(){
   const p=players[golf.cur],h=golf.hole>=0?HOLES[golf.hole]:null;
   p.bx=golf.bx;p.by=golf.by;
   if(cours.on){coursLand(p);return;}
+  if(!golf.practice)rouleAuSol(p,golf.dist||0);
   if(golf.practice){
     const d=Math.round(Math.hypot(p.bx-golf.sx,p.by-golf.sy)*M);
     golf.phase='result';
@@ -3930,46 +4155,117 @@ function land(){
       bunker:'Dans le bac à sable.',bois:'Dans les arbres.',rough:'Dans le rough.',eau:"À l'eau."})[lieAt(p.bx,p.by)];
     return;
   }
-  const t=getTile(Math.round(p.bx),Math.round(p.by));
+  const bx0=caseDe(p.bx), by0=caseDe(p.by);
+  const t=getTile(bx0,by0);
+  /* hors du domaine, c'est hors limites : la carte s'arrete la */
+  const dehors=(bx0<0||by0<0||bx0>=MW||by0>=MH);
+  const cas=dehors?'hors':sanction(t);
   let msg='';
-  if(t===T.WATER||t===T.POOL)sfx('plouf');
-  else if(SOLID.has(t))sfx('mur');
+  golf.penal='';
+  if(EAUX.has(t))sfx('plouf');
+  else if(cas==='dur'||cas==='avale')sfx('mur');
   else sfx('atterri');
-  if(t===T.WATER||t===T.MARE){p.stroke++;msg="Dans l'eau. Un coup de pénalité.";p.bx=golf.lx;p.by=golf.ly;}
-  else if(t===T.ROAD||t===T.LINE){p.stroke++;msg='Sur la départementale. Hors limites.';p.bx=golf.lx;p.by=golf.ly;}
-  else if(t===T.ASPH||t===T.CAR){
-    p.bx=golf.lx;p.by=golf.ly;p.stroke++;
-    msg=(t===T.CAR||Math.random()<0.4)
-      ?"La balle rebondit sur une aile. Sylvie de Kersauson sort déjà du club house."
-      :'Sur le parking. Hors limites.';
+
+  /* COUP ET DISTANCE : la balle n'existe plus, on rejoue d'ou l'on venait */
+  const coupEtDistance=(raison)=>{
+    p.stroke++;p.bx=golf.secx;p.by=golf.secy;golf.penal='coup et distance';msg=raison;
+  };
+  /* ZONE A PENALITE : un coup, et on repart du bord */
+  const zonePenalite=(raison)=>{
+    p.stroke++;
+    /* le point de reference, c'est le dernier franchissement de la limite */
+    let ex=golf.lx,ey=golf.ly;
+    const t0=getTile(caseDe(ex),caseDe(ey));
+    if(!ex||EAUX.has(t0)||SOLID.has(t0)||HORS.has(t0)){
+      const sec=pointSec(p.bx,p.by,Math.cos(golf.aim),Math.sin(golf.aim));
+      if(sec){ex=sec[0];ey=sec[1];} else {ex=golf.secx;ey=golf.secy;}
+    }
+    /* puis on recule sur la ligne trou-franchissement jusqu'a une case jouable :
+       c'est le degagement en arriere de la regle 17. Comme ca on ne retape jamais
+       depuis le meme piege. */
+    const q=reculeSurLaLigne(ex,ey,h);
+    p.bx=q[0];p.by=q[1];
+    golf.penal='zone à pénalité';msg=raison;
+  };
+  /* DEGAGEMENT GRATUIT : elle retombe au pied, et ca ne coute rien */
+  const degagement=(raison)=>{
+    const sec=pointSec(p.bx,p.by,Math.cos(golf.aim),Math.sin(golf.aim));
+    if(sec){p.bx=sec[0];p.by=sec[1];} else {p.bx=golf.secx;p.by=golf.secy;}
+    golf.penal='';msg=raison;
+  };
+
+  if(cas==='eau'){
+    zonePenalite(t===T.POOL?"Dans la piscine. Un coup de pénalité, et tout le monde te regarde."
+      :"Dans l'eau. Zone rouge : un coup de pénalité, tu rejoues au point d'entrée.");
   }
-  else if(estVitre(t)&&Math.abs(Math.round(p.bx)-MAMOU.x)<9&&Math.abs(Math.round(p.by)-MAMOU.y)<9){
-    breakWindow(Math.round(p.bx),Math.round(p.by));
-    game.vitres=(game.vitres||0)+1;p.stroke++;
-    msg='Une vitre des Mamoumani. Personne ne sort. Personne ne sort jamais.';
-    p.bx=golf.lx;p.by=golf.ly;}
-  else if(t===T.SWALL||t===T.SWIN||t===T.SROOF||t===T.SWINB||t===T.VASIS||
-          t===T.PROOF||t===T.FTOP||t===T.FACADE||t===T.FWIN||
-          t===T.HRIDGE||t===T.HEAVE||t===T.HWIN||t===T.HWINB||t===T.HBAIE||t===T.LUC||t===T.STORE){
-    p.stroke++;msg="Contre le mur du prieuré. Personne n'a rien vu.";p.bx=golf.lx;p.by=golf.ly;}
-  else if(t===T.WOOD||t===T.WHITE||t===T.STONEW||t===T.BAIE||t===T.FLATR||t===T.BROOF||t===T.JACU){
-    p.stroke++;msg='Contre une maison de lisière. On accélère le pas.';p.bx=golf.lx;p.by=golf.ly;}
+  else if(cas==='hors'){
+    if(t===T.CAR)coupEtDistance("La balle rebondit sur une aile. Hors limites, et Sylvie de Kersauson sort déjà du club house.");
+    else if(t===T.ROAD||t===T.LINE||t===T.ZEBRA)coupEtDistance('Sur la départementale. Hors limites, coup et distance.');
+    else if(t===T.TENN||t===T.TNET)coupEtDistance('Au milieu du court. Hors limites, et on te la renvoie de mauvaise grâce.');
+    else coupEtDistance('Hors limites. Coup et distance, tu rejoues de là où tu venais.');
+  }
+  else if(cas==='avale'){
+    if(estVitre(t)&&Math.abs(bx0-MAMOU.x)<9&&Math.abs(by0-MAMOU.y)<9){
+      breakWindow(bx0,by0);game.vitres=(game.vitres||0)+1;
+      coupEtDistance('Une vitre des Mamoumani. Personne ne sort. Personne ne sort jamais.');
+    }
+    else if(estVitre(t)){breakWindow(bx0,by0);game.vitres=(game.vitres||0)+1;
+      coupEtDistance('Verre brisé. Balle perdue chez les gens, coup et distance.');}
+    else coupEtDistance('Sur le toit. Elle y est encore. Coup et distance.');
+  }
+  else if(cas==='dur'){
+    degagement(t===T.HWALL||t===T.SWALL||t===T.FACADE
+      ?"Contre le mur du prieuré. Elle retombe au pied, aucune pénalité."
+      :'Contre un obstacle. Dégagement gratuit, tu joues au pied.');
+  }
   p.lie=lieAt(p.bx,p.by);
   const dh=Math.hypot(p.bx-(h.gx+0.5),p.by-(h.gy+0.5));
-  if(dh<0.5){holed(p);return;}
-  if(p.lie==='bois'&&!msg&&Math.random()<0.5){
-    if(p.human){golf.phase='result';golf.res="Elle est partie dans les bois. Tu ne la vois plus. Tu as cinq secondes pour fouiller.";golf.lost=true;return;}
-    p.stroke++;msg='Balle perdue dans les bois. Il rejoue une provisoire.';p.bx=golf.lx;p.by=golf.ly;p.lie=lieAt(p.bx,p.by);
+  if(dh<0.16&&!msg){holed(p);return;}
+
+  /* LA BALLE PERDUE. Dans le sous-bois epais on ne la voit plus : dix secondes
+     pour fouiller, comme les trois minutes de la regle 18.2, en plus court. */
+  if(!msg&&p.lie==='bois'){
+    const dense=(getTile(bx0,by0)===T.DENSE)||ARBRES.has(getTile(bx0,by0));
+    if(dense||Math.random()<0.35){
+      if(p.human){
+        golf.phase='result';golf.lost=true;
+        golf.res="Elle est partie dans les bois. Trois minutes dans la vraie vie, dix secondes ici.";
+        return;
+      }
+      const trouve=Math.random()<(0.62-p.skill*1.2);
+      if(!trouve){
+        p.stroke++;p.bx=golf.secx;p.by=golf.secy;p.lie=lieAt(p.bx,p.by);
+        golf.penal='coup et distance';
+        msg='Balle perdue dans les bois. Coup et distance.';
+      } else msg='Il la retrouve sous une fougère. Il la joue comme elle est.';
+    }
+  }
+  /* le score maximum : au-dela de par plus six on ramasse, on note, et on avance.
+     Personne n'a jamais fini un trou en quarante coups, meme Antoine. */
+  const plafond=h.par+6;
+  if(p.stroke>=plafond){
+    p.stroke=plafond;
+    golf.phase='result';golf.wait=48;
+    golf.res=(p.human?'Tu ramasses. ':p.name+' ramasse. ')+'Score maximum sur le trou, '+plafond+' coups.';
+    ramasse(p);
+    return;
   }
   golf.phase='result';golf.wait=48;
   golf.res=(msg?msg+' ':'')+(golf.airshot?"Air shot. La balle n'a pas bougé d'un centimètre. ":'')
-    +(golf.top?"Driver sur le fairway. Ça fait trois mètres et Charles se marre. ":'')
     +(p.human?'':p.name+' : ')+distM(p)+' m du drapeau.';
 }
+/* on ramasse sa balle : le trou est fini, on inscrit le score */
+function ramasse(p){
+  golf.chute=null;golf.lost=false;
+  p.done=true;p.card[golf.hole]=p.stroke;
+  if(p.human)game.card[golf.hole]=p.stroke;
+}
 function holed(p){
-  /* si elle roulait, on la regarde tomber dedans avant d'annoncer le score */
-  if(golf.phase==='roll'&&!golf.practice){
+  /* on la regarde tomber dedans avant d'annoncer le score, putt ou pas putt */
+  if(!golf.practice&&!cours.on){
     golf.chute={t:0,x:p.bx,y:p.by,p:p};
+    p.bx=HOLES[golf.hole].gx+0.5;p.by=HOLES[golf.hole].gy+0.5;
+    p.px=p.bx;p.py=p.by;
     golf.phase='drop';
     return;
   }
@@ -3977,6 +4273,9 @@ function holed(p){
 }
 function holedVrai(p){
   sfx('trou');
+  /* elle est dans le trou. On la retire du jeu, elle ne reapparait plus. */
+  golf.chute=null;golf.lost=false;golf.penal='';
+  if(players[golf.cur]===p){golf.bx=p.bx;golf.by=p.by;golf.hgt=0;}
   if(p.human)mission('trou');
   p.done=true;p.card[golf.hole]=p.stroke;
   if(p.human)game.card[golf.hole]=p.stroke;
@@ -3989,18 +4288,20 @@ function nextHole(){
   const nx=golf.hole+1;
   if(nx>=HOLES.length){
     const tot=players[0].card.reduce((a,b)=>a+b,0),par=HOLES.reduce((a,h)=>a+h.par,0);
-    game.party=[];placeGang();mission('partie9');
+    game.party=[];placeGang();
     quitGolf('');say([HOLES.length+' trous. '+tot+' coups pour un par '+par+'.',
-      players.length>1?'Charles dira qu\'il a fait mieux. Charles n\'a pas rendu sa carte.':'Il commence à faire frais.']);
+      players.length>1?'Charles dira qu\'il a fait mieux. Charles n\'a pas rendu sa carte.':'Il commence à faire frais.'],
+      ()=>mission('partie9'));
     return;
   }
   beginHole(nx);
 }
 function quitGolf(msg){
-  golf.on=false;golf.phase='';golf.cible=null;cours.on=false;
+  golf.on=false;golf.phase='';golf.cible=null;cours.on=false;golf.practice=false;
+  golf.lost=false;golf.chute=null;golf.penal='';golf.injouable=false;golf.hgt=0;
   const p=players[0]||{bx:game.px,by:game.py};
-  game.px=Math.max(1,Math.min(MW-2,Math.round(p.bx)));
-  game.py=Math.max(1,Math.min(MH-2,Math.round(p.by)));
+  game.px=Math.max(1,Math.min(MW-2,caseDe(p.bx)));
+  game.py=Math.max(1,Math.min(MH-2,caseDe(p.by)));
   let g=0;while(solidAt(game.px,game.py)&&g++<6)game.py=Math.min(MH-2,game.py+1);
   game.ox=0;game.oy=0;game.moving=false;game.state=S.WORLD;
   if(msg)toast(msg);
@@ -4077,7 +4378,7 @@ function startMamou(invite){
   toast('Trois balles. Charles compte.');
 }
 function cibleCheck(p,d){
-  const bx=Math.round(p.bx),by=Math.round(p.by);
+  const bx=caseDe(p.bx),by=caseDe(p.by);
   const t=getTile(bx,by);
   golf.cible.shots--;
   if(estVitre(t)){golf.cible.n++;game.vitres=(game.vitres||0)+1;breakWindow(bx,by);
@@ -4092,11 +4393,10 @@ function iaJoue(){
   const p=players[golf.cur];
   if(cours.on){
     const d=coursDist(p), err=p.skill*(golf.gene?2.4:1);
-    golf.club=autoClub(d,false);
+    golf.club=autoClub(d,false,p.lie,p.fid||p.id);
     golf.aim=Math.atan2(cours.ty+0.5-p.by,cours.tx+0.5-p.bx)+(Math.random()-0.5)*err;
-    const c=CLUBS[golf.club];
-    let pow=(d/M/(c.m/M)-0.42)/0.66;
-    pow=Math.min(1,Math.max(0.35,pow+(Math.random()-0.5)*(0.08+err)));
+    let pow=puissancePour(d,golf.club,p.lie,p.fid||p.id);
+    pow=Math.min(1,Math.max(0.05,pow+(Math.random()-0.5)*(0.08+err)));
     swing(pow,0.5+(Math.random()-0.5)*err*1.3);
     return;
   }
@@ -4113,11 +4413,10 @@ function iaJoue(){
     puttGo(Math.min(1,Math.max(0.12,(dt-0.024/0.075)/3.1+(Math.random()-0.5)*0.12)));
     return;
   }
-  golf.club=autoClub(d,p.lie==='tee');
+  golf.club=autoClub(d,p.lie==='tee',p.lie,p.fid||p.id);
   golf.aim=Math.atan2(h.gy+0.5-p.by,h.gx+0.5-p.bx)+(Math.random()-0.5)*err;
-  const c=CLUBS[golf.club];
-  let pow=(d/M/((c.m/M)*(LIEF[p.lie]||1))-0.42)/0.66;
-  pow=Math.min(1,Math.max(0.35,pow+(Math.random()-0.5)*0.12));
+  let pow=puissancePour(d,golf.club,p.lie,p.fid||p.id);
+  pow=Math.min(1,Math.max(0.05,pow+(Math.random()-0.5)*0.12));
   swing(pow,0.5+(Math.random()-0.5)*err*1.4);
 }
 function walkTo(p,x,y){
@@ -4133,9 +4432,11 @@ function updateGolf(){
     if(keys.left)golf.aim-=spd;
     if(keys.right)golf.aim+=spd;
     if(golf.phase==='aim'){
-      if(consume('up'))golf.club=(golf.club+CLUBS.length-1)%CLUBS.length;
-      if(consume('down'))golf.club=(golf.club+1)%CLUBS.length;
-      if(golf.club===PUTTER&&P.lie!=='green'&&consume('down'))golf.club=0;
+      /* le putter ne sort que sur le green : ailleurs on tourne dans les autres clubs */
+      const n=PUTTER;
+      if(consume('up'))golf.club=(golf.club+n-1)%n;
+      if(consume('down'))golf.club=(golf.club+1)%n;
+      if(golf.club>=n)golf.club=0;
     }
     if(consume('b')){
       if(golf.practice||P.stroke===0)quitGolf(golf.practice?'Tu poses le seau.':'Tu quittes le départ.');
@@ -4174,12 +4475,14 @@ function updateGolf(){
     golf.bx=golf.sx+(golf.ex-golf.sx)*pr+px*lat;
     golf.by=golf.sy+(golf.ey-golf.sy)*pr+py*lat;
     golf.hgt=Math.sin(Math.PI*pr)*golf.apex;
-    const tt=getTile(Math.round(golf.bx),Math.round(golf.by));
-    const dur=(tt===T.TREE||tt===T.DENSE||tt===T.HWALL||tt===T.HROOF||tt===T.SWIN||tt===T.SWINB||
-      tt===T.VASIS||tt===T.WOOD||tt===T.WHITE||tt===T.STONEW||tt===T.BAIE||tt===T.FLATR||tt===T.BROOF||tt===T.SWALL||
-      tt===T.PROOF||tt===T.FTOP||tt===T.FACADE||tt===T.FWIN||
-      tt===T.HRIDGE||tt===T.HEAVE||tt===T.HWIN||tt===T.HWINB||tt===T.HBAIE||tt===T.LUC||tt===T.STORE);
-    if(golf.hgt<7&&dur&&pr<0.97){golf.hgt=0;land();return;}
+    const tt=getTile(caseDe(golf.bx),caseDe(golf.by));
+    /* on garde en memoire le dernier endroit sec survole : c'est le point d'entree
+       dans l'eau, et c'est de la qu'on rejouera. */
+    if(!EAUX.has(tt)&&!HORS.has(tt)&&!SOLID.has(tt)&&!AVALE.has(tt)){golf.lx=golf.bx;golf.ly=golf.by;}
+    /* chaque obstacle a sa hauteur, dans la meme unite que le dessin : un pixel.
+       Une haie arrete une balle rasante, un toit arrete tout ce qui n'est pas haut. */
+    const haut=hauteurObstacle(tt);
+    if(haut>0&&golf.hgt<haut&&pr<0.97){golf.hgt=0;land();return;}
     if(pr>=1){golf.hgt=0;land();}
     return;
   }
@@ -4187,10 +4490,11 @@ function updateGolf(){
     const sl=golf.slope||{a:0,s:0};
     golf.rt=(golf.rt||0)+1;
     let sp0=Math.hypot(golf.vx,golf.vy);
-    /* la pente ne pousse que tant que la balle roule vraiment, sinon elle ne s'arrête jamais */
-    if(sp0>0.014){
-      golf.vx+=Math.cos(sl.a)*sl.s*0.00055;
-      golf.vy+=Math.sin(sl.a)*sl.s*0.00055;
+    /* la pente ne pousse que tant que la balle roule vraiment. Le seuil est au-dessus
+       de la vitesse d'equilibre, sinon la pente la pousse indefiniment. */
+    if(sp0>0.030){
+      golf.vx+=Math.cos(sl.a)*sl.s*0.00025;
+      golf.vy+=Math.sin(sl.a)*sl.s*0.00025;
     }
     P.bx+=golf.vx;P.by+=golf.vy;
     golf.bx=P.bx;golf.by=P.by;golf.hgt=0;
@@ -4199,18 +4503,38 @@ function updateGolf(){
     const sp=Math.hypot(golf.vx,golf.vy);
     const h=HOLES[golf.hole];
     const dh=Math.hypot(P.bx-(h.gx+0.5),P.by-(h.gy+0.5));
-    if(dh<0.3&&sp<0.085){holed(P);return;}
-    if(sp<0.006||golf.rt>420){
+    /* la coupe fait le diametre qu'on lui dessine, et une balle lancee la survole */
+    if(dh<0.16&&sp<0.035){holed(P);return;}
+    if(sp<0.004||golf.rt>420){
       P.lie=lieAt(P.bx,P.by);
-      if(dh<0.45){holed(P);return;}
+      if(dh<0.16){holed(P);return;}
+      /* un putt aussi peut finir a l'eau ou hors limites : memes regles que les autres */
+      if(sanction(getTile(caseDe(P.bx),caseDe(P.by)))){golf.bx=P.bx;golf.by=P.by;golf.dist=0;land();return;}
       golf.phase='result';golf.wait=48;
-      golf.res=(P.human?'':P.name+' : ')+(dh<0.9?'Elle a fait le tour du trou. ':'')+Math.round(dh*M)+' m. Encore un putt.';
+      golf.res=(P.human?'':P.name+' : ')+(dh<0.35?'Elle a fait le tour du trou. ':'')+Math.round(dh*M)+' m. Encore un putt.';
     }
     return;
   }
   if(golf.phase==='result'){
     if(!P.human)golf.wait--;
-    if(P.human&&golf.lost&&(consume('a'))){startSearch();return;}
+    if(P.human&&golf.lost){
+      if(consume('a')){startSearch();return;}
+      if(consume('b')){
+        P.stroke++;P.bx=golf.secx;P.by=golf.secy;P.px=P.bx;P.py=P.by;P.lie=lieAt(P.bx,P.by);
+        golf.lost=false;golf.penal='coup et distance';
+        golf.res='Tu ne cherches même pas. Balle perdue, coup et distance.';
+        return;
+      }
+      return;
+    }
+    /* une balle injouable : le joueur le declare, un coup, et il se degage d'une case */
+    if(P.human&&injouablePossible(P)&&consume('b')){
+      P.stroke++;
+      const q=caseLibrePres(caseDe(P.bx),caseDe(P.by),1)||[caseDe(golf.secx),caseDe(golf.secy)];
+      P.bx=q[0]+0.5;P.by=q[1]+0.5;P.px=P.bx;P.py=P.by;P.lie=lieAt(P.bx,P.by);
+      golf.penal='injouable';golf.res='Balle injouable. Un coup de pénalité, tu te dégages.';
+      return;
+    }
     if((P.human&&(consume('a')||consume('b')))||(!P.human&&golf.wait<=0)){
       if(cours.on){coursTurn();return;}
       if(golf.practice){
@@ -4243,22 +4567,25 @@ function updateGolf(){
   if(golf.phase==='search'){
     golf.stime--;
     const p=players[0];
-    if(!game.moving){
+    /* on marche, on ne se teleporte pas : un pas toutes les sept images */
+    if(golf.stime%7===0){
       let d=-1;
       if(keys.down)d=0;else if(keys.up)d=1;else if(keys.left)d=2;else if(keys.right)d=3;
       if(d>=0){game.dir=d;const[dx,dy]=DV[d];
-        if(!solidAt(game.px+dx,game.py+dy)||getTile(game.px+dx,game.py+dy)===T.TREE){
+        const tn=getTile(game.px+dx,game.py+dy);
+        if(!solidAt(game.px+dx,game.py+dy)||tn===T.TREE||tn===T.DENSE||ARBRES.has(tn)){
           game.px+=dx;game.py+=dy;game.frame=1+((game.tick>>2)&1);}}
     }
     if(Math.hypot(game.px-golf.hidx,game.py-golf.hidy)<1.5){
       p.bx=golf.hidx+0.5;p.by=golf.hidy+0.5;p.px=p.bx;p.py=p.by;p.lie=lieAt(p.bx,p.by);
-      golf.lost=false;golf.phase='result';golf.res='Elle est là, sous les feuilles. Tu la joues comme elle est.';
+      golf.lost=false;golf.penal='';golf.phase='result';
+      golf.res='Elle est là, sous les feuilles. Aucune pénalité, tu la joues comme elle est.';
       return;
     }
     if(golf.stime<=0){
-      p.stroke++;p.bx=golf.lx;p.by=golf.ly;p.px=p.bx;p.py=p.by;p.lie=lieAt(p.bx,p.by);
-      golf.lost=false;golf.phase='result';
-      golf.res='Balle perdue. Tu joues ta provisoire, un coup de pénalité.';
+      p.stroke++;p.bx=golf.secx;p.by=golf.secy;p.px=p.bx;p.py=p.by;p.lie=lieAt(p.bx,p.by);
+      golf.lost=false;golf.penal='coup et distance';golf.phase='result';
+      golf.res='Balle perdue. Coup et distance : un coup de pénalité, et tu rejoues de là où tu venais.';
     }
     return;
   }
@@ -4272,13 +4599,27 @@ function updateGolf(){
     return;
   }
 }
+/* Une balle est injouable quand le joueur le dit. Ici on ne le propose que
+   la ou c'est credible : le sous-bois, un buisson, le pied d'un mur. */
+function injouablePossible(p){
+  if(golf.practice||cours.on||golf.lost)return false;
+  if(p.lie==='bois')return true;
+  const x=caseDe(p.bx),y=caseDe(p.by);
+  for(const d of DV) if(SOLID.has(getTile(x+d[0],y+d[1])))return true;
+  return false;
+}
 function startSearch(){
   const p=players[0];
   golf.lost=false;
-  const ang=Math.random()*Math.PI*2,r=1+Math.random()*2.5;
-  golf.hidx=Math.round(p.bx+Math.cos(ang)*r);golf.hidy=Math.round(p.by+Math.sin(ang)*r);
-  game.px=Math.round(p.bx);game.py=Math.round(p.by);game.ox=0;game.oy=0;game.moving=false;
-  golf.stime=300;golf.phase='search';
+  const ang=Math.random()*Math.PI*2,r=1.5+Math.random()*2;
+  let hx=caseDe(p.bx+Math.cos(ang)*r),hy=caseDe(p.by+Math.sin(ang)*r);
+  if(SOLID.has(getTile(hx,hy))||hx<1||hy<1||hx>=MW-1||hy>=MH-1){
+    const q=caseLibrePres(caseDe(p.bx),caseDe(p.by),1);
+    if(q){hx=q[0];hy=q[1];} else {hx=caseDe(p.bx);hy=caseDe(p.by);}
+  }
+  golf.hidx=hx;golf.hidy=hy;
+  game.px=caseDe(p.bx);game.py=caseDe(p.by);game.ox=0;game.oy=0;game.moving=false;
+  golf.stime=600;golf.phase='search';
 }
 function drawCard(){
   box(8,10,224,140);
@@ -4340,6 +4681,7 @@ function drawGreenZoom(cx,cy){
     return;
   }
   for(const p of players){
+    if(p.done)continue; /* une balle rentree ne ressort pas du trou */
     ctx.fillStyle='rgba(0,0,0,.25)';ctx.beginPath();ctx.ellipse(p.bx*TS,p.by*TS,2.5,1.2,0,0,7);ctx.fill();
     ctx.fillStyle='#1b2030';ctx.beginPath();ctx.arc(p.bx*TS,p.by*TS,2.4,0,7);ctx.fill();
     ctx.fillStyle='#fdfdfd';ctx.beginPath();ctx.arc(p.bx*TS,p.by*TS,1.7,0,7);ctx.fill();
@@ -4368,7 +4710,7 @@ function drawGolf(){
     drawGreenZoom(Math.round(fx-W/4),Math.round(fy-H/4));
   } else {
     let tx=(golf.phase==='fly')?golf.bx*TS:P.bx*TS;
-    let ty=(golf.phase==='fly')?golf.by*TS-golf.hgt*0.5:P.by*TS;
+    let ty=(golf.phase==='fly')?golf.by*TS-golf.hgt:P.by*TS;
     /* pendant qu'on vise, la camera va voir la ou la balle doit tomber */
     if(golf.phase==='aim'||golf.phase==='acc'||golf.phase==='power'){
       let d=CLUBS[golf.club].d||6;
@@ -4413,69 +4755,104 @@ function drawGolf(){
   nightTint();
   if(golf.phase==='card'){drawCard();return;}
   if(golf.phase==='search'){
-    box(4,112,232,44);
-    text('OÙ EST CETTE BALLE',14,120,'#38405a',10);
-    text(Math.ceil(golf.stime/60)+' secondes',14,136,'#c8443a',12);
-    const w=Math.round(200*golf.stime/300);
-    ctx.fillStyle='#20242f';ctx.fillRect(120,136,102,8);
-    ctx.fillStyle='#e0503a';ctx.fillRect(121,137,Math.round(100*golf.stime/300),6);
+    box(4,105,232,51);
+    text('OÙ EST CETTE BALLE',12,111,'#38405a',10);
+    text(Math.ceil(golf.stime/60)+' secondes',12,129,'#c8443a',13);
+    ctx.fillStyle='#20242f';ctx.fillRect(112,131,110,10);
+    ctx.fillStyle='#e0503a';ctx.fillRect(113,132,Math.round(108*golf.stime/600),8);
+    text('Marche dessus pour la retrouver.',12,145,'#8a92a8',9);
     return;
   }
-  if(game.hudOff)return;
-  box(4,112,232,44);
+  /* --- ce qui se raconte : le resultat du coup, le joueur qui se met en place --- */
   if(golf.phase==='drop'){
-    text('Elle est dedans.',14,122,'#38405a',10);
+    box(4,105,232,51);
+    text('Elle est dedans.',12,122,'#38405a',11);
     return;
   }
   if(golf.phase==='result'||golf.phase==='ia'||golf.phase==='walk'){
+    box(4,105,232,51);
     const txt=golf.phase==='ia'?((golf.res2||(P.name+' se met en place. B pour le déconcentrer.'))):golf.res;
-    const ls=wrap(txt,206);
-    for(let i=0;i<ls.length&&i<2;i++)text(ls[i],14,122+i*14);
-    if(golf.phase==='result'&&P.human&&(game.tick>>4)%2===0){
-      ctx.fillStyle='#c8443a';ctx.fillRect(222,146,6,3);ctx.fillRect(223,149,4,2);}
+    const ls=wrap(txt,208);
+    for(let i=0;i<ls.length&&i<3;i++)text(ls[i],12,110+i*12,'#38405a',10);
+    if(golf.phase==='result'&&P.human){
+      if(golf.lost)text('A : fouiller       B : abandonner la balle',12,145,'#8a92a8',9);
+      else if(injouablePossible(P))text('A : jouer la balle     B : injouable, +1',12,145,'#8a92a8',9);
+      else if(golf.penal)text('Pénalité : '+golf.penal,12,145,'#c8443a',9);
+      if((game.tick>>4)%2===0){
+        ctx.fillStyle='#c8443a';ctx.fillRect(222,146,6,3);ctx.fillRect(223,149,4,2);}
+    }
     return;
   }
-  const c=CLUBS[golf.club];
-  text(c.n,14,118,'#38405a',10);
-  text(golf.club===PUTTER?'':c.m+' m',66,119,'#8a92a8',9);
-  if(cours.on){
-    text('COUP '+(cours.shot+1)+' / '+cours.max,14,132,'#8a92a8',9);
-    const rang=players.slice().sort((a,b)=>b.cours-a.cours);
-    let rx=14;
-    for(let i=0;i<rang.length&&i<4;i++){
-      text(rang[i].name.slice(0,6)+' '+rang[i].cours,rx,144,rang[i].human?'#38405a':'#8a92a8',8);
-      rx+=48;
-    }
+  if(game.hudOff)return;
+  drawGolfHUD(P);
+}
+/* ---------- le tableau de bord ----------
+   Une seule chose a lire a la fois. En haut ou l'on est, au milieu le club,
+   en bas la jauge en cours et rien d'autre. */
+function jauge(x,y,w,h,v,col,fond){
+  ctx.fillStyle=fond||'#20242f';ctx.fillRect(x,y,w,h);
+  ctx.fillStyle=col;ctx.fillRect(x+1,y+1,Math.max(0,Math.round((w-2)*v)),h-2);
+}
+function motDePrecision(a){
+  const e=Math.abs(a-0.5);
+  if(e<0.035)return 'PARFAITE';
+  if(e<0.10)return 'BONNE';
+  if(e<0.20)return (a<0.5?'un peu à gauche':'un peu à droite');
+  return (a<0.5?'À GAUCHE':'À DROITE');
+}
+function drawGolfHUD(P){
+  const c=CLUBS[golf.club], putt=(golf.phase==='putt'||golf.phase==='putpow');
+  box(4,105,232,51);
+  /* --- la ligne du haut : ou l'on en est --- */
+  let gauche='';
+  if(cours.on)gauche='COUP '+(cours.shot+1)+' / '+cours.max;
+  else if(golf.practice)gauche=golf.cible?('VITRES '+golf.cible.n+'   BALLES '+golf.cible.shots):('SEAU '+game.seau);
+  else gauche='TROU '+HOLES[golf.hole].n+'    PAR '+HOLES[golf.hole].par+'    COUPS '+P.stroke;
+  text(gauche,12,110,'#8a92a8',9);
+  if(!golf.practice&&!cours.on){
+    const d=distM(P)+' m';
+    font(13);const w=ctx.measureText(d).width;
+    font(8);const wl=ctx.measureText('RESTE').width;
+    text('RESTE',226-w-wl-5,113,'#8a92a8',8);
+    text(d,226-w,108,'#38405a',13);
   }
-  else if(golf.practice)text(golf.cible?'VITRES '+golf.cible.n+'   BALLES '+golf.cible.shots:'SEAU '+game.seau,14,132,'#8a92a8',9);
-  else{
-    text('TROU '+HOLES[golf.hole].n+'  PAR '+HOLES[golf.hole].par+'  COUPS '+P.stroke,14,132,'#8a92a8',9);
-    text('RESTE '+distM(P)+' m',14,144,'#38405a',10);
-  }
-  const gx=112,gw=110;
-  ctx.fillStyle='#20242f';ctx.fillRect(gx,118,gw,10);
-  /* la precision d'abord, en haut, puis la puissance */
-  if(golf.phase!=='putt'&&golf.phase!=='putpow'){
-    ctx.fillStyle='#20242f';ctx.fillRect(gx,118,gw,10);
-    ctx.fillStyle='#48c04a';ctx.fillRect(gx+gw/2-2,119,4,8);
-    const av=(golf.phase==='acc')?golf.gT:golf.acc;
-    if(golf.phase==='acc'||golf.phase==='power'){
-      ctx.fillStyle=(golf.phase==='acc')?'#f8f8fa':'#8a92a8';
-      ctx.fillRect(gx+1+Math.round((gw-4)*av),119,3,8);
-    }
-    text('PRÉCISION '+etoiles(fiche(P.fid||P.id).prec),gx,130,'#8a92a8',7);
-  }
-  const pw=(golf.phase==='power'||golf.phase==='putpow')?golf.gT:0;
-  ctx.fillStyle='#20242f';ctx.fillRect(gx,141,gw,10);
-  ctx.fillStyle=pw>0.85?'#e0503a':pw>0.6?'#e8b83a':'#48c04a';
-  ctx.fillRect(gx+1,142,Math.round((gw-2)*pw),8);
-  text('PUISSANCE '+etoiles(fiche(P.fid||P.id).puis),gx,152,'#8a92a8',7);
-  if(golf.phase==='putt'||golf.phase==='putpow'){
-    const sl=golf.slope;
-    text('PENTE',gx,118,'#8a92a8',8);
-    const ax=Math.cos(sl.a)*9,ay=Math.sin(sl.a)*9;
+  ctx.fillStyle='#d8dce8';ctx.fillRect(12,124,216,1);
+  /* --- le club --- */
+  text(putt?'PUTTER':c.n,12,128,'#38405a',11);
+  if(!putt&&golf.club!==PUTTER)
+    text(Math.round(porteeDe(golf.club,P.lie,P.fid||P.id))+' m',76,130,'#8a92a8',9);
+  if(putt){
+    const sl=golf.slope||{a:0,s:0},ax=Math.cos(sl.a),ay=Math.sin(sl.a);
+    text('PENTE',76,130,'#8a92a8',8);
     ctx.fillStyle='#38405a';
-    for(let k=0;k<5;k++)ctx.fillRect(Math.round(gx+48+ax*k/4),Math.round(124+ay*k/4),2,2);
+    for(let k=0;k<5;k++)ctx.fillRect(Math.round(108+ax*k*2.2),Math.round(133+ay*k*2.2),2,2);
+  }
+  /* --- la jauge du moment, et elle seule --- */
+  if(golf.phase==='aim'||golf.phase==='putt'){
+    text(golf.phase==='putt'?'← → viser        A frapper        B quitter'
+                            :'← → viser     ↑ ↓ club     A valider',12,144,'#8a92a8',9);
+    return;
+  }
+  if(golf.phase==='acc'){
+    text('PRÉCISION',12,143,'#38405a',9);
+    const gx=76,gw=152;
+    jauge(gx,142,gw,10,0,'#20242f');
+    ctx.fillStyle='#2f6b3a';ctx.fillRect(gx+Math.round(gw/2)-8,143,16,8);
+    ctx.fillStyle='#48c04a';ctx.fillRect(gx+Math.round(gw/2)-2,143,4,8);
+    ctx.fillStyle='#f8f8fa';ctx.fillRect(gx+1+Math.round((gw-5)*golf.gT),142,3,10);
+    return;
+  }
+  if(golf.phase==='power'||golf.phase==='putpow'){
+    if(golf.phase==='power'){
+      const m=motDePrecision(golf.acc);
+      text(m,132,129,(m==='PARFAITE')?'#2f8a4a':(m==='BONNE')?'#5a627a':'#c8443a',9);
+    }
+    text('PUISSANCE',12,143,'#38405a',9);
+    const gx=76,gw=132,pw=golf.gT;
+    jauge(gx,142,gw,10,pw,pw>0.9?'#e0503a':pw>0.65?'#e8b83a':'#48c04a');
+    ctx.fillStyle='#f8f8fa';ctx.fillRect(gx+Math.round((gw-2)*0.92),143,1,8);
+    text(Math.round(pw*100)+'%',gx+gw+4,144,'#8a92a8',9);
+    return;
   }
 }
 function gy0(){return 146;}
@@ -4483,47 +4860,183 @@ function gy0(){return 146;}
 /* ---------- musique chiptune ---------- */
 let AC=null, musBus=null, musCur='', musStep=0, musNext=0;
 const NOTE=n=>440*Math.pow(2,(n-69)/12);
+/* ---------- les six musiques ----------
+   Trois voix : la melodie, une voix du milieu qui tient l'accord, et la basse.
+   Un pas vaut une croche. Zero c'est un silence, moins un c'est une tenue :
+   la note d'avant continue de sonner. C'est la que respire la melancolie.
+   Le swing retarde les pas impairs, le tambour donne l'appui. */
 const TRACKS={
- /* balade : lent, doux, majeur, on se promene */
- balade:{bpm:88,wave:'triangle',vol:0.17,
-  lead:[74,0,72,0,71,0,72,0, 74,0,0,0,71,0,69,0, 67,0,69,0,71,0,72,0, 74,0,0,0,0,0,0,0,
-        72,0,71,0,69,0,71,0, 72,0,0,0,74,0,0,0, 71,0,69,0,67,0,66,0, 67,0,0,0,0,0,0,0],
+ /* Le soir tiède où l'on comprend que ça ne reviendra pas.
+    la mineur naturel, 80 au metronome. */
+ hameau:{bpm:80,wave:'triangle',wave2:'triangle',waveH:'triangle',vol:0.15,drum:2,swing:0.08,
+  lead:[
+    76, -1, -1, -1, 72, -1, -1, -1, 69, -1, -1, -1, -1, -1,  0,  0,
+    79, -1, -1, 72, -1, -1, -1, -1, 76, -1, -1, -1, 71, -1,  0,  0,
+    76, -1, -1, -1, 79, -1, -1, -1, 83, -1, -1, -1, 79, -1, -1, -1,
+    81, -1, -1, -1, -1, -1, -1, -1, 79, -1, -1, -1, 76, -1,  0,  0,
+    77, -1, -1, -1, 74, -1, -1, -1, 72, -1, -1, -1, 71, 72, -1, -1,
+    69, -1, -1, -1, 65, -1,  0,  0, 71, -1, -1, -1, -1, -1,  0,  0],
+  harm:[
+    60, -1, -1, -1, 64, -1, -1, -1, 65, -1, -1, -1, -1, -1, -1, -1,
+    64, -1, -1, -1, -1, -1, -1, -1, 67, -1, -1, -1, -1, -1, -1, -1,
+    67, -1, -1, -1, 64, -1, -1, -1, 62, -1, -1, -1, 59, -1, -1, -1,
+    60, -1, -1, -1, 65, -1, -1, -1, 64, -1, -1, -1, 67, -1, 64, -1,
+    69, -1, -1, -1, 65, -1, -1, -1, 64, -1, -1, -1, -1, -1, -1, -1,
+    60, -1, -1, -1, 57, -1, -1, -1, 64, -1, -1, -1, 67, -1, 62, -1],
+  bass:[
+    45, -1, -1, -1, -1, -1, -1, -1, 41, -1, -1, -1, 48, -1, -1, -1,
+    48, -1, -1, -1, 43, -1, -1, -1, 40, -1, -1, -1, -1, -1, 47, -1,
+    48, -1, -1, -1, -1, -1, -1, -1, 43, -1, -1, -1, 50, -1, -1, -1,
+    41, -1, -1, -1, 45, -1, -1, -1, 48, -1, -1, -1, -1, -1, 43, -1,
+    50, -1, -1, -1, 45, -1, -1, -1, 45, -1, -1, -1, -1, -1, -1, -1,
+    41, -1, -1, -1, 48, -1, -1, -1, 40, -1, -1, -1, 47, -1, -1,  0]},
+ /* Marche large sur l'herbe rase, la nostalgie passe mais le pas ne ralentit jamais.
+    sol mixolydien, 104 au metronome. */
+ parcours:{bpm:104,wave:'square',wave2:'triangle',waveH:'triangle',vol:0.15,drum:3,swing:0.12,
+  lead:[
+    67, -1, 74, -1, 79, -1, -1, -1, 77, -1, -1, -1, 72, -1, -1, -1,
+    79, -1, -1, 76, -1, -1, -1, -1, 74, -1, -1, -1, -1, -1,  0,  0,
+    72, -1, 76, -1, -1, -1, -1, -1, 79, -1, -1, -1, 76, -1, -1, -1,
+    81, -1, -1, -1, 77, -1, -1, -1, 79, -1, -1, -1, -1, -1,  0,  0,
+    74, -1, 79, -1, 83, -1, -1, -1, 84, -1, 81, -1, -1, -1, 77, -1,
+    76, -1, -1, 79, -1, -1, 84, -1, 83, -1, -1, -1, 79, -1, 77, -1,
+    76, -1, -1, -1, 83, -1, -1, -1, 84, -1, -1, -1, 79, -1, -1, -1,
+    81, -1, -1, 77, -1, -1, 72, -1, 74, -1, -1, -1, 71, -1,  0,  0],
+  harm:[
+    62, -1, -1, -1, 59, -1, -1, -1, 60, -1, -1, -1, 67, -1, -1, -1,
+    64, -1, -1, -1, 62, -1, -1, -1, 59, -1, -1, -1, -1, -1, -1, -1,
+    60, -1, -1, -1, -1, -1, -1, -1, 64, -1, -1, -1, 67, -1, -1, -1,
+    65, -1, -1, -1, 69, -1, -1, -1, 62, -1, -1, -1, -1, -1,  0,  0,
+    71, -1, -1, -1, 62, -1, -1, -1, 69, -1, 72, -1, -1, -1, -1, -1,
+    67, -1, -1, -1, 64, -1, -1, -1, 62, -1, -1, -1, 67, -1, -1, -1,
+    67, -1, -1, -1, 62, -1, -1, -1, 67, -1, -1, -1, 72, -1, -1, -1,
+    72, -1, -1, -1, 65, -1, -1, -1, 67, -1, -1, -1, 62, -1, -1, -1],
+  bass:[
+    43, -1, -1, -1, -1, -1, 50, -1, 41, -1, -1, -1, 48, -1, -1, -1,
+    48, -1, -1, -1, 43, -1, -1, -1, 43, -1, -1, -1, -1, -1, 45, -1,
+    45, -1, -1, -1, 52, -1, -1, -1, 48, -1, -1, -1, 43, -1, -1, -1,
+    41, -1, -1, -1, 48, -1, 45, -1, 43, -1, -1, -1, -1, -1, -1, -1,
+    43, -1, 50, -1, 43, -1, 47, -1, 41, -1, 48, -1, 41, -1, 45, -1,
+    48, -1, -1, -1, 43, -1, 48, -1, 43, -1, 50, -1, 47, -1, -1, -1,
+    40, -1, -1, -1, 47, -1, -1, -1, 48, -1, -1, -1, 43, -1, -1, -1,
+    41, -1, -1, -1, 48, -1, 45, -1, 43, -1, -1, -1, -1, -1, 50, -1]},
+ /* Répétitif et calme, l'esprit décroche entre deux balles.
+    ré dorien, 104 au metronome. */
+ practice:{bpm:104,wave:'triangle',wave2:'triangle',waveH:'triangle',vol:0.13,drum:3,swing:0.08,
+  lead:[
+     0,  0,  0,  0, 81, -1, 77, -1, 79, -1, -1, -1, -1, -1,  0,  0,
+     0,  0,  0,  0, 81, -1, 77, -1, 79, -1, -1, -1, 83, -1, -1, -1,
+     0,  0,  0,  0, 81, -1, 77, -1,  0,  0, 79, -1, -1, -1, 81, -1,
+     0,  0,  0,  0,  0,  0, 74, -1, -1, -1, 79, -1, -1, -1, -1, -1,
+     0,  0,  0,  0, 81, -1, 77, -1, 79, -1, -1, -1, -1, -1,  0,  0,
+     0,  0,  0,  0, 84, -1, 81, -1, 79, -1, -1, -1, -1, -1,  0,  0,
+     0,  0,  0,  0, 81, -1, 77, -1, 79, -1, -1, -1, 81, -1, -1, -1,
+     0,  0,  0,  0, 81, -1, 77, -1, 79, -1, -1, -1, 74, -1, -1, -1],
+  harm:[
+    69, -1, -1, -1, -1, -1, -1, -1, 71, -1, -1, -1, -1, -1, -1, -1,
+    69, -1, -1, -1, -1, -1, -1, -1, 71, -1, -1, -1, 67, -1, -1, -1,
+    69, -1, -1, -1, -1, -1, -1, -1, 72, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, 71, -1, -1, -1,  0,  0,  0,  0,
+    69, -1, -1, -1, -1, -1, -1, -1, 71, -1, -1, -1, 72, -1, -1, -1,
+    65, -1, -1, -1, 69, -1, -1, -1, 71, -1, -1, -1, -1, -1, -1, -1,
+    69, -1, -1, -1, -1, -1, -1, -1, 72, -1, -1, -1, -1, -1,  0,  0,
+    72, -1, -1, -1, 69, -1, -1, -1, 71, -1, -1, -1, 72, -1, 69, -1],
+  bass:[
+    38, -1, -1, -1, 45, -1, -1, -1, 43, -1, -1, -1, 50, -1, -1, -1,
+    38, -1, -1, -1, 45, -1, -1, -1, 43, -1, -1, -1, -1, -1, 50, -1,
+    38, -1, -1, -1, 45, -1, -1, -1, 45, -1, -1, -1, 52, -1, -1, -1,
+    38, -1, -1, -1, -1, -1, -1, -1, 43, -1, -1, -1,  0,  0, 50, -1,
+    38, -1, -1, -1, 45, -1, -1, -1, 43, -1, -1, -1, 50, -1, -1, -1,
+    41, -1, -1, -1, 48, -1, -1, -1, 43, -1, -1, -1, 50, -1, -1, -1,
+    38, -1, -1, -1, 45, -1, -1, -1, 45, -1, -1, -1, 52, -1,  0,  0,
+    38, -1, -1, -1, -1, -1, -1, -1, 43, -1, -1, -1, 50, -1, 45, -1]},
+ /* Chaleur immobile sur le carrelage, l'eau brille, et l'ete se termine sans qu'on bouge.
+    la majeur (couleur lydienne sur le IV), 92 au metronome. */
+ piscine:{bpm:92,wave:'triangle',wave2:'triangle',waveH:'square',vol:0.14,drum:0,swing:0.1,
+  lead:[
+    85, 83, 80, 81, -1, -1, -1, -1, 83, 85, 88, -1, -1, -1, -1,  0,
+    85, 81, 80, 78, -1, -1, -1, -1,  0,  0, 76, 78, 81, -1, -1, -1,
+    81, -1, -1, -1, 85, 86, 88, -1, -1, -1, -1, -1, 85, 81, 78,  0,
+    83, -1, -1, -1, 80, 83, 85, -1, 86, -1, 83, -1, 81, -1,  0,  0,
+    83, -1, -1, -1, 81, 78, 76, -1, 80, 83, 86, -1, -1, -1, -1, -1,
+    85, -1, -1, -1, 81, 80, 78, -1, 81, -1, 83, -1, 80, 83, 86, -1],
+  harm:[
+    64, -1, -1, -1, -1, -1, -1, -1, 68, -1, -1, -1, -1, -1,  0,  0,
+    69, -1, -1, -1, -1, -1, -1, -1, 66, -1, -1, -1, -1, -1,  0,  0,
+    66, -1, -1, -1, -1, -1, -1, -1, 69, -1, -1, -1, -1, -1, -1, -1,
+    64, -1, -1, -1, -1, -1, -1, -1, 62, -1, -1, -1, -1, -1,  0,  0,
+    69, -1, -1, -1, -1, -1, -1, -1, 71, -1, -1, -1, -1, -1, -1, -1,
+    69, -1, -1, -1, -1, -1,  0,  0, 62, -1, -1, -1, 66, -1, -1, -1],
+  bass:[
+    45, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    42, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    38, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0,  0,
+    37, -1, -1, -1, -1, -1, -1, -1, 35, -1, -1, -1, -1, -1, -1, -1,
+    40, -1, -1, -1, -1, -1, -1, -1, 44, -1, -1, -1, -1, -1, -1, -1,
+    42, -1, -1, -1, -1, -1,  0,  0, 35, -1, -1, -1, 40, -1, -1, -1]},
+ /* Une valse qui traine, le velours a pris la poussiere et personne ne se leve pour danser.
+    re mineur, sixte majeure de salon et sensible do diese, neuviemes ajoutees, 90 au metronome. */
+ clubhouse:{bpm:90,wave:'triangle',wave2:'triangle',waveH:'square',vol:0.14,drum:0,swing:0.08,
+  lead:[
+    74, -1, -1, -1, 76, -1, 77, -1, -1, -1, -1, -1, 74, -1, -1, -1,
+    70, -1, 69, -1, -1, -1, 72, -1, 74, -1, -1, -1, 77, -1, 81, -1,
+    -1, -1, -1, -1, 79, -1, -1, -1, 82, -1, 81, -1, -1, -1,  0,  0,
+    76, -1, -1, 74, -1, -1, 72, -1, -1, 77, -1,  0, 76, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, 79, -1, 77, -1, -1, -1, 74, -1, 74, -1,
+    -1, -1, 70, -1, 69, -1, -1, -1, 73, -1, 74, -1, -1, -1,  0,  0],
+  harm:[
+     0,  0, 57, -1, 64, -1,  0,  0, 59, -1, 65, -1,  0,  0, 58, -1,
+    62, -1,  0,  0, 57, -1, 64, -1, 60, -1, -1, -1, 62, -1, 62, -1,
+    -1, -1, -1, -1,  0,  0, 61, -1, 64, -1, 62, -1, -1, -1,  0,  0,
+     0,  0, 57, -1, 65, -1,  0,  0, 58, -1, 62, -1,  0,  0, 58, -1,
+    64, -1,  0,  0, 58, -1, 64, -1,  0,  0, 57, -1, 62, -1,  0,  0,
+    62, -1, 58, -1,  0,  0, 61, -1, 67, -1, 65, -1, -1, -1, -1, -1],
+  bass:[
+    38, -1, -1, -1, -1, -1, 38, -1, -1, -1, 45, -1, 43, -1, -1, -1,
+    -1, -1, 48, -1, -1, -1, 45, -1, 41, -1, -1, -1, -1, -1, 46, -1,
+    -1, -1, -1, -1, 45, -1, -1, -1, 37, -1, 38, -1, -1, -1, -1,  0,
+    38, -1, -1, -1, -1, -1, 46, -1, -1, -1, -1, -1, 43, -1, -1, -1,
+    -1, -1, 37, -1, -1, -1, -1, -1, 38, -1, -1, -1, 41, -1, 43, -1,
+    -1, -1, -1, -1, 45, -1, -1, -1, -1, -1, 38, -1, -1, -1, 45, -1]},
+ /* On descend trop vite pour freiner, et on sait deja que c'est la derniere fois.
+    la mineur naturel, 156 au metronome. */
+ grassboard:{bpm:156,wave:'square',wave2:'triangle',waveH:'square',vol:0.16,drum:1,swing:0,
+  lead:[
+    81, -1, -1, -1, 77, -1, -1, -1, 79, -1, -1, -1, 76, -1, -1, -1,
+    74, -1, -1, -1, 71, -1, -1, -1, 71, -1, -1, 72, 71, -1,  0,  0,
+    81, -1, -1, -1, 79, -1, 77, -1, 76, -1, -1, 74, 72, -1, -1, -1,
+    77, -1, -1, -1, 81, -1, -1, -1, 83, -1, -1, -1, 79, -1, 74, -1,
+    84, -1, -1, 81, 77, -1, -1, -1, 83, -1, -1, 79, 76, -1, -1, -1,
+    81, -1, -1, 77, 74, -1, -1, -1, 79, -1, -1, 76, 72, -1,  0,  0,
+    74, -1, 77, -1, 81, -1, 86, -1, 86, -1, 83, -1, 79, -1, 83, -1,
+    81, -1, -1, -1, -1, -1, -1, -1, -1, -1, 79, -1, 81, -1, -1, -1],
+  harm:[
+    65, -1, -1, -1, 62, -1, -1, -1, 64, -1, -1, -1, 60, -1, -1, -1,
+    59, -1, -1, -1, 62, -1, -1, -1, 64, -1, -1, -1, -1, -1, -1, -1,
+    65, -1, -1, -1, 62, -1, -1, -1, 64, -1, -1, -1, 60, -1, -1, -1,
+    -1, -1, -1, -1, 65, -1, -1, -1, 67, -1, -1, -1, 62, -1, -1, -1,
+    69, -1, 65, -1, 69, -1, 65, -1, 67, -1, 64, -1, 67, -1, 64, -1,
+    65, -1, 62, -1, 65, -1, 62, -1, 64, -1, 60, -1, 64, -1,  0,  0,
+    62, -1, -1, -1, 65, -1, -1, -1, 67, -1, -1, -1, 71, -1, -1, -1,
+    72, -1, -1, -1, 65, -1, -1, -1, 64, -1, -1, -1, 60, -1, -1, -1],
+  bass:[
+    38, 38, 50, 38, 45, 38, 50, 38, 36, 36, 48, 36, 43, 36, 48, 36,
+    43, 43, 55, 43, 50, 43, 55, 43, 40, 40, 52, 40, 47, 40, 52, 40,
+    38, 38, 38, 50, 38, 38, 45, 50, 36, 36, 36, 48, 36, 36, 43, 48,
+    41, 41, 41, 53, 41, 41, 48, 53, 43, 43, 43, 55, 43, 43, 50, 55,
+    41, 41, 53, 41, 48, 41, 53, 41, 40, 40, 52, 40, 47, 40, 52, 40,
+    38, 38, 50, 38, 45, 38, 50, 38, 36, 36, 48, 36, 43, 36, 48, 36,
+    38, 50, 38, 50, 38, 50, 38, 50, 43, 55, 43, 50, 43, 55, 43, 50,
+    41, 41, 53, 41, 38, 38, 50, 38, 40, 40, 52, 47, 33, -1, 45, -1]},
+ /* On marche, c'est tout. Le theme de tous les jours, celui du domaine.
+    sol majeur, 88 au metronome. */
+ balade:{bpm:88,wave:'triangle',wave2:'triangle',waveH:'triangle',vol:0.15,drum:0,swing:0.06,
+  lead:[74,0,72,0,71,0,72,0, 74,0,0,0,71,0,69,0, 67,0,69,0,71,0,72,0, 74,0,-1,0,0,0,0,0,
+        72,0,71,0,69,0,71,0, 72,0,0,0,74,0,0,0, 71,0,69,0,67,0,66,0, 67,0,-1,-1,0,0,0,0],
+  harm:[67,-1,-1,-1,67,-1,-1,-1, 66,-1,-1,-1,64,-1,-1,-1, 62,-1,-1,-1,64,-1,-1,-1, 67,-1,-1,-1,-1,-1,-1,-1,
+        64,-1,-1,-1,64,-1,-1,-1, 67,-1,-1,-1,66,-1,-1,-1, 62,-1,-1,-1,59,-1,-1,-1, 60,-1,-1,-1,-1,-1,-1,-1],
   bass:[43,0,0,0,50,0,0,0, 43,0,0,0,50,0,0,0, 48,0,0,0,55,0,0,0, 48,0,0,0,55,0,0,0,
-        45,0,0,0,52,0,0,0, 45,0,0,0,52,0,0,0, 41,0,0,0,48,0,0,0, 43,0,0,0,50,0,0,0],
-  drum:0},
- /* practice : tranquille, repetitif, on tape des balles sans y penser */
- practice:{bpm:104,wave:'triangle',vol:0.15,
-  lead:[76,0,74,0, 72,0,74,0, 76,0,79,0, 76,0,0,0,
-        74,0,72,0, 71,0,72,0, 74,0,76,0, 74,0,0,0,
-        72,0,71,0, 69,0,71,0, 72,0,74,0, 72,0,0,0,
-        71,0,69,0, 67,0,69,0, 71,0,72,0, 74,0,0,0],
-  bass:[48,0,0,0, 55,0,0,0, 48,0,0,0, 55,0,0,0,
-        50,0,0,0, 57,0,0,0, 50,0,0,0, 57,0,0,0,
-        45,0,0,0, 52,0,0,0, 45,0,0,0, 52,0,0,0,
-        43,0,0,0, 50,0,0,0, 43,0,0,0, 50,0,0,0],
-  drum:0},
- /* grass board : ca descend, ca va vite, on ne freine pas */
- grassboard:{bpm:152,wave:'square',vol:0.16,
-  lead:[74,74,76,78, 74,0,78,0, 81,0,78,76, 74,0,0,0,
-        72,72,74,76, 72,0,76,0, 79,0,76,74, 72,0,0,0,
-        74,76,78,81, 83,81,78,76, 74,76,78,74, 69,0,0,0,
-        86,0,83,0, 81,0,78,0, 76,78,81,83, 86,0,0,0],
-  bass:[50,0,50,0, 50,0,50,57, 45,0,45,0, 45,0,45,52,
-        48,0,48,0, 48,0,48,55, 43,0,43,0, 43,0,43,50,
-        50,0,50,0, 45,0,45,0, 43,0,43,0, 41,0,41,0,
-        38,0,38,0, 40,0,40,0, 41,0,41,0, 43,0,0,0],
-  drum:1},
- /* partie : plus rapide, plus carre, on joue */
- golf:{bpm:136,wave:'square',vol:0.15,
-  lead:[67,71,74,71, 67,71,74,79, 77,74,71,74, 72,71,69,67,
-        65,69,72,69, 65,69,72,77, 76,72,69,72, 71,69,67,0,
-        74,0,72,74, 71,0,69,71, 67,0,69,67, 62,0,0,0,
-        74,76,77,79, 77,76,74,72, 71,72,74,71, 67,0,0,0],
-  bass:[43,0,43,0, 43,0,43,50, 41,0,41,0, 41,0,41,48,
-        40,0,40,0, 40,0,40,47, 38,0,38,0, 38,0,43,0,
-        43,0,43,0, 43,0,43,50, 36,0,36,0, 36,0,36,43,
-        41,0,41,0, 40,0,40,0, 38,0,38,0, 43,0,0,0],
-  drum:1}};
+        45,0,0,0,52,0,0,0, 45,0,0,0,52,0,0,0, 41,0,0,0,48,0,0,0, 43,0,0,0,50,0,0,0]}};
 let sfxBus=null, brBuf=null, feuSrc=null, feuGain=null, rouleSrc=null, rouleGain=null, rouleFil=null;
 function audioInit(){
   if(AC)return;
@@ -4603,12 +5116,43 @@ function noiseHit(t,vol,dur,bus){
   const g=AC.createGain(); g.gain.value=vol||0.2;
   s.connect(g); g.connect(bus||musBus); s.start(t);
 }
+/* Ou l'on se trouve decide de ce qu'on entend. Le club a sa valse, la piscine
+   son scintillement, le hameau sa melancolie du soir. */
+let PISCINE_C=null;
+function centrePiscine(){
+  let n=0,sx=0,sy=0;
+  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++)
+    if(getTile(x,y)===T.POOL){sx+=x;sy+=y;n++;}
+  PISCINE_C=n?{x:sx/n,y:sy/n}:null;
+}
 function musWant(){
-  if(game.state===S.TITLE)return 'balade';
+  if(game.state===S.TITLE)return 'hameau';
   if(game.state===S.PENTE)return 'grassboard';
-  if(golf.practice&&!cours.on)return 'practice';
-  if(golf.on||game.state===S.BATTLE)return 'golf';
+  if(golf.practice||cours.on)return 'practice';
+  if(golf.on||game.state===S.BATTLE)return 'parcours';
+  if(game.inside)return (game.inside==='club')?'clubhouse':'hameau';
+  if(game.nage)return 'piscine';
+  if(PISCINE_C&&Math.hypot(game.px-PISCINE_C.x,game.py-PISCINE_C.y)<10)return 'piscine';
+  /* on lit la zone sous les pieds, pas celle du dernier bandeau affiche */
+  const z=zoneAt(game.px,game.py);
+  if(z==='LE PRIEURÉ'||z==='LA TERRASSE'||z==="L'ENTRÉE DU CLUB")return 'clubhouse';
+  if(z==='HAMEAU DU PRIEURÉ'||z==='MAISONS DE LISIÈRE'||z==='FORÊT DES HAMEAUX')return 'hameau';
+  if(z==='LE PRACTICE')return 'practice';
+  /* la nuit, dehors, c'est le theme du hameau : celui du soir qui ne revient pas */
+  if(game.phase==='f')return 'hameau';
   return 'balade';
+}
+/* combien de pas une note tient, tenues comprises */
+function tenue(arr,i){
+  let k=1;
+  while(k<24&&arr[(i+k)%arr.length]===-1)k++;
+  return k;
+}
+/* une voix, un pas : on ne joue que les vraies attaques, les tenues allongent */
+function voix(arr,step,t,sp,wave,vol,bus){
+  const i=step%arr.length, n=arr[i];
+  if(n===undefined||n<=0)return;
+  blip(NOTE(n),t,sp*tenue(arr,i)*0.92,wave,vol,bus);
 }
 function musTick(){
   if(!AC||AC.state==='suspended')return;
@@ -4619,13 +5163,19 @@ function musTick(){
   if(musNext<AC.currentTime) musNext=AC.currentTime+0.03;
   let guard=0;
   while(musNext<AC.currentTime+0.3 && guard++<32){
-    const i=musStep%tr.lead.length;
-    const n=tr.lead[i]; if(n>0) blip(NOTE(n),musNext,sp*0.85,tr.wave,tr.vol);
-    const b=tr.bass[musStep%tr.bass.length]; if(b>0) blip(NOTE(b),musNext,sp*1.7,'triangle',tr.vol*1.5);
-    if(tr.drum&&musStep%4===0) noiseHit(musNext,0.07,0.05);
+    /* le swing : les pas impairs arrivent un peu en retard, ca respire */
+    const t=musNext+((musStep%2)?sp*(tr.swing||0):0);
+    voix(tr.lead,musStep,t,sp,tr.wave,tr.vol);
+    if(tr.harm)voix(tr.harm,musStep,t,sp,tr.waveH||'triangle',tr.vol*0.45);
+    voix(tr.bass,musStep,musNext,sp,tr.wave2||'triangle',tr.vol*1.35);
+    const m=musStep%16;
+    if(tr.drum===1&&musStep%4===0) noiseHit(musNext,0.07,0.05);
+    else if(tr.drum===2&&(m===4||m===12)) noiseHit(musNext,0.035,0.07);
+    else if(tr.drum===3&&musStep%2===0) noiseHit(musNext,0.018,0.03);
     musNext+=sp; musStep++;
   }
 }
+centrePiscine();
 setInterval(musTick,60);
 setInterval(ambiances,50);
 /* toute la banque de bruitages, au format GBA : court, sec, et jamais fort */
@@ -4678,6 +5228,12 @@ function updateCars(){
       ?{x:32,y:MH+2,v:-0.12,c:(cars.length+1)%CAR_PALS.length,honk:0}
       :{x:30,y:-2,v:0.12,c:(cars.length+3)%CAR_PALS.length,honk:0});
   }
+  /* le soir, les voitures du parking remontent la departementale les unes apres
+     les autres. C'est a ca qu'on voit que la journee est finie. */
+  if(departsEnAttente>0&&carClock%110===0){
+    departsEnAttente--;
+    cars.push({x:32,y:78,v:-0.11,c:(cars.length+5)%CAR_PALS.length,honk:0,rentre:1});
+  }
   for(let i=cars.length-1;i>=0;i--){
     const c=cars[i]; c.y+=c.v;
     if(c.y<-4||c.y>MH+4){cars.splice(i,1);continue;}
@@ -4698,11 +5254,18 @@ function carHit(){
        "Le type ne s'arrête même pas. On traverse par la passerelle, on te l'avait dit."],null,'LA D 130');
 }
 function drawCars(cx,cy){
+  const nuit=heureLampes();
   for(const c of cars){
     const sx=Math.round(c.x*TS-cx), sy=Math.round(c.y*TS-cy);
     if(sx<-20||sx>W+20||sy<-20||sy>H+20)continue;
     ctx.fillStyle='rgba(0,0,0,.22)';ctx.fillRect(sx+2,sy+13,12,3);
     drawSprite(SPR_CAR[0],sx,sy,1,Object.assign({},PAL,CAR_PALS[c.c]));
+    /* phares devant, feux rouges derriere, en gros pixels */
+    if(nuit){
+      const av=(c.v<0)?-3:14, ar=(c.v<0)?15:-2;
+      ctx.fillStyle='#f6e9b0';ctx.fillRect(sx+3,sy+av,3,2);ctx.fillRect(sx+10,sy+av,3,2);
+      ctx.fillStyle='#c8443a';ctx.fillRect(sx+3,sy+ar,2,2);ctx.fillRect(sx+11,sy+ar,2,2);
+    }
   }
 }
 
@@ -4886,7 +5449,7 @@ function phaseOf(){const h=hNow();return (h>=8&&h<16)?'g':((h>=21||h<6)?'f':'h')
 function timeStep(){
   const h=hNow(), nuit=(h>=20||h<7);
   game.min+=nuit?0.018:0.0075;
-  if(game.min>=1440)game.min-=1440;
+  if(game.min>=1440){game.min-=1440;game.jour=(game.jour||0)+1;}
   const ph=phaseOf();
   if(ph!==game.phase){
     game.phase=ph;placeGang();
@@ -4979,7 +5542,7 @@ function callFeu(){
 function demandeFeu(){
   game.feuAttend=false;
   if(game.inside||game.state!==S.WORLD)return;
-  askYN("Le feu est allumé au bord du 6. Ils y sont tous. Tu y vas ?",'LA BANDE',
+  askYN("Le feu est allumé dans les bois. Ils y sont tous. Tu y vas ?",'LA BANDE',
     ()=>goFeu(),
     ()=>{toast("Tu les rejoindras. A sur un terrain vide pour y aller d'un coup.");});
 }
@@ -4987,7 +5550,10 @@ function goFeu(){
   game.feuCall=false;game.feuAttend=false;
   fadeTo(()=>{
     game.inside=null;
-    game.px=109;game.py=41;game.dir=1;game.ox=0;game.oy=0;game.moving=false;
+    /* on arrive par le sud, a la place laissee vide dans le cercle */
+    trouveLeFeu();
+    const q=caseLibrePres(FEU.x,FEU.y+2,0)||[FEU.x,FEU.y+2];
+    game.px=q[0];game.py=q[1];game.dir=1;game.ox=0;game.oy=0;game.moving=false;
     game.zone=zoneAt(game.px,game.py);game.banner='LE FEU DE CAMP';game.bannerT=0;
     game.state=S.WORLD;
   });
@@ -5039,15 +5605,189 @@ function placeGang(){
     else if(game.phase==='h'){n.x=sp.h[0];n.y=sp.h[1];n.inside=sp.hin||null;}
     else {n.x=sp.f[0];n.y=sp.f[1];}
   }
+  placeAgenda();
+  placeAccueil();
+  rentreALaMaison();
   if(game.phase==='f')placeAutourDuFeu();
+}
+/* ---------- le petit monde qui tourne ----------
+   Personne ne passe l'ete debout au meme endroit. Deux ou trois postes chacun,
+   et on change toutes les douze heures. La replique suit le poste : ce qu'on
+   raconte depend de la ou l'on se tient.
+   Les reperes sont approximatifs : on se cale sur la case libre la plus proche,
+   comme ca la carte peut bouger sans que personne se retrouve dans un mur. */
+function creneau(){const h=hNow();return (game.jour||0)*2+((h>=6&&h<18)?0:1);}
+const AGENDA={
+ sophie:[
+  {x:83,y:59,ou:'au bord de la piscine',d:[
+    ["On ne bronze pas au bord d'une piscine en polo. Enlève-moi ce polo."],
+    ["Vous avez vu Sylvie ? Elle a repris trois rosés avant le 10."]]},
+  {x:62,y:53,ou:'sur la terrasse',d:[
+    ["Je remets mes lunettes pour lire la carte, et je les perds pour taper."],
+    ["Le chef dit que c'est frais. Le chef dit ça depuis 1994."]]},
+  {x:19,y:55,ou:'au practice',d:[
+    ["Je viens taper vingt balles. J'en tape trois et je regarde les autres."],
+    ["Gilles dit que j'ai un beau geste. Gilles dit ça à tout le monde."]]}],
+ olivier:[
+  {x:66,y:53,ou:'devant le club house',d:[
+    ["Wesh alors, tu joues au golf toi ? C'est un sport de vieux."],
+    ["Moi je fais du basket. J'ai le crossover. Tu connais même pas."]]},
+  {x:79,y:58,ou:'au bord de la piscine',d:[
+    ["Je plonge pas, je saute. C'est pas pareil, c'est plus dur."],
+    ["Touche pas à ma casquette. Je l'ai vue avant toi de toute façon."]]},
+  {x:57,y:33,ou:'dans les bois',d:[
+    ["Mon short est quelque part par là. Il y est depuis mardi."],
+    ["Si tu le retrouves tu me le dis. Enfin, tu me le dis pas. Tu le laisses."]]}],
+ margaux:[
+  {x:3,y:3,in:'lebel',ou:'dans sa chambre',d:[
+    ["Je ponce, je peins, je reponce. Tu peux regarder si tu parles pas."],
+    ["Je sors pas. Dehors il y a des gens, et les gens font du bruit."]]},
+  {x:80,y:27,ou:'dans le jardin',d:[
+    ["Je suis sortie. Voilà. C'est fait, on n'en parle plus."],
+    ["La lumière est meilleure ici. C'est la seule raison."]]},
+  {x:64,y:33,ou:'au bord de l\'eau',d:[
+    ["L'eau bouge tout le temps. C'est pour ça que je la peins mal."],
+    ["Charles dit que la peinture c'est pas un sport. Charles perd au golf."]]}],
+ georgie:[
+  {x:59,y:55,ou:'devant le club',d:[
+    ["Tiens, un jeune. Tu veux un conseil ? Ne joue jamais pour de l'argent."],
+    ["On m'a repris ma carte. On ne m'a jamais rendu ma réputation.","Enfin. Tape ta balle, toi."]]},
+  {x:16,y:54,ou:'au practice',d:[
+    ["Regarde-moi ce geste. Non, le mien. Il ne reste que ça.","Vas-y, tape. Je regarde."],
+    ["Il y a des balles qui bougent toutes seules dans le rough.","C'est tout ce que je dirai. Va taper."]]},
+  {x:66,y:66,ou:'au putting green',d:[
+    ["Deux mètres. Vingt ans que je les rate, ces deux mètres."],
+    ["Le putting c'est comme le reste. Ça se perd et ça ne revient pas."]]}],
+ sylvie:[
+  {x:60,y:54,ou:'sur la terrasse',d:[
+    ["Ce n'est pas un terrain de jeu, les enfants. Enfin si. Mais pas comme ça."],
+    ["J'ai ri si fort au 7 que j'ai avalé une mouche. Vous imaginez !"]]},
+  {x:41,y:74,ou:'au parking',d:[
+    ["Ma Volvo est garée là. Si une balle la touche, je saurai qui."],
+    ["Je ne repars jamais avant d'avoir dit au revoir à tout le monde. Ça prend une heure."]]},
+  {x:80,y:60,ou:'au bord de la piscine',d:[
+    ["Je ne me baigne pas. Je surveille. Ce n'est pas la même chose."],
+    ["Sophie m'a dit trois rosés. Il y en avait deux. Et un demi."]]}],
+ herve:[
+  {x:52,y:64,ou:'au départ du 1',d:[
+    ["Bonjour."],["Hervé sourit, regarde le 1, et ne dit rien de plus."]]},
+  {x:63,y:54,ou:'sur la terrasse',d:[
+    ["J'ai fait 82 ce matin. Je ne l'ai dit à personne. Voilà, maintenant si."],
+    ["Le café ici est mauvais. J'en prends deux."]]},
+  {x:64,y:67,ou:'au putting green',d:[
+    ["Je m'entraîne au putting parce que c'est là que je perds. C'est logique."],
+    ["Bonjour. Encore."]]}],
+ sorin:[
+  {x:65,y:68,ou:'au putting green',d:[
+    ["Ta balle a traversé MA ligne de putt. C'est écrit dans les règles. Article 16."],
+    ["Si tu comptes mal ton score, je le verrai. Je vois toujours."]]},
+  {x:61,y:54,ou:'sur la terrasse',d:[
+    ["Je plaide au pénal toute la semaine. Le week-end je plaide ici. C'est pire."],
+    ["Une balle hors limites, c'est coup et distance. Ce n'est pas négociable."]]},
+  {x:48,y:70,ou:'au parking',d:[
+    ["Ma voiture est garée droite. Regarde les autres. Regarde bien."],
+    ["On m'a rayé la portière en 1998. Je n'ai jamais retrouvé qui."]]}],
+ perrine:[
+  {x:62,y:56,ou:'sur la terrasse',d:[
+    ["Mon petit, tu as les joues rouges. Assieds-toi deux minutes.","Voilà. Tiens, un carambar. Ne le dis pas à Charles."]]},
+  {x:84,y:58,ou:'au bord de la piscine',d:[
+    ["Tu ne te baignes pas tout de suite. Tu viens de manger.","Bon. Vas-y. Mais doucement."]]},
+  {x:57,y:66,ou:'au putting green',d:[
+    ["Je compte les balles que vous perdez. J'en suis à quarante-deux."],
+    ["Tiens, un carambar. Il en reste. Il en reste toujours."]]}],
+ arthur:[
+  {x:100,y:91,ou:'chez lui',d:[
+    ["Cette nuit j'ai cramé une souche entière. Elle a brûlé jusqu'au matin.","Enfin, presque le matin. Vingt minutes."]]},
+  {x:59,y:31,ou:'près du foyer',d:[
+    ["C'est moi qui l'allume. Personne d'autre. C'est la règle."],
+    ["J'ai des allumettes, des briquets, et une loupe. On sait jamais."]]},
+  {x:108,y:84,ou:'dans les champs',d:[
+    ["Le chaume ça part tout seul. Je dis ça, je dis rien."],
+    ["Mon père m'a interdit les champs. Donc je regarde les champs."]]}],
+ valentine:[
+  {x:108,y:91,ou:'chez elle',d:[
+    ["Mon frère raconte n'importe quoi. Il a mis le feu à une brindille."],
+    ["Vous pouvez traverser le jardin. Mais vous refermez le portillon."]]},
+  {x:105,y:84,ou:'dans les champs',d:[
+    ["Je ramasse des bleuets. Il en reste trois dans tout le Vexin."],
+    ["Arthur dit qu'il a brûlé un chêne. Le chêne est toujours là."]]},
+  {x:66,y:35,ou:'au bord de l\'eau',d:[
+    ["Il y a des tritons là-dedans. Regarde sans bouger."],
+    ["Camille arrive samedi. Elle nous battra tous, comme d'habitude."]]}],
+ julien:[
+  {x:114,y:91,ou:'chez lui',d:[
+    ["Les balles du 4 tombent dans notre haie. On en a un seau plein."],
+    ["Camille arrive samedi. Elle joue mieux que nous tous, c'est vexant."]]},
+  {x:111,y:86,ou:'dans les champs',d:[
+    ["On a le droit de couper par là. Enfin, personne ne nous a dit non."],
+    ["Le seau de balles est à vendre. Deux euros. Une balle, pas le seau."]]},
+  {x:63,y:65,ou:'au putting green',d:[
+    ["Je m'entraîne pour samedi. Camille ne me battra pas deux fois."],
+    ["Tu veux faire un putting contre moi ? Une balle, un euro. Non ? Bon."]]}],
+ alex:[
+  {x:64,y:66,ou:'au putting green',d:[
+    ["Oscar il a dit que je pouvais venir. Il a dit. Demande-lui."],
+    ["Moi aussi je tape à cent mètres. Presque cent. Enfin je tape."]]},
+  {x:82,y:57,ou:'au bord de la piscine',d:[
+    ["Je sais nager. Je sais très bien nager. Regarde, je fais la planche."],
+    ["Si vous fumez je le dis pas. Mais faut me donner une gorgée."]]},
+  {x:110,y:12,ou:'au hameau',d:[
+    ["J'attends. Ils vont bien finir par descendre."],
+    ["Personne m'a dit où on se retrouvait. C'est pas grave."]]}],
+ margot:[
+  {x:96,y:9,ou:'au hameau',d:[
+    ["J'ai mis un ver de terre dans le sac de Charles. Tu dis rien."],
+    ["Je descends jamais au club house. Je reste ici, c'est mieux ici."]]},
+  {x:100,y:20,ou:'sur l\'allée',d:[
+    ["On fait la course jusqu'au portail ? Trois, deux... j'ai déjà commencé !"],
+    ["Charles a dit que j'avais pas le droit de vous suivre. Donc je vous suis."]]},
+  {x:65,y:37,ou:'au bord de l\'eau',d:[
+    ["Il y a un truc mort dans l'eau. Viens voir. Viens voir !"],
+    ["La fontaine du patio est pleine de pièces. Enfin, elle l'était."]]}]};
+function placeAgenda(){
+  const c=creneau();
+  for(const id in AGENDA){
+    const n=NPCS.find(x=>x.id===id); if(!n||n.gone)continue;
+    if(game.party.includes(id))continue;
+    if(game.phase==='f'&&AU_FEU.includes(id))continue;
+    const l=AGENDA[id], p=l[c%l.length];
+    n.inside=p.in||null;
+    if(p.in){n.x=p.x;n.y=p.y;}
+    else{
+      const q=caseLibrePres(p.x,p.y,0)||[p.x,p.y];
+      n.x=q[0];n.y=q[1];
+    }
+    n.hx=n.x;n.hy=n.y;
+    if(!n.dFixe)n.d=p.d;
+    n.ou=p.ou;
+  }
+}
+/* ---------- le soir, on rentre ----------
+   Les grands ne dorment pas au golf. A la nuit tombee ils remontent au parking,
+   une portiere claque, et on les voit repartir sur la departementale. Ils
+   redescendent au matin, comme si de rien n'etait. */
+const RENTRENT=['sylvie','herve','sorin','perrine','poteless1','poteless2','sophie',
+  'georgie','daniel','cathy','gilles','pascal','alain','olivier','jackie',
+  'william','philippe','helene','barman'];
+let departsEnAttente=0;
+function rentreALaMaison(){
+  const nuit=(game.phase==='f');
+  let partants=0;
+  RENTRENT.forEach(id=>{
+    const n=NPCS.find(x=>x.id===id); if(!n)return;
+    if(nuit){ if(!n.gone){n.gone=true;n.rentre=true;partants++;} }
+    else if(n.rentre){n.gone=false;n.rentre=false;}
+  });
+  if(nuit&&partants)departsEnAttente=Math.min(8,partants);
 }
 /* deux personnes a l'accueil, jamais les trois, ca tourne */
 const ACCUEIL=['william','philippe','helene'];
 function placeAccueil(){
+  if(game.phase==='f')return; /* la nuit le secretariat est ferme, tout le monde est rentre */
   const off=ACCUEIL[(game.phase==='g')?2:(game.phase==='h')?0:1];
   ACCUEIL.forEach((id,i)=>{
     const n=NPCS.find(x=>x.id===id); if(!n)return;
-    n.gone=(id===off);
+    n.gone=(id===off);n.rentre=false;
     if(!n.gone){const k=ACCUEIL.filter(a=>a!==off).indexOf(id);
       /* devant le secretariat, sur la carte de Pierre */
       n.x=POSTES.william[0]+k;n.y=POSTES.william[1];n.dir=0;}
@@ -5093,8 +5833,10 @@ function nightTint(cx,cy){
     for(let j=-1;j<=11;j++)for(let i=-1;i<=16;i++){
       const x=t0x+i,y=t0y+j; if(x<0||y<0||x>=MW||y>=MH)continue;
       const t=map[y*MW+x];
-      if(lampes&&t===T.LAMPH)
-        sources.push({x:(x*TS+8-cx)/2,y:(y*TS+10-cy)/2,r:15,f:0.92,c:'#f2e2a8'});
+      /* le lampadaire eclaire l'allee, pas le poteau : la flaque tombe au pied,
+         et elle est assez large pour qu'on voie ou l'on marche */
+      if(lampes&&(t===T.LAMPH||t===T.LAMPB))
+        sources.push({x:(x*TS+8-cx)/2,y:(y*TS+15-cy)/2,r:21,f:0.95,c:'#f2e2a8',sol:1});
       else if(fen&&FENETRES_ALLUMEES.has(t))
         /* la lumiere tombe devant la maison, donc un peu plus bas que la vitre */
         sources.push({x:(x*TS+8-cx)/2,y:(y*TS+16-cy)/2,r:11,f:0.72,c:'#f2d08a',vitre:[x,y]});
@@ -5112,7 +5854,9 @@ function nightTint(cx,cy){
   sources.forEach(o=>{
     ctx.fillStyle=o.c;
     const r=Math.round(o.r*0.5)*2;
-    ctx.fillRect(Math.round(o.x*2-r/2),Math.round(o.y*2-r/2),r,r);
+    /* au sol, la flaque est plus large que haute : c'est un cone qui tombe */
+    const w=o.sol?Math.round(r*1.25):r, h2=o.sol?Math.round(r*0.72):r;
+    ctx.fillRect(Math.round(o.x*2-w/2),Math.round(o.y*2-h2/2),w,h2);
   });
   ctx.restore();
   /* la vitre elle-meme s'allume */
@@ -6153,6 +6897,7 @@ NPCS.forEach(n=>{
 });
 NPCS.forEach(n=>{n.gx0=n.x;n.gy0=n.y;});
 placeAccueil();
+placeAgenda();
 
 /* ---------- boucle ---------- */
 function update(){

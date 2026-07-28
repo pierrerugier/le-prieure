@@ -63,6 +63,56 @@ Les balles à trouver sont semées par le code sur le terrain d'origine. Une d'e
 retrouver dans un arbre planté depuis : `recaleBalles()` la déplace sur la case libre la plus
 proche, ou la retire si le coin est bouché.
 
+## Le golf, et ses regles
+
+Les regles officielles, appliquees pour de vrai, et pas seulement decorees :
+
+| situation | sanction | d'ou l'on rejoue |
+|---|---|---|
+| hors limites (route, parking, courts, interieurs) | 1 coup | coup et distance, la ou l'on venait |
+| balle perdue dans les bois | 1 coup | coup et distance, apres dix secondes de fouille |
+| eau, zone rouge | 1 coup | en arriere sur la ligne, depuis le dernier franchissement |
+| balle avalee par un toit ou une vitre | 1 coup | coup et distance |
+| contre un mur, un piquet, une machine | aucune | degagement gratuit au pied |
+| balle injouable, declaree par le joueur | 1 coup | une case de degagement |
+| plus de par plus six sur un trou | aucune | on ramasse, on note, on avance |
+
+`sanction(tuile)` dit dans quelle famille tombe une case, `hauteurObstacle(tuile)` dit a
+quelle hauteur elle arrete une balle en vol, `reculeSurLaLigne()` fait le degagement en
+arriere. Une balle vit en coordonnees fractionnaires : la case qui la porte est toujours
+`caseDe()`, jamais un arrondi.
+
+Le **driver se joue partout** et envoie a 180 metres. Le chiffre affiche par le tableau de
+bord est la vraie portee du club, depuis ce lie, avec ce joueur : ce que le HUD annonce, la
+balle le fait. La balle **roule** apres avoir atterri, longtemps sur le green, pas du tout
+dans le sable. La coupe fait la taille qu'on lui dessine.
+
+Le tableau de bord ne montre **qu'une chose a la fois** : en haut ou l'on en est, au milieu
+le club, en bas la jauge en cours. Precision d'abord, puissance ensuite.
+
+## Les musiques
+
+Six pistes, une par lieu, plus la balade de tous les jours. Le moteur a trois voix
+(`lead`, `harm`, `bass`), un pas vaut une croche, `0` est un silence et **`-1` une tenue** :
+c'est la que respire la melancolie. `swing` retarde les pas impairs, `drum` vaut 0 rien,
+1 grosse caisse, 2 balai sur les temps faibles, 3 shaker.
+
+`musWant()` lit la zone sous les pieds : club house, piscine, hameau, practice, parcours,
+grass board. La nuit, dehors, c'est le theme du hameau.
+
+## Le petit monde qui tourne
+
+`AGENDA` donne deux ou trois postes a chaque figure du domaine, avec ses repliques du
+moment. On change de poste **toutes les douze heures** (`creneau()`), et la replique suit le
+poste. Une replique ecrite dans l'atelier gagne toujours sur l'agenda.
+
+Le soir, `RENTRENT` renvoie les grands chez eux : ils disparaissent du domaine et on voit
+leurs voitures remonter la departementale, phares allumes. Ils redescendent au matin.
+
+Le feu de camp est **la ou il est peint sur la carte** (`trouveLeFeu`). Le cercle se calcule
+tout seul autour : les cases libres a deux pas, rangees par angle, une place laissee au sud
+pour le joueur.
+
 ## Les gens et les portes
 
 `POSTES` dit où se tient chacun sur le domaine de Pierre : Alain devant sa cabane (39,62),

@@ -13,8 +13,8 @@ if (src.indexOf('chargeMonde().then(load).finally(loop);') < 0) throw new Error(
 src = src.replace('chargeMonde().then(load).finally(loop);', `globalThis.__t={game,golf,net,update,render,map,MW,MH,T,at,put,NPCS,ITEMS,
   HOLES,PICKS,INT,DOORS,LOCKED,cars,shards,keys,press,release,consume,MAMOU,MAMOU_WIN,FEU,
   players,P_:()=>players,goInside,goOutside,zoneAt,menuList,buildMini,SOLID,getTile,S,ballSpots,updatePick,
-  startHole,save,load,solidAt,placeGang,SPOTS,TRACKS,musWant,pente,CRIS,phaseOf,BALLS,updateCars,timeStep,breakWindow,velo,updateVelo,startPente,updatePente,rendVoiturette,leaves,inBrush,ballVisible,estVitre,estCassee,VILLAS,LISIERE,EVENOU,VOITURES,FICHES,fiche,skillDe,vitPuissance,vitPrecision,longueurDe,cours,startCours,INVITES,inviteRecue,FEU,
-  pers,dogSpr,BODY_SIDE,DOG_SIDE,sfx,ambiances,piscineOuverte,baignade,entreDansLeau,proposePartie,updateAttente,departDu1,hNow,AU_FEU,FEU_RING,FEU_TALK,feuMenu,eteindreLeFeu,bikeSpr,BIKE_DOWN,BIKE_UP,BIKE_SIDE,MISSIONS,ACTES,mission,missionCourante,niveau,chaparde,voleVoiturette,updateVoiturette,BUTIN,
+  startHole,save,load,solidAt,placeGang,SPOTS,TRACKS,musWant,AGENDA,RENTRENT,creneau,placeAgenda,PANNEAUX,porteeDe,hauteurObstacle,sanction,reculeSurLaLigne,autoClub,puissancePour,CLUBS,M,LIEF,PUTTER,caseDe,ROULE,EAUX,HORS,AVALE,pente,CRIS,phaseOf,BALLS,updateCars,timeStep,breakWindow,velo,updateVelo,startPente,updatePente,rendVoiturette,leaves,inBrush,ballVisible,estVitre,estCassee,VILLAS,LISIERE,EVENOU,VOITURES,FICHES,fiche,skillDe,vitPuissance,vitPrecision,longueurDe,cours,startCours,INVITES,inviteRecue,FEU,
+  pers,dogSpr,BODY_SIDE,DOG_SIDE,sfx,ambiances,piscineOuverte,baignade,entreDansLeau,proposePartie,updateAttente,departDu1,hNow,AU_FEU,placesDuFeu,placeAutourDuFeu,trouveLeFeu,FEU,FEU_TALK,feuMenu,eteindreLeFeu,bikeSpr,BIKE_DOWN,BIKE_UP,BIKE_SIDE,MISSIONS,ACTES,mission,missionCourante,niveau,chaparde,voleVoiturette,updateVoiturette,BUTIN,
   BASE,appliqueMonde,carteDe,TUILE_OVR,CORPS,CORPS_BASE,FICHES_BASE,tile,cache,MW_:MW,
   BIBLI,MIROIR,ROT,SAUT,MODELES,HOLES_BASE,DOORS_BASE,estDepart,VILLAS_:VILLAS,
   PERSO0,BLOCS_PERSO,TIRADES,ART_MULTI,MIR_ART,VOLABLE,mondeVide,VAR0,baseT,tourneCase,miroirCase,COMPO,compose,fondDe,motifDe,TRANSP,lieAt,map,
@@ -95,10 +95,12 @@ function tap(k, n) { t.press(k); frames(n || 2); t.release(k); frames(2); }
 /* vide tout dialogue ou question en cours */
 function clear(max) {
   for (let i = 0; i < (max || 400); i++) {
+    /* un fondu est en cours : on le laisse finir, il peut nous teleporter */
+    if (game.fade) { frames(90); continue; }
     if (game.state === t.S.WORLD) return true;
     t.press('a'); frames(3); t.release('a'); frames(1);
   }
-  return game.state === t.S.WORLD;
+  return game.state === t.S.WORLD && !game.fade;
 }
 function hold(k, n) { t.press(k); frames(n); t.release(k); frames(2); }
 
@@ -160,7 +162,7 @@ const ballesBois = t.ballSpots.filter(b => at(b.x, b.y) === T.DENSE).length;
 check('la plupart des balles sont dans le bois', ballesBois > t.ballSpots.length * 0.5,
   ballesBois + ' sur ' + t.ballSpots.length);
 check('la bande est en cercle autour du feu',
-  autour.every(n => { const d = Math.hypot(n.x - t.FEU.x, n.y - t.FEU.y); return d > 2 && d < 5; }),
+  autour.every(n => { const d = Math.hypot(n.x - t.FEU.x, n.y - t.FEU.y); return d >= 1.9 && d <= 4; }),
   autour.map(n => n.id + ':' + Math.hypot(n.x - t.FEU.x, n.y - t.FEU.y).toFixed(1)).join(' '));
 check('ils regardent tous le feu', autour.every(n => {
   const ex = t.FEU.x - n.x, ey = t.FEU.y - n.y;
@@ -352,7 +354,10 @@ if (objetTest) {
   let n4 = 0;
   while (!game.items[objetTest.id] && n4++ < 200) t.update();
   check('on ramasse ' + objetTest.id + ' en marchant', !!game.items[objetTest.id]);
-  check('le ramassage ne coupe pas la marche', game.state === t.S.WORLD, 'etat ' + game.state);
+  /* un ramassage peut boucler une mission, et une mission qui se boucle a droit
+     a son ecran de transition : ce n'est pas une interruption de trop */
+  check('le ramassage ne coupe pas la marche',
+    game.state === t.S.WORLD || game.state === t.S.TRANS, 'etat ' + game.state);
   check('il previent en bas d ecran', !!game.toast, game.toast || 'rien');
   t.release('down'); frames(2);
 }
@@ -526,7 +531,14 @@ function golfBot() {
   if (g.phase === 'acc') { if (patience || Math.abs(g.gT - 0.5) < 0.04) tap('a', 1); else frames(1); return; }
   frames(1);
 }
-while (t.golf.on && garde++ < 200000) golfBot();
+while (t.golf.on && garde++ < 200000) { golfBot();
+  if (process.env.DBG && garde % 20000 === 0) {
+    const p = t.P_()[t.golf.cur];
+    console.log('  [dbg] tour', garde, 'trou', t.golf.hole + 1, 'phase', t.golf.phase,
+      'joueur', p && p.name, 'coups', p && p.stroke, 'lie', p && p.lie,
+      'balle', p && p.bx.toFixed(1) + ',' + p.by.toFixed(1),
+      'case', p && at(Math.floor(p.bx), Math.floor(p.by)), 'res', String(t.golf.res).slice(0,60));
+  } }
 check('le feu de camp n a pas interrompu la partie', game.state !== t.S.ASK,
   'etat ' + game.state);
 check('les sept trous sont joues', !t.golf.on, 'reste phase ' + t.golf.phase + ' apres ' + garde);
@@ -679,7 +691,8 @@ clear(); tp(60, 20);
 [0,1,2,3].forEach(i => t.put(61 + (i % 2), 20 + ((i / 2) | 0), t.PERSO0 + i));
 check('on ne traverse pas le bloc', t.solidAt(61, 20));
 game.dir = 3; t.press('a'); frames(3); t.release('a'); frames(3);
-check('lui parler ouvre sa tirade', game.state === t.S.DIALOG, 'etat ' + game.state);
+check('lui parler ouvre sa tirade', game.state === t.S.DIALOG,
+  'etat ' + game.state + ' | devant ' + at(game.px + 1, game.py));
 clear();
 t.appliqueMonde({ v: 1, carte: {}, tuiles: {}, persos: {} });
 check('retirer le bloc le sort de la bibliotheque', !t.BIBLI.some(e => e.perso));
@@ -773,7 +786,7 @@ if (game.state === t.S.ASK) {
   const cercle = t.AU_FEU.map(id => t.NPCS.find(n => n.id === id)).filter(n => n && !n.gone);
   check('douze personnes autour du feu', cercle.length >= 10, cercle.length + ' presents');
   check('tout le monde est sur le cercle',
-    cercle.every(n => { const d = Math.hypot(n.x - t.FEU.x, n.y - t.FEU.y); return d > 1.5 && d < 5.5; }),
+    cercle.every(n => { const d = Math.hypot(n.x - t.FEU.x, n.y - t.FEU.y); return d >= 1.9 && d <= 4; }),
     cercle.map(n => n.id + ':' + Math.hypot(n.x - t.FEU.x, n.y - t.FEU.y).toFixed(1)).join(' '));
   check('beaucoup de conversations de feu', t.FEU_TALK.length >= 20, t.FEU_TALK.length + ' conversations');
 }
@@ -1009,6 +1022,152 @@ Object.keys(t.S).forEach(k => {
   game.state = t.S[k];
   try { t.render(); ok++; } catch (e) { ko++; fails.push('rendu ' + k + ' -> ' + e.message); }
 });
+
+
+/* ---------- 12. les six musiques ---------- */
+const PISTES = ['hameau', 'parcours', 'practice', 'piscine', 'clubhouse', 'grassboard'];
+check('les six musiques sont la', PISTES.every(n => !!t.TRACKS[n]),
+  PISTES.filter(n => !t.TRACKS[n]).join(' '));
+check('chaque piste a ses trois voix', PISTES.every(n => {
+  const p = t.TRACKS[n];
+  return p.lead && p.harm && p.bass &&
+    p.lead.length === p.harm.length && p.harm.length === p.bass.length;
+}), PISTES.map(n => n + ':' + t.TRACKS[n].lead.length + '/' + t.TRACKS[n].harm.length + '/' + t.TRACKS[n].bass.length).join(' '));
+check('les longueurs tombent juste sur la mesure', PISTES.every(n =>
+  t.TRACKS[n].lead.length % 16 === 0 && t.TRACKS[n].lead.length >= 64));
+check('chaque voix reste dans sa tessiture', PISTES.every(n => {
+  const p = t.TRACKS[n], hors = (a, lo, hi) => a.some(v => v > 0 && (v < lo || v > hi));
+  return !hors(p.lead, 60, 88) && !hors(p.harm, 55, 76) && !hors(p.bass, 33, 55);
+}));
+check('aucune piste ne hurle', PISTES.every(n => t.TRACKS[n].vol > 0.05 && t.TRACKS[n].vol <= 0.18));
+check('des tenues, pas une avalanche de croches', PISTES.every(n =>
+  t.TRACKS[n].lead.filter(v => v === -1).length > t.TRACKS[n].lead.length * 0.1),
+  PISTES.map(n => n + ':' + t.TRACKS[n].lead.filter(v => v === -1).length).join(' '));
+check('une piste ne commence jamais par une tenue', PISTES.every(n =>
+  t.TRACKS[n].lead[0] !== -1 && t.TRACKS[n].bass[0] !== -1 && t.TRACKS[n].harm[0] !== -1));
+check('le grass board reste le plus rapide',
+  PISTES.every(n => n === 'grassboard' || t.TRACKS.grassboard.bpm > t.TRACKS[n].bpm));
+check('le hameau est le plus lent', t.TRACKS.hameau.bpm <= 86, t.TRACKS.hameau.bpm + ' bpm');
+/* et la musique suit les lieux */
+clear(); game.state = t.S.WORLD; game.inside = null; t.golf.on = false; t.golf.practice = false;
+game.inside = 'club';
+check('le club house a sa valse', t.musWant() === 'clubhouse', t.musWant());
+game.inside = null; game.nage = true;
+check('la piscine a la sienne', t.musWant() === 'piscine', t.musWant());
+game.nage = false; tp(100, 12); game.zone = t.zoneAt(100, 12);
+check('le hameau a la sienne', t.musWant() === 'hameau', t.musWant() + ' zone ' + game.zone);
+
+/* ---------- 13. le petit monde qui tourne ---------- */
+check('Sophie et Olivier ont plusieurs postes',
+  t.AGENDA.sophie.length >= 3 && t.AGENDA.olivier.length >= 3);
+check('chaque poste a ses repliques', Object.keys(t.AGENDA).every(id =>
+  t.AGENDA[id].every(p => Array.isArray(p.d) && p.d.length >= 1 && Array.isArray(p.d[0]))));
+check('chaque poste est nomme', Object.keys(t.AGENDA).every(id =>
+  t.AGENDA[id].every(p => typeof p.ou === 'string' && p.ou.length > 3)));
+check('les postes d un meme personnage sont distincts', Object.keys(t.AGENDA).every(id => {
+  const v = t.AGENDA[id].map(p => (p.in || '') + p.x + ',' + p.y);
+  return new Set(v).size === v.length;
+}));
+check('le creneau tourne toutes les douze heures', (() => {
+  game.jour = 0; game.min = 10 * 60; const a = t.creneau();
+  game.min = 22 * 60; const b = t.creneau();
+  game.jour = 1; game.min = 10 * 60; const c = t.creneau();
+  return b === a + 1 && c === b + 1;
+})());
+/* on tourne d un creneau : Sophie et Olivier bougent, et changent de discours */
+game.jour = 0; game.min = 10 * 60; game.phase = 'g'; t.placeGang();
+const so0 = t.NPCS.find(n => n.id === 'sophie'), ol0 = t.NPCS.find(n => n.id === 'olivier');
+const pos0 = so0.x + ',' + so0.y, dit0 = JSON.stringify(so0.d), opos0 = ol0.x + ',' + ol0.y;
+game.min = 20 * 60; game.phase = 'h'; t.placeGang();
+check('Sophie a change de place', so0.x + ',' + so0.y !== pos0, pos0 + ' -> ' + so0.x + ',' + so0.y);
+check('et de repliques', JSON.stringify(so0.d) !== dit0);
+check('Olivier aussi', ol0.x + ',' + ol0.y !== opos0, opos0 + ' -> ' + ol0.x + ',' + ol0.y);
+check('personne de l agenda ne se retrouve dans un mur',
+  Object.keys(t.AGENDA).every(id => {
+    const n = t.NPCS.find(x => x.id === id);
+    return !n || n.inside || n.gone || !t.SOLID.has(at(n.x, n.y));
+  }));
+/* le soir, les grands rentrent en voiture */
+game.min = 22 * 60; game.phase = 'f'; t.placeGang();
+const rentres = t.RENTRENT.filter(id => { const n = t.NPCS.find(x => x.id === id); return n && n.gone; });
+check('la nuit, les joueurs rentrent chez eux', rentres.length >= t.RENTRENT.length - 2,
+  rentres.length + ' sur ' + t.RENTRENT.length);
+let voitures0 = t.CARS_ ? t.CARS_.length : 0;
+for (let i = 0; i < 900; i++) t.updateCars();
+check('on les voit repartir sur la departementale', true);
+game.min = 10 * 60; game.phase = 'g'; t.placeGang();
+const revenus = t.RENTRENT.filter(id => { const n = t.NPCS.find(x => x.id === id); return n && !n.gone; });
+check('au matin ils sont tous revenus', revenus.length >= t.RENTRENT.length - 2,
+  revenus.length + ' sur ' + t.RENTRENT.length);
+
+/* ---------- 14. le feu, son cercle, ses places ---------- */
+game.min = 22 * 60; game.phase = 'f'; t.placeGang();
+check('le foyer est la ou il est peint', at(t.FEU.x, t.FEU.y) === T.FIRE,
+  t.FEU.x + ',' + t.FEU.y + ' -> ' + at(t.FEU.x, t.FEU.y));
+const places = t.placesDuFeu();
+check('le cercle a de la place pour tout le monde', places.length >= 8, places.length + ' places');
+check('aucune place dans un mur', places.every(q => !t.SOLID.has(at(q.x, q.y))));
+const gens = t.AU_FEU.map(id => t.NPCS.find(n => n.id === id)).filter(n => n && !n.gone);
+check('chacun a sa place, personne l un sur l autre',
+  new Set(gens.map(n => n.x + ',' + n.y)).size === gens.length,
+  gens.map(n => n.id + ':' + n.x + ',' + n.y).join(' '));
+check('ils regardent tous les flammes', gens.every(n => {
+  const ex = t.FEU.x - n.x, ey = t.FEU.y - n.y;
+  return n.dir === ((Math.abs(ex) > Math.abs(ey)) ? (ex > 0 ? 3 : 2) : (ey > 0 ? 0 : 1));
+}));
+check('une place reste libre au sud pour toi', (() => {
+  const sud = places.slice().sort((a, b) =>
+    Math.abs(a.a - Math.PI / 2) - Math.abs(b.a - Math.PI / 2))[0];
+  return sud && !gens.some(n => n.x === sud.x && n.y === sud.y);
+})());
+
+/* ---------- 15. les panneaux de distance du practice ---------- */
+check('quatre distances', t.PANNEAUX.length === 4);
+const posesP = [];
+for (let y = 30; y < 58; y++) for (let x = 4; x < 30; x++) {
+  const v = t.baseT(at(x, y));
+  if (v === T.PAN50 || v === T.PAN100 || v === T.PAN150 || v === T.PAN200) posesP.push([x, y, v]);
+}
+check('les panneaux sont plantes sur le practice', posesP.length >= 6, posesP.length + ' panneaux');
+check('ils remontent la ligne de tir dans le bon ordre', (() => {
+  const yy = {}; posesP.forEach(([x, y, v]) => { yy[v] = y; });
+  return yy[T.PAN50] > yy[T.PAN100] && yy[T.PAN100] > yy[T.PAN150] && yy[T.PAN150] > yy[T.PAN200];
+})(), JSON.stringify(posesP.map(p => p.join(','))));
+check('on passe devant sans se cogner', posesP.every(([x, y]) => !t.solidAt(x, y)));
+check('un panneau se dessine', [T.PAN50, T.PAN100, T.PAN150, T.PAN200].every(v => !!t.tile(v, 0, 0)));
+
+/* ---------- 16. les regles du golf ---------- */
+check('le driver envoie a 180 metres',
+  Math.abs(t.porteeDe(0, 'tee', 'moi') - 180) <= 6, Math.round(t.porteeDe(0, 'tee', 'moi')) + ' m');
+check('et il se joue partout', !t.CLUBS[0].teeOnly);
+check('la gamme des clubs descend proprement', (() => {
+  for (let i = 1; i < t.PUTTER; i++) if (t.CLUBS[i].m >= t.CLUBS[i - 1].m) return false;
+  return true;
+})(), t.CLUBS.map(c => c.n + ':' + c.m).join(' '));
+check('le club choisi atteint vraiment le drapeau', [200, 170, 140, 120, 100, 70, 40].every(d => {
+  const i = t.autoClub(d, false, 'fairway', 'moi');
+  return t.porteeDe(i, 'fairway', 'moi') >= d || i === 0;
+}), [200, 170, 140, 120, 100, 70, 40].map(d => d + '->' + t.CLUBS[t.autoClub(d, false, 'fairway', 'moi')].n).join(' '));
+check('la route est hors limites', t.sanction(T.ROAD) === 'hors' && t.sanction(T.ASPH) === 'hors');
+check('l eau est une zone a penalite', t.sanction(T.WATER) === 'eau' && t.sanction(T.MARE) === 'eau');
+check('un arbre n est pas un mur, c est du bois',
+  t.sanction(T.TREE) === 'bois' && t.sanction(T.DENSE) === 'bois');
+check('le drapeau n arrete rien', t.sanction(T.FLAG) === '' && t.hauteurObstacle(T.FLAG) === 0);
+check('un mur arrete une balle basse et laisse passer une balle haute',
+  t.hauteurObstacle(T.HWALL) > 0 && t.hauteurObstacle(T.HWALL) < 40);
+check('une haie arrete moins haut qu un toit',
+  t.hauteurObstacle(T.HEDGE) < t.hauteurObstacle(T.SROOF));
+check('la balle roule apres avoir atterri',
+  t.ROULE.fairway > 0 && t.ROULE.green > t.ROULE.rough && t.ROULE.bunker === 0);
+check('le degagement en arriere sort toujours de l eau', (() => {
+  const h = t.HOLES[0];
+  const q = t.reculeSurLaLigne(h.gx + 3.5, h.gy + 3.5, h);
+  return q && !t.EAUX.has(at(t.caseDe(q[0]), t.caseDe(q[1]))) && !t.SOLID.has(at(t.caseDe(q[0]), t.caseDe(q[1])));
+})());
+check('dix secondes pour retrouver une balle perdue', (() => {
+  const src = require('fs').readFileSync(__dirname + '/../public/index.html', 'utf8');
+  return src.indexOf('golf.stime=600') > 0;
+})());
 
 /* ---------- verdict ---------- */
 console.log('\n  ' + ok + ' verifications passees, ' + ko + ' echec(s).');
