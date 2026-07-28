@@ -170,10 +170,19 @@ gros pixels qui en sortent, c'est le rendu voulu. Même principe pour la fumée 
 `?h=21` dans l'URL cale l'heure du domaine, pratique pour regarder un rendu de nuit.
 
 Le serveur garde ça dans `data/monde.json` (`GET`/`POST /api/monde`) et prévient les joueurs
-connectés, qui appliquent la retouche sans recharger. **Sur Render le disque est effacé à
-chaque déploiement** : pour qu'une carte survive, l'exporter depuis l'atelier et committer le
-fichier en `public/monde.json`, que le serveur relit en secours. Sans serveur (Netlify, fichier
-local), l'atelier travaille dans le `localStorage` du navigateur.
+connectés, qui appliquent la retouche sans recharger.
+
+⚠️ **Sur Render le disque est effacé à chaque déploiement.** C'est déjà arrivé une fois : un
+monde de 1364 cases retouchées est parti. Trois filets, dans cet ordre :
+
+1. L'atelier écrit **aussi** dans le `localStorage` du navigateur à chaque enregistrement.
+   Au chargement, si le serveur revient **vide** (`mondeVide()`), c'est la copie locale qui
+   reprend la main, et l'atelier affiche un bandeau pour la remettre en ligne d'un clic.
+2. `public/monde.json`, committé dans le dépôt, est relu par le serveur quand `data/` est vide.
+   C'est le seul endroit vraiment durable : **après une bonne session, exporter et committer.**
+3. Le bouton `Exporter` télécharge le fichier.
+
+Sans serveur (Netlify, fichier local), l'atelier travaille dans le `localStorage` seul.
 
 ## Architecture du script
 

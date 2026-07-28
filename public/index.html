@@ -1977,16 +1977,29 @@ function appliqueMonde(mo){
   if(typeof buildMini==='function'){try{buildMini();}catch(e){}}
 }
 const MONDEKEY='prieure3monde';
+/* Un monde sans rien dedans, ce n'est pas un monde : c'est un serveur qui a perdu
+   son disque. Dans ce cas la copie gardee sur l'appareil reprend la main. */
+function mondeVide(m){
+  if(!m)return true;
+  const n=o=>Object.keys(o||{}).length;
+  const l=a=>(a&&a.length)?a.length:0;
+  return !n(m.carte)&&!n(m.tuiles)&&!n(m.pnj)&&!n(m.objets)
+    &&!l(m.blocs)&&!l(m.missions)&&!l(m.lieux)&&!l(m.trous)&&!l(m.portes)
+    &&!n((m.persos||{}).fiches)&&!n((m.persos||{}).corps);
+}
+let MONDE_SECOURS=false;
 async function chargeMonde(){
-  let mo=null;
+  let srv=null, loc=null;
   try{
     if(typeof fetch==='function'&&location.protocol!=='file:'){
       const r=await fetch('/api/monde',{cache:'no-store'});
-      if(r.ok)mo=await r.json();
+      if(r.ok)srv=await r.json();
     }
   }catch(e){}
-  if(!mo||!mo.carte){ try{const raw=localStorage.getItem(MONDEKEY); if(raw)mo=JSON.parse(raw);}catch(e){} }
-  if(mo&&mo.carte)appliqueMonde(mo);
+  try{const raw=localStorage.getItem(MONDEKEY); if(raw)loc=JSON.parse(raw);}catch(e){}
+  let mo=srv;
+  if(mondeVide(srv)&&!mondeVide(loc)){mo=loc;MONDE_SECOURS=true;}
+  if(!mondeVide(mo))appliqueMonde(mo);
 }
 
 /* ---------- balles et objets ---------- */
@@ -5836,7 +5849,8 @@ if(MODE_EDIT){
     BIBLI:BIBLI,MIROIR:MIROIR,ROT:ROT,SAUT:SAUT,MODELES:MODELES,ART_MULTI:ART_MULTI,
     PERSO0:PERSO0,BLOCS_PERSO:BLOCS_PERSO,PERSO_CASE:PERSO_CASE,TIRADES:TIRADES,
     HOLES:HOLES,DOORS:DOORS,HOLES_BASE:HOLES_BASE,DOORS_BASE:DOORS_BASE,estDepart:estDepart,
-    MONDEKEY:MONDEKEY,get monde(){return MONDE;},appliqueMonde:appliqueMonde
+    MONDEKEY:MONDEKEY,get monde(){return MONDE;},appliqueMonde:appliqueMonde,
+    get secours(){return MONDE_SECOURS;}
   };
   chargeMonde().finally(function(){
     const sc=document.createElement('script');

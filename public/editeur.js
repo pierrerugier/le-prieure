@@ -1638,5 +1638,19 @@ window.addEventListener('beforeunload',e=>{
 batPlanche();
 prendEnMain(1,1,[ed.bloc],'Rough','bibli'); ed.enMain=false;
 majOutils(); majPanneau(); majVue(); boucle();
-dit('Prêt.');
+if(A.secours){
+  const b=document.createElement('div');
+  b.style.cssText='position:fixed;left:0;right:0;top:46px;z-index:9;background:#5e3a1e;'+
+    'border-bottom:1px solid #8a5a2a;color:#f4e2a8;padding:9px 14px;font-size:12px;'+
+    'display:flex;align-items:center;gap:12px';
+  b.innerHTML='<span><b>Le serveur est reparti à vide.</b> Voici la version gardée sur cet '+
+    'appareil. Enregistre pour la remettre en ligne, et exporte-la pour la mettre à l\'abri.</span>';
+  const ok=document.createElement('button'); ok.className='b vert'; ok.textContent='Remettre en ligne';
+  ok.onclick=()=>{enregistre();b.remove();};
+  const x=document.createElement('button'); x.className='b'; x.textContent='Plus tard';
+  x.onclick=()=>b.remove();
+  b.appendChild(ok); b.appendChild(x);
+  document.body.appendChild(b);
+  dit('Version locale reprise. Pense à l\'enregistrer.');
+} else dit('Prêt.');
 })();

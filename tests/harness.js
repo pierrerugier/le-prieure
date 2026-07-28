@@ -17,7 +17,7 @@ src = src.replace('chargeMonde().then(load).finally(loop);', `globalThis.__t={ga
   pers,dogSpr,BODY_SIDE,DOG_SIDE,sfx,ambiances,piscineOuverte,baignade,entreDansLeau,proposePartie,updateAttente,departDu1,hNow,AU_FEU,FEU_RING,FEU_TALK,feuMenu,eteindreLeFeu,bikeSpr,BIKE_DOWN,BIKE_UP,BIKE_SIDE,MISSIONS,ACTES,mission,missionCourante,niveau,chaparde,voleVoiturette,updateVoiturette,BUTIN,
   BASE,appliqueMonde,carteDe,TUILE_OVR,CORPS,CORPS_BASE,FICHES_BASE,tile,cache,MW_:MW,
   BIBLI,MIROIR,ROT,SAUT,MODELES,HOLES_BASE,DOORS_BASE,estDepart,VILLAS_:VILLAS,
-  PERSO0,BLOCS_PERSO,TIRADES,ART_MULTI,MIR_ART,
+  PERSO0,BLOCS_PERSO,TIRADES,ART_MULTI,MIR_ART,mondeVide,
   ITEMS_BASE,NPCS_BASE,MISSIONS_BASE,ACTES_BASE,LOCKED_BASE,EVENTS};`);
 
 /* ---------- faux canvas ---------- */
@@ -607,6 +607,11 @@ clear();
 t.appliqueMonde({ v: 1, carte: {}, tuiles: {}, persos: {} });
 check('retirer le bloc le sort de la bibliotheque', !t.BIBLI.some(e => e.perso));
 check('et rend le passage', !t.SOLID.has(t.PERSO0) && !t.TIRADES[t.PERSO0]);
+check('un monde sans rien dedans est reconnu comme vide',
+  t.mondeVide({v:1,carte:{},tuiles:{},persos:{fiches:{},corps:{}},pnj:{},objets:{}}));
+check('un monde avec une seule case retouchee n est pas vide',
+  !t.mondeVide({v:1,carte:{domaine:[[1,1,3]]}}));
+check('un monde avec un bloc maison n est pas vide', !t.mondeVide({v:1,carte:{},blocs:[{id:400}]}));
 check('la maison des Molina existe hors du hameau', !!t.INT.molina);
 check('les Molina ne sont plus au hameau', !t.VILLAS.some(v => v.id === 'molina'));
 clear();
