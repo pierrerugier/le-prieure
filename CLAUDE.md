@@ -37,6 +37,38 @@ node tests/harness.js
 Deux raccourcis d'URL pour regarder une zone sans y marcher : `?go=x,y[,interieur]` place le
 personnage au démarrage, `?demo=pente` ouvre directement le grass board.
 
+## L'atelier
+
+`/editeur` ouvre un éditeur dans la même page que le jeu, avec les mêmes objets en mémoire :
+la carte, le cache de tuiles, les fiches et les poses. Rien n'est dupliqué, donc ce qu'on voit
+dans l'atelier est exactement ce que le jeu dessine. Le code de l'atelier est dans
+`public/editeur.js`, chargé seulement en mode éditeur ; `index.html` lui passe ce qu'il faut
+par `window.__PRIEURE__`.
+
+Trois onglets :
+
+- **Carte.** Le domaine et chaque intérieur, à n'importe quel zoom. Pinceau (taille 1 à 9),
+  rectangle, pot de peinture, pipette. Alt + clic reprend le bloc déjà posé, clic droit
+  déplace, molette zoome sur le curseur. Un liseré doré marque ce qui a été retouché,
+  un voile rouge montre les cases où l'on ne passe pas.
+- **Blocs.** La bibliothèque de tous les blocs, et un éditeur 16x16 pour en redessiner un.
+  Le dessin de départ est lu dans le canvas que le code a peint, donc on part toujours de
+  l'existant. Un bloc redessiné remplace toutes ses variantes.
+- **Personnages.** La fiche (couleurs, coupe, taille, carrure, short, lunettes, précision,
+  puissance) avec les douze poses en aperçu direct, et un éditeur de pose où chaque case est
+  une **lettre de palette**, pas une couleur : les poses sont communes à toute la bande, les
+  couleurs viennent de la fiche.
+
+**Ce qu'on enregistre n'est jamais le monde entier, seulement l'écart** avec ce que le code
+fabrique : une liste de cases, les blocs redessinés, les fiches et poses modifiées. Vider le
+fichier remet tout d'aplomb, et `Tout remettre d'origine` le fait depuis l'atelier.
+
+Le serveur garde ça dans `data/monde.json` (`GET`/`POST /api/monde`) et prévient les joueurs
+connectés, qui appliquent la retouche sans recharger. **Sur Render le disque est effacé à
+chaque déploiement** : pour qu'une carte survive, l'exporter depuis l'atelier et committer le
+fichier en `public/monde.json`, que le serveur relit en secours. Sans serveur (Netlify, fichier
+local), l'atelier travaille dans le `localStorage` du navigateur.
+
 ## Architecture du script
 
 1. Écran, entrées clavier et tactile

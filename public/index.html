@@ -319,8 +319,21 @@ const SOLID=new Set([T.TREE,T.WATER,T.CAR,T.SWALL,T.SWIN,T.HEDGE,T.PARA,T.POOL,
   T.HRIDGE,T.HEAVE,T.HWIN,T.HWINB,T.HBAIE,T.LUC,T.STORE,T.PLAT,T.VITRINE,T.WC,T.CABW,T.CABR,
   T.HANG,T.HANGR,T.HANGW,T.PICKUP,T.CHARIOT]);
 const cache={};
+/* les blocs redessines dans l'editeur : {pal:[couleurs], px:[256 indices, -1 = transparent]} */
+const TUILE_OVR={};
+function canvasOvr(o){
+  const c=document.createElement('canvas'); c.width=TS;c.height=TS;
+  const g=c.getContext('2d');
+  for(let i=0;i<256;i++){
+    const k=o.px[i]; if(k==null||k<0)continue;
+    const col=o.pal[k]; if(!col)continue;
+    g.fillStyle=col; g.fillRect((i%16)|0,(i/16)|0,1,1);
+  }
+  return c;
+}
 function tile(id,v,f){
   const key=id+':'+v+':'+(f||0); if(cache[key])return cache[key];
+  if(TUILE_OVR[id]){const c=canvasOvr(TUILE_OVR[id]);cache[key]=c;return c;}
   const c=document.createElement('canvas'); c.width=TS;c.height=TS;
   const g=c.getContext('2d'), R=(col,x,y,w,h)=>{g.fillStyle=col;g.fillRect(x,y,w,h);};
   let sd=id*131+v*37+11; const nr=()=>{sd=(sd*1103515245+12345)&0x7fffffff;return (sd>>9)/4194304%1;};
@@ -1109,6 +1122,8 @@ function buildWorld(){
   put(52,49,T.SIGN);
 }
 buildWorld();
+/* la carte telle que le code la fabrique : sert de reference a l'editeur */
+const BASE={domaine:map.slice()};
 
 /* ---------- interieurs ---------- */
 const INT={};
@@ -1284,6 +1299,64 @@ makeInt('jungers',16,10,'CHEZ TOI',7,8,102,5,function(){
   for(const x of [3,4,5,10,11,12]) iput(x,9,T.BAIE);
   iput(7,9,T.EXIT);iput(8,9,T.EXIT);
 });
+Object.keys(INT).forEach(k=>{BASE[k]=INT[k].map.slice();});
+
+/* ---------- les retouches de l'editeur ----------
+   Un monde = trois choses : des cases repeintes, des blocs redessines, et des
+   personnages retouches. Tout est un ecart par rapport a ce que le code fabrique,
+   donc on peut toujours revenir en arriere en vidant le fichier. */
+let MONDE={v:1,carte:{},tuiles:{},persos:{}};
+const CORPS={BODY_DOWN:BODY_DOWN,BODY_UP:BODY_UP,BODY_SIDE:BODY_SIDE,
+  CHEV_MI_DOWN:CHEV_MI_DOWN,CHEV_LONG_DOWN:CHEV_LONG_DOWN,CHEV_BOUCLE_DOWN:CHEV_BOUCLE_DOWN,
+  CHEV_MI_SIDE:CHEV_MI_SIDE,LUNETTES_DOWN:LUNETTES_DOWN,LUNETTES_SIDE:LUNETTES_SIDE,
+  CARRURE:CARRURE,OURLET:OURLET,
+  LEGS_DOWN0:LEGS_DOWN[0],LEGS_DOWN1:LEGS_DOWN[1],LEGS_DOWN2:LEGS_DOWN[2],
+  LEGS_SIDE0:LEGS_SIDE[0],LEGS_SIDE1:LEGS_SIDE[1],LEGS_SIDE2:LEGS_SIDE[2]};
+const CORPS_BASE={};
+Object.keys(CORPS).forEach(k=>{CORPS_BASE[k]=CORPS[k].slice();});
+const FICHES_BASE=JSON.parse(JSON.stringify(FICHES));
+function videCacheTuiles(){Object.keys(cache).forEach(k=>{delete cache[k];});}
+function carteDe(nom){
+  if(nom==='domaine')return {m:map,w:MW,h:MH};
+  const I=INT[nom]; return I?{m:I.map,w:I.w,h:I.h}:null;
+}
+function appliqueMonde(mo){
+  if(!mo)return;
+  MONDE=Object.assign({v:1,carte:{},tuiles:{},persos:{}},mo);
+  /* les cases : on repart de la carte d'origine, puis on repose les retouches */
+  Object.keys(BASE).forEach(nom=>{
+    const c=carteDe(nom); if(!c)return;
+    c.m.set(BASE[nom]);
+    (MONDE.carte[nom]||[]).forEach(p=>{
+      if(p[0]>=0&&p[1]>=0&&p[0]<c.w&&p[1]<c.h)c.m[p[1]*c.w+p[0]]=p[2];
+    });
+  });
+  /* les blocs redessines */
+  Object.keys(TUILE_OVR).forEach(k=>{delete TUILE_OVR[k];});
+  Object.keys(MONDE.tuiles||{}).forEach(k=>{TUILE_OVR[k|0]=MONDE.tuiles[k];});
+  videCacheTuiles();
+  /* les personnages : les fiches, puis les poses communes */
+  const P=MONDE.persos||{};
+  Object.keys(FICHES).forEach(id=>{Object.assign(FICHES[id],FICHES_BASE[id]);});
+  Object.keys(P.fiches||{}).forEach(id=>{if(FICHES[id])Object.assign(FICHES[id],P.fiches[id]);});
+  Object.keys(CORPS).forEach(k=>{
+    const src=(P.corps&&P.corps[k])||CORPS_BASE[k];
+    const dst=CORPS[k]; dst.length=0; src.forEach(r=>dst.push(r));
+  });
+  if(typeof buildMini==='function'){try{buildMini();}catch(e){}}
+}
+const MONDEKEY='prieure3monde';
+async function chargeMonde(){
+  let mo=null;
+  try{
+    if(typeof fetch==='function'&&location.protocol!=='file:'){
+      const r=await fetch('/api/monde',{cache:'no-store'});
+      if(r.ok)mo=await r.json();
+    }
+  }catch(e){}
+  if(!mo||!mo.carte){ try{const raw=localStorage.getItem(MONDEKEY); if(raw)mo=JSON.parse(raw);}catch(e){} }
+  if(mo&&mo.carte)appliqueMonde(mo);
+}
 
 /* ---------- balles et objets ---------- */
 const BALLS=[
@@ -3701,12 +3774,20 @@ function eteindreLeFeu(){
 function callFeu(){
   if(game.inside)return;
   game.feuCall=true;
+  /* on n'interrompt jamais une partie, une descente ni un dialogue : l'appel
+     attend qu'on soit de nouveau sur le terrain, les pieds dans l'herbe */
+  if(game.state!==S.WORLD){game.feuAttend=true;return;}
+  demandeFeu();
+}
+function demandeFeu(){
+  game.feuAttend=false;
+  if(game.inside||game.state!==S.WORLD)return;
   askYN("Le feu est allumé au bord du 6. Ils y sont tous. Tu y vas ?",'LA BANDE',
     ()=>goFeu(),
     ()=>{toast("Tu les rejoindras. A sur un terrain vide pour y aller d'un coup.");});
 }
 function goFeu(){
-  game.feuCall=false;
+  game.feuCall=false;game.feuAttend=false;
   fadeTo(()=>{
     game.inside=null;
     game.px=109;game.py=41;game.dir=1;game.ox=0;game.oy=0;game.moving=false;
@@ -4685,6 +4766,13 @@ function netConnect(){
       }
     }
     else if(m.t==='verre'){ breakWindow(m.x,m.y,true); }
+    else if(m.t==='monde'){
+      /* on repose la carte a plat, donc on se souvient des vitres deja cassees */
+      const casses=MAMOU_WIN.filter(w=>estCassee(at(w[0],w[1])));
+      appliqueMonde(m.monde);
+      casses.forEach(w=>breakWindow(w[0],w[1],true));
+      toast('La carte vient de changer.');
+    }
     else if(m.t==='invite'){ inviteRecue(m); }
     else if(m.t==='rejoint'){
       if(game.attente&&m.pk&&game.attente.pk.indexOf(m.pk)<0&&game.attente.pk.length<3){
@@ -4813,6 +4901,7 @@ placeAccueil();
 function update(){
   game.tick++;
   if(game.state!==S.TITLE&&game.state!==S.PICK){timeStep();updateCars();updateShards();updateLeaves();netTick();}
+  if(game.feuAttend&&game.state===S.WORLD&&!game.inside&&!game.fade)demandeFeu();
   if(game.bannerT<300)game.bannerT++;
   if(game.banner&&game.bannerT>110)game.banner=null;
   if(game.toast){game.toastT++;if(game.toastT>150)game.toast=null;}
@@ -4997,8 +5086,30 @@ async function load(){
     if(d.balls)d.balls.forEach((v,i)=>{if(ballSpots[i])ballSpots[i].taken=!!v;});
   }catch(e){}
 }
-netConnect();
-load().finally(loop);
+/* /editeur ouvre l'atelier au lieu du jeu */
+const MODE_EDIT=(function(){
+  try{
+    if(/\/editeur\/?$/.test(location.pathname))return true;
+    return new URLSearchParams(location.search).has('editeur');
+  }catch(e){return false;}
+})();
+if(MODE_EDIT){
+  window.__PRIEURE__={
+    TS:TS,MW:MW,MH:MH,map:map,INT:INT,T:T,SOLID:SOLID,tile:tile,cache:cache,
+    PAL:PAL,FICHES:FICHES,palFiche:palFiche,pers:pers,fiche:fiche,
+    CORPS:CORPS,CORPS_BASE:CORPS_BASE,FICHES_BASE:FICHES_BASE,BASE:BASE,
+    TUILE_OVR:TUILE_OVR,videCacheTuiles:videCacheTuiles,carteDe:carteDe,tv:tv,
+    MONDEKEY:MONDEKEY,get monde(){return MONDE;},appliqueMonde:appliqueMonde
+  };
+  chargeMonde().finally(function(){
+    const sc=document.createElement('script');
+    sc.src='editeur.js';
+    document.body.appendChild(sc);
+  });
+}else{
+  netConnect();
+  chargeMonde().then(load).finally(loop);
+}
 })();
 </script>
 </body>

@@ -8,6 +8,7 @@
    Un personnage laissé sans nouvelles pendant trente secondes repasse en PNJ. */
 'use strict';
 const path = require('path');
+const fs = require('fs');
 const http = require('http');
 const express = require('express');
 const { WebSocketServer } = require('ws');
@@ -94,8 +95,46 @@ function seededRandom() {
   return graine / 4294967296;
 }
 
+/* ---------- le monde retouche dans l'atelier ----------
+   On ne garde jamais la carte entiere, seulement l'ecart avec ce que le code
+   fabrique. Le fichier vit dans data/, et public/monde.json sert de secours
+   quand la machine repart de zero apres un deploiement. */
+const DATA = path.join(__dirname, '..', 'data');
+const FMONDE = path.join(DATA, 'monde.json');
+const FSECOURS = path.join(PUBLIC, 'monde.json');
+const MONDE_VIDE = { v: 1, carte: {}, tuiles: {}, persos: { fiches: {}, corps: {} } };
+function lireMonde() {
+  for (const f of [FMONDE, FSECOURS]) {
+    try { if (fs.existsSync(f)) return JSON.parse(fs.readFileSync(f, 'utf8')); } catch (e) { /* tant pis */ }
+  }
+  return MONDE_VIDE;
+}
+let monde = lireMonde();
+function ecrisMonde(m) {
+  try {
+    if (!fs.existsSync(DATA)) fs.mkdirSync(DATA, { recursive: true });
+    fs.writeFileSync(FMONDE, JSON.stringify(m));
+    return true;
+  } catch (e) { return false; }
+}
+
 /* ---------- express + websocket ---------- */
 const app = express();
+app.use(express.json({ limit: '6mb' }));
+app.get('/api/monde', (req, res) => res.json(monde));
+app.post('/api/monde', (req, res) => {
+  const m = req.body;
+  if (!m || typeof m !== 'object' || !m.carte) { res.status(400).json({ ok: false }); return; }
+  monde = {
+    v: 1,
+    carte: m.carte || {},
+    tuiles: m.tuiles || {},
+    persos: m.persos || { fiches: {}, corps: {} }
+  };
+  const surDisque = ecrisMonde(monde);
+  diffuse({ t: 'monde', monde: monde });
+  res.json({ ok: true, disque: surDisque });
+});
 app.get('/sante', (req, res) => {
   res.json({
     ok: true, heure: hhmm(), phase: phase(),

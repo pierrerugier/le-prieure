@@ -9,12 +9,13 @@ const root = path.join(__dirname, '..', 'public');
 const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 let src = html.match(/<script>([\s\S]*)<\/script>/)[1];
 
-if (src.indexOf('load().finally(loop);') < 0) throw new Error('point de sortie introuvable');
-src = src.replace('load().finally(loop);', `globalThis.__t={game,golf,net,update,render,map,MW,MH,T,at,put,NPCS,ITEMS,
+if (src.indexOf('chargeMonde().then(load).finally(loop);') < 0) throw new Error('point de sortie introuvable');
+src = src.replace('chargeMonde().then(load).finally(loop);', `globalThis.__t={game,golf,net,update,render,map,MW,MH,T,at,put,NPCS,ITEMS,
   HOLES,PICKS,INT,DOORS,LOCKED,cars,shards,keys,press,release,consume,MAMOU,MAMOU_WIN,FEU,
   players,P_:()=>players,goInside,goOutside,zoneAt,menuList,buildMini,SOLID,getTile,S,ballSpots,updatePick,
   startHole,save,load,solidAt,placeGang,SPOTS,TRACKS,musWant,pente,CRIS,phaseOf,BALLS,updateCars,timeStep,breakWindow,velo,updateVelo,startPente,updatePente,leaves,inBrush,ballVisible,estVitre,estCassee,VILLAS,LISIERE,EVENOU,VOITURES,FICHES,fiche,skillDe,vitPuissance,vitPrecision,longueurDe,cours,startCours,INVITES,inviteRecue,FEU,
-  pers,dogSpr,BODY_SIDE,DOG_SIDE,sfx,ambiances,piscineOuverte,baignade,entreDansLeau,proposePartie,updateAttente,departDu1,hNow,AU_FEU,FEU_RING,FEU_TALK,feuMenu,eteindreLeFeu,bikeSpr,BIKE_DOWN,BIKE_UP,BIKE_SIDE,MISSIONS,ACTES,mission,missionCourante,niveau,chaparde,voleVoiturette,updateVoiturette,BUTIN};`);
+  pers,dogSpr,BODY_SIDE,DOG_SIDE,sfx,ambiances,piscineOuverte,baignade,entreDansLeau,proposePartie,updateAttente,departDu1,hNow,AU_FEU,FEU_RING,FEU_TALK,feuMenu,eteindreLeFeu,bikeSpr,BIKE_DOWN,BIKE_UP,BIKE_SIDE,MISSIONS,ACTES,mission,missionCourante,niveau,chaparde,voleVoiturette,updateVoiturette,BUTIN,
+  BASE,appliqueMonde,carteDe,TUILE_OVR,CORPS,CORPS_BASE,FICHES_BASE,tile,cache,MW_:MW};`);
 
 /* ---------- faux canvas ---------- */
 function fakeCtx() {
@@ -446,7 +447,12 @@ function golfBot() {
   if (game.state === t.S.DIALOG) { tap('a', 1); return; }
   /* une partie dure assez longtemps pour que le feu de camp s'invite : on decline */
   if (game.state === t.S.ASK) { tap('b', 1); return; }
-  if (g.phase === 'aim' || g.phase === 'putt' || g.phase === 'result' || g.phase === 'card') { tap('a', 1); return; }
+  if (g.phase === 'aim') {
+    /* coince dans les bois : un humain change d'angle au lieu de retaper dans le meme arbre */
+    if (p && (p.lie === 'bois' || p.stroke > 6)) hold((p.stroke & 1) ? 'left' : 'right', 5);
+    tap('a', 1); return;
+  }
+  if (g.phase === 'putt' || g.phase === 'result' || g.phase === 'card') { tap('a', 1); return; }
   if (g.phase === 'power') { if (patience || (g.gT > 0.7 && g.dirg > 0)) tap('a', 1); else frames(1); return; }
   if (g.phase === 'putpow') {
     const d = Math.hypot(t.HOLES[g.hole].gx + 0.5 - p.bx, t.HOLES[g.hole].gy + 0.5 - p.by);
@@ -457,11 +463,42 @@ function golfBot() {
   frames(1);
 }
 while (t.golf.on && garde++ < 200000) golfBot();
+check('le feu de camp n a pas interrompu la partie', game.state !== t.S.ASK,
+  'etat ' + game.state);
 check('les neuf trous sont joues', !t.golf.on, 'reste phase ' + t.golf.phase + ' apres ' + garde);
 const players = t.P_();
 const totalCarte = game.card.reduce((a, b) => a + b, 0);
 check('carte de score remplie', game.card.every(v => v > 0), JSON.stringify(game.card));
 check('score plausible', totalCarte > 20 && totalCarte < 320, 'total ' + totalCarte);
+clear();
+
+/* ---------- 4 bis. l'atelier : les retouches du monde ---------- */
+clear();
+check('la carte d origine est gardee de cote', !!t.BASE.domaine && t.BASE.domaine.length === MW * MH);
+check('chaque interieur a sa carte d origine',
+  Object.keys(t.INT).every(k => t.BASE[k] && t.BASE[k].length === t.INT[k].w * t.INT[k].h));
+const tuileAvant = at(60, 20);
+t.appliqueMonde({ v: 1, carte: { domaine: [[60, 20, T.SAND]] }, tuiles: {}, persos: {} });
+check('une retouche de carte s applique', at(60, 20) === T.SAND, 'tuile ' + at(60, 20));
+/* une fiche retouchee, puis remise d aplomb */
+t.appliqueMonde({ v: 1, carte: {}, tuiles: {}, persos: { fiches: { moi: { puis: 5 } }, corps: {} } });
+check('une fiche retouchee s applique', t.FICHES.moi.puis === 5, 'puis ' + t.FICHES.moi.puis);
+check('la retouche de carte a bien ete retiree', at(60, 20) === tuileAvant, 'tuile ' + at(60, 20));
+/* une pose retouchee change ce que le jeu dessine */
+const poseDeBase = t.CORPS.BODY_DOWN.join('|');
+t.appliqueMonde({ v: 1, carte: {}, tuiles: {},
+  persos: { fiches: {}, corps: { BODY_DOWN: t.CORPS_BASE.BODY_DOWN.map(() => '                ') } } });
+check('une pose retouchee s applique', t.pers(0, 0)[1].trim() === '', 'ligne : [' + t.pers(0,0)[1] + ']');
+t.appliqueMonde({ v: 1, carte: {}, tuiles: {}, persos: { fiches: {}, corps: {} } });
+check('la pose revient a l origine', t.CORPS.BODY_DOWN.join('|') === poseDeBase);
+check('les fiches reviennent a l origine', t.FICHES.moi.puis === t.FICHES_BASE.moi.puis);
+/* un bloc redessine passe devant le dessin du code */
+t.appliqueMonde({ v: 1, carte: {},
+  tuiles: { [T.ROUGH]: { pal: ['#ff0000'], px: new Array(256).fill(0) } }, persos: {} });
+check('un bloc redessine est pris en compte', !!t.TUILE_OVR[T.ROUGH]);
+check('le cache de tuiles a ete vide', Object.keys(t.cache).length === 0 || !!t.tile(T.ROUGH, 0, 0));
+t.appliqueMonde({ v: 1, carte: {}, tuiles: {}, persos: {} });
+check('le bloc revient au dessin du code', !t.TUILE_OVR[T.ROUGH]);
 clear();
 
 /* ---------- 5. les voitures de la departementale ---------- */
