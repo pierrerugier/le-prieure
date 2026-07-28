@@ -140,6 +140,16 @@ mais la correspondance est déclarée quand même : sans elle l'atelier refuse l
 n'a pas de correspondance, l'atelier **refuse et le dit** plutôt que de produire une bouillie.
 Une voiture ne se tourne pas d'un quart de tour : il n'existe pas de dessin vu de dessus.
 
+### Dans la main
+
+La colonne de gauche montre en permanence **ce qu'on tient** : une vignette qui se redessine,
+le nom, la taille, et les boutons `↻ Tourner` et `⇄ Retourner` juste à côté. Sans cette
+vignette, tourner un bloc d'une seule case ne se voyait nulle part et on croyait le bouton
+cassé, alors qu'il marchait.
+
+Tout est en français jusque dans les infobulles, et la barre d'info sous la carte donne le nom
+de la bibliothèque, pas le nom technique de la case.
+
 ### La tranche en main
 
 Une tranche découpée est **en main** ou **en mémoire**. En main, elle suit le curseur ; un clic

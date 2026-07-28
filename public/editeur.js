@@ -40,7 +40,7 @@ button.b.rouge{background:#5e2f34;border-color:#7c3b42}
 button.b:disabled{opacity:.4;cursor:default}
 main{flex:1;display:flex;min-height:0}
 aside{background:#1b1e26;overflow-y:auto;flex:0 0 auto}
-#outils{width:158px;border-right:1px solid #2b2f3a;padding:10px}
+#outils{width:212px;border-right:1px solid #2b2f3a;padding:10px 11px 18px}
 #pan{width:266px;border-left:1px solid #2b2f3a;padding:10px}
 #vue{flex:1;position:relative;background:#0d0f13;overflow:hidden;min-width:0}
 #cv{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair;
@@ -48,8 +48,21 @@ aside{background:#1b1e26;overflow-y:auto;flex:0 0 auto}
 #infos{position:absolute;left:10px;bottom:10px;background:rgba(12,14,18,.82);
   border:1px solid #2b2f3a;border-radius:6px;padding:5px 9px;font-size:11px;color:#aeb6c6;
   pointer-events:none;font-variant-numeric:tabular-nums}
-h4{margin:14px 0 6px;font-size:10px;letter-spacing:.13em;color:#7f8798;text-transform:uppercase}
+h4{margin:15px 0 6px;font-size:10px;letter-spacing:.13em;color:#7f8798;text-transform:uppercase}
 h4:first-child{margin-top:2px}
+#outils .o button{padding:7px 4px;font-size:11.5px}
+#outils select{padding:7px}
+/* la carte de ce qu'on tient en main */
+.main{background:#1b2432;border:1px solid #2f4159;border-radius:7px;padding:8px}
+.main .haut{display:flex;gap:9px;align-items:center}
+.main canvas{image-rendering:pixelated;border-radius:4px;background:#11151c;flex:0 0 auto}
+.main .quoi{min-width:0}
+.main .quoi b{display:block;font-size:12px;color:#f4e2a8;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.main .quoi span{font-size:10.5px;color:#8fa0b8}
+.main .o{margin-top:7px}
+.main.vide{background:#1b1e26;border-color:#2b2f3a}
+.main.vide .quoi b{color:#79808f}
 .grille{display:grid;gap:4px}
 .o{display:grid;grid-template-columns:1fr 1fr;gap:4px}
 .o button{background:#252a35;border:1px solid #333a49;color:#c6ccda;border-radius:5px;
@@ -162,6 +175,20 @@ const outils=$('#outils'), pan=$('#pan'), etat=$('#etat');
 
 /* ---------- l'etat de l'atelier ---------- */
 const NOMS_T={}; Object.keys(T).forEach(k=>{NOMS_T[T[k]]=k;});
+/* le nom francais d'une case, celui de la bibliotheque, jamais le nom technique */
+const NOM_FR={};
+A.BIBLI.forEach(e=>{
+  if(e.m)e.m.forEach((id,i)=>{NOM_FR[id]=e.n+(e.m.length>1?' ('+(i+1)+'/'+e.m.length+')':'');});
+  else NOM_FR[e.t]=e.n;
+});
+function nomCase(t){
+  const b=A.baseT(t);
+  const p=A.poseDe?A.poseDe(t):0;
+  let n=NOM_FR[b];
+  if(!n){const per=A.BLOCS_PERSO[b]; n=per?per.n:(NOMS_T[b]||('case '+b));}
+  if(t>=A.COMPO)n+=' sur '+(NOM_FR[A.fondDe(t)]||NOMS_T[A.fondDe(t)]||'…');
+  return n;
+}
 const CARTES=[{id:'domaine',n:'LE DOMAINE'}].concat(
   Object.keys(A.INT).map(k=>({id:k,n:A.INT[k].name})));
 const ed={
@@ -434,7 +461,8 @@ window.addEventListener('mousemove',e=>{
   ed.sx=(c.x>=0&&c.y>=0&&c.x<d.w&&c.y<d.h)?c.x:null; ed.sy=c.y;
   if(ed.sx!=null){
     const t=tuileA(ed.carte,c.x,c.y);
-    infos.textContent=c.x+', '+c.y+'   '+(NOMS_T[t]||t)+(A.SOLID.has(t)?'   (on ne passe pas)':'');
+    infos.textContent=c.x+', '+c.y+'   '+nomCase(t)+
+      (A.SAUT.has(t)?'   (on saute par-dessus)':(A.SOLID.has(t)?'   (on ne passe pas)':''));
   }
   if(ed.pan){
     ed.camx-=(e.clientX-ed.panx)/ed.z; ed.camy-=(e.clientY-ed.pany)/ed.z;
@@ -515,65 +543,94 @@ window.addEventListener('keydown',e=>{
 });
 
 /* ---------- le panneau de gauche ---------- */
+/* Ce qu'on tient en main, montre en petit : sans ca, tourner un bloc ne se voit
+   nulle part et on croit que le bouton ne marche pas. */
+function vignetteMain(){
+  const p=enMain();
+  const c=document.createElement('canvas');
+  const w=p?p.w:1, h=p?p.h:1;
+  const z=Math.max(1,Math.min(4,Math.floor(72/(16*Math.max(w,h)))));
+  c.width=w*16*z; c.height=h*16*z;
+  c.style.width=(w*16*z)+'px'; c.style.height=(h*16*z)+'px';
+  const g=c.getContext('2d'); g.imageSmoothingEnabled=false;
+  if(!p)return c;
+  const transp=A.TRANSP.has(A.baseT(p.t[0]));
+  for(let j=0;j<h;j++)for(let i=0;i<w;i++){
+    if(transp)g.drawImage(A.tile(A.T.ROUGH,(i+j)%3,0),i*16*z,j*16*z,16*z,16*z);
+    g.drawImage(A.tile(p.t[j*w+i],0,0),i*16*z,j*16*z,16*z,16*z);
+  }
+  return c;
+}
+function nomEnMain(){
+  const p=enMain(); if(!p)return 'Rien en main';
+  if(p.n)return p.n;
+  return (p.src==='presse')?'Tranche découpée':(NOM_FR[A.baseT(p.t[0])]||'Bloc');
+}
 function majOutils(){
   if(ed.ong==='textes'){outils.style.display='';outilsTextes();return;}
   if(ed.ong!=='carte'){outils.innerHTML='';outils.style.display='none';return;}
   outils.style.display='';
   const O=[['pinceau','Pinceau','B'],['rect','Rectangle','R'],['remplir','Remplir','G'],
     ['pipette','Pipette','I'],['select','Découper','S'],['gomme','Effacer','E']];
+  const tenu=enMain();
   outils.innerHTML=`
-    <h4>Carte</h4>
+    <h4>La carte</h4>
     <select id="selCarte">${CARTES.map(c=>`<option value="${c.id}"${c.id===ed.carte?' selected':''}>${c.n}</option>`).join('')}</select>
-    <h4>Outil</h4>
-    <div class="o">${O.map(o=>`<button data-o="${o[0]}" class="${ed.outil===o[0]?'on':''}" title="${o[2]}">${o[1]}</button>`).join('')}</div>
-    <h4>Taille du pinceau : ${ed.taille}</h4>
+    <h4>Dans la main</h4>
+    <div class="main${tenu?'':' vide'}">
+      <div class="haut">
+        <span id="apercuMain"></span>
+        <span class="quoi"><b>${tenu?nomEnMain():'Rien en main'}</b>
+          <span>${tenu?(tenu.w+' × '+tenu.h+' case'+((tenu.w*tenu.h>1)?'s':'')):'choisis un bloc à droite'}</span></span>
+      </div>
+      <div class="o">
+        <button id="bTourne" ${tenu?'':'disabled'} title="Quart de tour (touche T)">↻ Tourner</button>
+        <button id="bMiroir" ${tenu?'':'disabled'} title="Retourner (touche M)">⇄ Retourner</button>
+      </div>
+      <div class="o">
+        <button id="bDup2" ${tenu?'':'disabled'} title="Ouvrir une copie dans l'atelier des blocs">En faire un bloc</button>
+        <button id="bLache" ${ed.enMain?'':'disabled'} title="Reposer ce qu'on tient (touche Échap)">Lâcher</button>
+      </div>
+    </div>
+    <h4>L'outil</h4>
+    <div class="o">${O.map(o=>`<button data-o="${o[0]}" class="${ed.outil===o[0]?'on':''}" title="Raccourci : ${o[2]}">${o[1]}</button>`).join('')}</div>
+    <h4>Largeur du pinceau : ${ed.taille}</h4>
     <input type="range" id="rTaille" min="1" max="9" step="2" value="${ed.taille}">
-    <h4>Zoom</h4>
+    <h4>Le zoom</h4>
     <div class="o">
-      <button id="zM">Moins</button><button id="zP">Plus</button>
-      <button id="zTout">Tout voir</button><button id="z1">100 %</button>
+      <button id="zM" title="Dézoomer (⌘-)">Moins</button><button id="zP" title="Zoomer (⌘+)">Plus</button>
+      <button id="zTout" title="Voir la carte entière">Tout voir</button><button id="z1" title="Une case = seize pixels">100 %</button>
     </div>
-    <h4>Repères</h4>
+    <h4>Ce qu'on affiche</h4>
     <div class="o">
-      <button id="tG" class="${ed.grille?'on':''}">Quadrillage</button>
-      <button id="tS" class="${ed.solides?'on':''}">Obstacles</button>
-      <button id="tR" class="${ed.reperes?'on':''}">Départs, portes</button>
-      <button id="tC" ${ed.selRect?'':'disabled'}>Désélectionner</button>
+      <button id="tG" class="${ed.grille?'on':''}" title="Une ligne entre chaque case">Quadrillage</button>
+      <button id="tS" class="${ed.solides?'on':''}" title="Voile rouge sur ce qui arrête le joueur">Obstacles</button>
+      <button id="tR" class="${ed.reperes?'on':''}" title="Départs, greens et portes, à déplacer à la souris">Départs, portes</button>
+      <button id="tC" ${ed.selRect?'':'disabled'} title="Oublier la tranche entourée">Désélectionner</button>
     </div>
-    <h4>Ce qu'on tient en main</h4>
+    <h4>La tranche découpée</h4>
     <div class="o">
-      <button id="bCopie" ${ed.selRect?'':'disabled'}>Copier</button>
-      <button id="bCoupe" ${ed.selRect?'':'disabled'}>Couper</button>
-      <button id="bTourne" ${enMain()?'':'disabled'}>Tourner</button>
-      <button id="bMiroir" ${enMain()?'':'disabled'}>Miroir</button>
-      <button id="bColle" ${ed.presse?'':'disabled'}>Reprendre</button>
-      <button id="bLache" ${ed.enMain?'':'disabled'}>Lâcher</button>
+      <button id="bCopie" ${ed.selRect?'':'disabled'} title="Copier la tranche entourée (⌘C)">Copier</button>
+      <button id="bCoupe" ${ed.selRect?'':'disabled'} title="Couper la tranche entourée (⌘X)">Couper</button>
     </div>
-    <button class="b" id="bDup2" style="width:100%;margin-top:5px" ${enMain()?'':'disabled'}>En faire un bloc</button>
-    ${(ed.enMain&&enMain())?'<div class="aide">En main : <b>'+(enMain().n||('tranche de '+enMain().w+'×'+enMain().h))+
-      '</b>, '+enMain().w+'×'+enMain().h+' case'+((enMain().w*enMain().h>1)?'s':'')+'.<br>'+
-      '<kbd>T</kbd> la tourne, <kbd>M</kbd> la retourne.'+
-      (enMain().src==='presse'?' Un clic la pose et la lâche, <b>Alt + clic</b> pour en poser plusieurs.':'')+
-      '</div>'
-      :(ed.presse?'<div class="aide">Une tranche de '+ed.presse.w+'×'+ed.presse.h+
-        ' cases est en mémoire. <b>Reprendre</b> ou <kbd>⌘V</kbd> pour la remettre en main.</div>':'')}
-    <h4>Historique</h4>
+    <button class="b" id="bColle" ${ed.presse?'':'disabled'} style="width:100%;margin-top:4px"
+      title="Remettre en main la dernière tranche copiée (⌘V)">Reprendre la tranche${ed.presse?' ('+ed.presse.w+'×'+ed.presse.h+')':''}</button>
+    <h4>Revenir en arrière</h4>
     <div class="o">
-      <button id="bU" ${ed.hist.length?'':'disabled'}>Annuler</button>
-      <button id="bR" ${ed.futur.length?'':'disabled'}>Refaire</button>
+      <button id="bU" ${ed.hist.length?'':'disabled'} title="Annuler le dernier geste (⌘Z)">Annuler</button>
+      <button id="bR" ${ed.futur.length?'':'disabled'} title="Refaire (⌘⇧Z)">Refaire</button>
     </div>
-    <button class="b rouge" id="bReset" style="width:100%;margin-top:8px">Tout remettre d'origine</button>
+    <button class="b rouge" id="bReset" style="width:100%;margin-top:8px"
+      title="Effacer toutes les retouches de toutes les cartes">Tout remettre d'origine</button>
     <div class="aide">
-      <b>Clic</b> pose le bloc choisi.<br>
+      <b>Clic</b> pose ce qu'on tient.<br>
       <b>Alt + clic</b> reprend le bloc qui est déjà là.<br>
-      <b>Clic droit</b> déplace la carte.<br>
-      <b>Deux doigts</b> déplacent la carte.<br>
+      <b>Clic droit</b> déplace la carte, <b>deux doigts</b> aussi.<br>
       <kbd>⌘+</kbd> et <kbd>⌘-</kbd> zooment.<br>
-      <b>Découper</b> puis <kbd>⌘C</kbd> ou <kbd>⌘X</kbd>, <kbd>⌘V</kbd> pour coller.<br>
-      <kbd>T</kbd> tourne ce qu'on tient, <kbd>M</kbd> le retourne. Tout se tourne,
-      même une seule case.<br>
-      <kbd>⌘Z</kbd> annule, <kbd>⌘S</kbd> enregistre.
+      <kbd>T</kbd> tourne, <kbd>M</kbd> retourne. Tout se tourne, même une seule case.<br>
+      <kbd>Échap</kbd> lâche, <kbd>⌘Z</kbd> annule, <kbd>⌘S</kbd> enregistre.
     </div>`;
+  if($('#apercuMain'))$('#apercuMain').appendChild(vignetteMain());
   $('#selCarte').onchange=e=>{ed.carte=e.target.value;batPlanche();cadre();};
   outils.querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{
     ed.outil=b.dataset.o; majOutils(); majPanneau();});
@@ -1691,7 +1748,7 @@ prendEnMain(1,1,[ed.bloc],'Rough','bibli'); ed.enMain=false;
 majOutils(); majPanneau(); majVue(); boucle();
 if(A.secours){
   const b=document.createElement('div');
-  b.style.cssText='position:fixed;left:0;right:0;top:46px;z-index:9;background:#5e3a1e;'+
+  b.style.cssText='flex:0 0 auto;background:#5e3a1e;'+
     'border-bottom:1px solid #8a5a2a;color:#f4e2a8;padding:9px 14px;font-size:12px;'+
     'display:flex;align-items:center;gap:12px';
   b.innerHTML='<span><b>Le serveur est reparti à vide.</b> Voici la version gardée sur cet '+
@@ -1701,7 +1758,8 @@ if(A.secours){
   const x=document.createElement('button'); x.className='b'; x.textContent='Plus tard';
   x.onclick=()=>b.remove();
   b.appendChild(ok); b.appendChild(x);
-  document.body.appendChild(b);
+  const ed0=document.querySelector('#ed');
+  ed0.insertBefore(b,ed0.querySelector('main'));
   dit('Version locale reprise. Pense à l\'enregistrer.');
 } else dit('Prêt.');
 })();
