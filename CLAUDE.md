@@ -198,6 +198,19 @@ Trois pièges déjà tombés dedans :
 
 Rien ne peint de sol : elles sont dans `TRANSP` comme le reste du mobilier.
 
+### Les courts de tennis
+
+Deux courts entiers, **quatre cases de large sur six de haut**, en quick et en terre battue.
+Le tracé est dessiné d'un seul tenant sur 64 × 96 pixels puis découpé : couloirs, lignes de
+fond, lignes de service, ligne médiane, marques du milieu. Le filet est en haut de la
+**quatrième rangée**, avec sa bande blanche, sa sangle centrale et ses poteaux : ces quatre
+cases sont dans `SOLID` **et** dans `SAUT`, donc on ne les traverse pas et on saute par-dessus
+avec A. Tout le reste du court se marche.
+
+Un court est un **sol**, pas un objet : il n'est pas dans `TRANSP`, il remplace ce qu'il y a
+dessous. La terre battue a ses passages de filet de traînage et ses traces de glissade,
+dispersés et jamais réguliers, sinon ça fait une échelle.
+
 ### La gamme d'arbres
 
 Dessinés sur du vide, avec de vraies silhouettes rondes : `boule()` trace un disque en pixels,

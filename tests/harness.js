@@ -652,6 +652,19 @@ check('la case composee se dessine', !!t.tile(pose, 0, 0));
 t.put(62, 24, T.PET1);
 check('un objet remplace l objet, pas le sol', t.fondDe(t.map[24 * MW + 62]) === T.FAIR);
 t.put(62, 24, T.FAIR); clear();
+/* les deux courts de tennis, vingt-quatre cases chacun, filet a la quatrieme rangee */
+[['quick', T.TENQ], ['terre battue', T.TENT]].forEach(([nom, base]) => {
+  const e = t.BIBLI.find(x => x.m && x.m[0] === base);
+  check('le court ' + nom + ' est dans la bibliotheque', !!e && e.w === 4 && e.h === 6);
+  check('ses vingt-quatre cases se dessinent',
+    Array.from({length:24},(_,i)=>base+i).every(id => !!t.tile(id, 0, 0)));
+  check('son filet arrete le joueur', [12,13,14,15].every(i => t.SOLID.has(base + i)));
+  check('et il se saute', [12,13,14,15].every(i => t.SAUT.has(base + i)));
+  check('on marche partout ailleurs sur le court',
+    [0,5,10,17,20,23].every(i => !t.SOLID.has(base + i)));
+  check('le court est un sol, il ne se pose pas sur autre chose', !t.TRANSP.has(base));
+});
+check('les deux courts ne partagent aucune case', T.TENT >= T.TENQ + 24);
 check('la maison des Molina existe hors du hameau', !!t.INT.molina);
 check('les Molina ne sont plus au hameau', !t.VILLAS.some(v => v.id === 'molina'));
 clear();

@@ -343,7 +343,10 @@ const T={FAIR:0,ROUGH:1,GREEN:2,SAND:3,WATER:4,PATH:5,TREE:6,DENSE:7,TEE:8,FLAG:
   SAU1:319,SAU2:320,SAU3:321,SAU4:322,
   MAJ1:323,MAJ2:324,MAJ3:325,MAJ4:326,MAJ5:327,MAJ6:328,
   PINT1:329,PINT2:330,PINT3:331,PINT4:332,PINT5:333,PINT6:334,
-  BUIT1:335,BUIT2:336,BUIT3:337,MASS1:338,MASS2:339};
+  BUIT1:335,BUIT2:336,BUIT3:337,MASS1:338,MASS2:339,
+  /* Deux courts de tennis entiers, quatre cases de large sur six de haut. Les
+     numeros se suivent dans l'ordre de lecture, la rangee du filet est la 4e. */
+  TENQ:340,TENT:364};
 /* Sept voitures de profil, quatre cases chacune, a partir de VOIT0 :
    quatre identifiants d'affilee par modele, dans l'ordre haut-gauche, haut-droit,
    bas-gauche, bas-droit. */
@@ -474,6 +477,10 @@ bib('exterieur',[[T.PATIO,'Dallage'],[T.DECK,'Terrasse bois'],[T.PARA,'Parasol']
  [T.TABLB,'Table ronde blanche'],[T.FAUTB,'Fauteuil de jardin'],[T.TABEXT,'Table de jardin en bois'],
  [T.CHAIEXT,'Chaise de jardin'],[T.BARBEC,'Barbecue'],[T.CANETTE,'Canette'],
  [T.FOUNT,'Fontaine'],[T.FIRE,'Feu de camp'],[T.LOG,'Rondin'],[T.TENN,'Court de tennis'],[T.TNET,'Filet']]);
+motif('exterieur','Court de tennis, quick',4,6,
+  Array.from({length:24},(_,i)=>T.TENQ+i));
+motif('exterieur','Court de tennis, terre battue',4,6,
+  Array.from({length:24},(_,i)=>T.TENT+i));
 motif('exterieur','Transat en plastique',2,1,[T.TRANPG,T.TRANPD]);
 motif('exterieur','Lampadaire',1,2,[T.LAMPH,T.LAMPB]);
 bib('interieur',[[T.FLOOR,'Parquet clair'],[T.PARQ,'Parquet'],[T.COCO,'Coco'],[T.JONC,'Jonc de mer'],
@@ -547,6 +554,7 @@ const ART_MULTI=new Set([]);
  [T.PASSG,T.PASSM,T.PASSD]].forEach(g=>g.forEach(id=>ART_MULTI.add(id)));
 for(let i=0;i<MODELES.length*4;i++)ART_MULTI.add(T.VOIT0+i);
 for(let i=0;i<9*4;i++)ART_MULTI.add(T.MIR0+i);
+for(let i=0;i<24;i++){ART_MULTI.add(T.TENQ+i);ART_MULTI.add(T.TENT+i);}
 
 /* ---------- les blocs fabriques dans l'atelier ----------
    Ils vivent au-dessus de 400 pour ne jamais tomber sur un numero du code, meme
@@ -573,6 +581,11 @@ const estDepart=t=>DEPARTS.has(t);
 
 /* ce par-dessus quoi on peut sauter avec A : les haies et toute la cloture blanche */
 const SAUT=new Set([T.HEDGE,T.GATE,T.CLOH,T.CLOV,T.CLONO,T.CLONE,T.CLOSO,T.CLOSE,T.CLOP]);
+/* la quatrieme rangee de chaque court, c'est le filet : on ne passe pas, on saute */
+for(let i=12;i<16;i++){
+  SOLID.add(T.TENQ+i); SAUT.add(T.TENQ+i);
+  SOLID.add(T.TENT+i); SAUT.add(T.TENT+i);
+}
 /* ---------- les blocs qui tiennent sur plusieurs cases ----------
    On dessine le motif entier dans son propre repere, et chaque case n'en montre
    qu'un quart, un sixieme, un tiers. Comme ca le dessin reste d'un seul tenant. */
@@ -829,6 +842,68 @@ function dessinePin(g){
   R('#245c28',11,2,10,6); R('#245c28',8,8,16,7); R('#245c28',5,15,22,8);
   R('#317335',13,3,6,4); R('#317335',10,9,11,4); R('#317335',7,16,15,4);
 }
+/* ---------- un court de tennis entier, 4 cases sur 6 ----------
+   On dessine les soixante-quatre sur quatre-vingt-seize pixels d'un seul tenant,
+   et chaque case n'en montre qu'un morceau. La rangee du filet est la quatrieme :
+   elle arrete, et on la saute. */
+function dessineCourt(g,terre){
+  const R=(c,x,y,w,h)=>{g.fillStyle=c;g.fillRect(x,y,w,h);};
+  const W=64,H=96;
+  const jeu   = terre?'#c06a3c':'#3f7f68';   /* l'aire de jeu */
+  const jeu2  = terre?'#b45f33':'#387260';
+  const hors  = terre?'#a5522b':'#2e5f50';   /* le degagement, plus sombre */
+  const hors2 = terre?'#9a4a25':'#295549';
+  const ligne = '#f2efe4';
+  R(hors,0,0,W,H);
+  for(let i=0;i<130;i++){
+    const x=(i*37)%W, y=(i*61)%H;
+    R((i%2)?hors2:hors,x,y,1,1);
+  }
+  /* l'aire de jeu, un peu plus claire que le tour */
+  R(jeu,4,6,W-8,H-12);
+  for(let i=0;i<150;i++){
+    const x=4+((i*29)%(W-8)), y=6+((i*53)%(H-12));
+    R((i%2)?jeu2:jeu,x,y,1,1);
+  }
+  /* sur la terre battue, on voit les traces de glissade et les lignes de balayage */
+  if(terre){
+    /* les passages du filet de trainage, larges et espaces, jamais reguliers */
+    let sd=7717;
+    const nr=()=>{sd=(sd*1103515245+12345)&0x7fffffff;return (sd>>9)/4194304%1;};
+    for(let y=8;y<H-8;y+=5+((y*7)%3))R('#b8623a',5,y,W-10,1);
+    /* et les traces de glissade, dispersees */
+    for(let i=0;i<18;i++){
+      const x=6+(nr()*(W-16))|0, y=10+(nr()*(H-24))|0, l=3+(nr()*4)|0;
+      R('#cf7f50',x,y,l,1);
+      R('#b8623a',x,y+1,l-1,1);
+    }
+  }
+  /* les lignes : couloirs, fonds, services, marque du milieu */
+  const X0=6,X1=57,Y0=8,Y1=87, S0=12,S1=51, V0=28,V1=67, CX=31;
+  R(ligne,X0,Y0,X1-X0+1,1); R(ligne,X0,Y1,X1-X0+1,1);      /* les fonds */
+  R(ligne,X0,Y0,1,Y1-Y0+1); R(ligne,X1,Y0,1,Y1-Y0+1);      /* les couloirs */
+  R(ligne,S0,Y0,1,Y1-Y0+1); R(ligne,S1,Y0,1,Y1-Y0+1);      /* le simple */
+  R(ligne,S0,V0,S1-S0+1,1); R(ligne,S0,V1,S1-S0+1,1);      /* les services */
+  R(ligne,CX,V0,1,V1-V0+1);                                 /* la ligne mediane */
+  R(ligne,CX,Y0,1,4); R(ligne,CX,Y1-3,1,4);                 /* les marques du milieu */
+  /* le filet, en haut de la quatrieme rangee : il arrete, et on le saute */
+  const NY=48;
+  R('#2b2f36',3,NY+1,W-6,6);
+  for(let y=NY+1;y<NY+7;y++)
+    for(let x=3;x<W-3;x++)
+      if(((x+y)&1)===0)R('#525963',x,y,1,1);
+  R('#e8e4d8',3,NY,W-6,1);                                  /* la bande blanche */
+  R('#c9c3ae',3,NY+7,W-6,1);                                /* le cable du bas */
+  R('#f4f2ec',CX,NY,1,8);                                   /* la sangle du milieu */
+  /* les poteaux, un peu plus hauts que le filet */
+  [1,W-4].forEach(x=>{
+    R('#1c1f25',x,NY-3,3,12);
+    R('#3a3f47',x,NY-3,1,12);
+    R('#8f959e',x,NY-4,3,1);
+  });
+  /* l'ombre du filet sur le sol, cote sud */
+  R('rgba(20,26,20,.18)',3,NY+8,W-6,2);
+}
 function dessineBillard(g){
   const R=(c,x,y,w,h)=>{g.fillStyle=c;g.fillRect(x,y,w,h);};
   R('#6b4a2c',1,1,30,46);
@@ -963,6 +1038,12 @@ function tile(id,v,f){
   const c=document.createElement('canvas'); c.width=TS;c.height=TS;
   const g=c.getContext('2d'), R=(col,x,y,w,h)=>{g.fillStyle=col;g.fillRect(x,y,w,h);};
   let sd=id*131+v*37+11; const nr=()=>{sd=(sd*1103515245+12345)&0x7fffffff;return (sd>>9)/4194304%1;};
+  if(id>=T.TENQ&&id<T.TENQ+24){
+    grand(g,id-T.TENQ,4,gg=>dessineCourt(gg,0)); cache[key]=c; return c;
+  }
+  if(id>=T.TENT&&id<T.TENT+24){
+    grand(g,id-T.TENT,4,gg=>dessineCourt(gg,1)); cache[key]=c; return c;
+  }
   if(id>=T.VOIT0&&id<T.VOIT0+MODELES.length*4){
     const m=MODELES[(id-T.VOIT0)>>2], q=(id-T.VOIT0)&3;
     grand(g,q,2,gg=>dessineVoiture(gg,m));
@@ -1374,6 +1455,8 @@ function tile(id,v,f){
     case T.BUIT3: buisson(g,16,16,OLIVE); break;
     case T.MASS1: grand(g,0,2,gg=>buisson(gg,32,16,SAULE)); break;
     case T.MASS2: grand(g,1,2,gg=>buisson(gg,32,16,SAULE)); break;
+    /* ---------- les deux courts de tennis ---------- */
+    case T.TENQ: case T.TENT: break;   /* jamais atteint, traite avant le switch */
     /* ---------- ce que l'atelier a ajoute ---------- */
     case T.MARE: R('#3f6b5c',0,0,16,16); R('#4d7f6c',0,f?2:9,16,2);
       R('#69a08c',f?9:3,f?11:5,4,1); R('#2f5548',f?2:10,f?6:12,5,1);
