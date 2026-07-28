@@ -131,6 +131,9 @@ Kuperfils dit Kupi (ne se lave pas, on s'essuie les pieds trois fois), Louis Mar
 (l'intello), Paul Robin (ne parle pas, sauf au feu pour les étoiles), Olivier Bernardini
 (se prend pour un basketteur), Pierre Jungers.
 
+Les Bernardini **n'ont pas de maison au hameau**. Olivier vient, il n'habite pas là. Ne pas
+lui redonner de villa.
+
 Margaux Lebel : fille unique, peint sur bois, ne sort jamais de chez elle. PNJ, pas jouable,
 comme Margot.
 
@@ -193,12 +196,16 @@ au fond.
   haut de la pente, puis glander.
 - La descente en planche s'appelle **le grass board**, jamais autrement. Elle a sa propre
   musique, plus rapide, et les autres gueulent « GRASS BOARD » pendant la descente.
-  L'objectif tient en une ligne : **dix portes de slalom** à passer entre deux piquets, banderole
-  rouge tant qu'on ne l'a pas prise, verte une fois passée. Aucun obstacle à éviter, aucune
-  chute : les haies des deux bords freinent et repoussent, c'est tout. La piste se dessine
-  ligne par ligne en perspective, avec les bandes de tonte, la raie claire du milieu et les
-  arbres qui défilent derrière les haies. La largeur dessinée (`14+74*sc`) doit rester égale
-  à la largeur jouable (46 unités x 1.9), sinon on frotte une haie qu'on ne voit pas.
+  Malgré le nom, **ça se passe sur de la terre** : une petite pente dans le bois derrière le
+  hameau, pas sur du gazon. Le décor est un sentier de terre battue avec deux ornières, des
+  racines en travers, des cailloux et des feuilles qui défilent, une frange d'herbe rase sur
+  les bords, des ronces, puis les troncs du bois et la voûte des feuilles au-dessus, percée de
+  quelques trouées de ciel. Ne jamais le redessiner en herbe tondue.
+  L'objectif tient en une ligne : **dix portes de slalom** à passer entre deux branches
+  plantées, ruban de chantier rouge et blanc tant qu'on ne l'a pas prise, vert une fois passée.
+  Aucun obstacle à éviter, aucune chute : les ronces des deux bords freinent et repoussent,
+  c'est tout. La largeur dessinée (`10+55*sc`) doit rester égale à la largeur jouable
+  (34 unités x 1.9), sinon on frotte une ronce qu'on ne voit pas.
 - Quand Antoine putte, il y en a toujours un pour dire « Antoine Zirimis, sur le green du 18,
   pour gagner l'US Open. Que se passe-t-il ? »
 - Le foyer est **froid en journée** : un cercle de pierres et du bois noirci. Il ne brûle

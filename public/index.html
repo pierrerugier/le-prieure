@@ -799,7 +799,7 @@ const VILLAS=[
  {id:'villa2',    x:99, y:11, n:'UNE VILLA DU HAMEAU'},
  {id:'villa3',    x:109,y:12, n:'UNE VILLA DU HAMEAU', fenetre:1},
  {id:'dutreuil',  x:89, y:20, n:'CHEZ PERRINE DUTREUIL'},
- {id:'bernardini',x:109,y:20, n:'CHEZ LES BERNARDINI'}];
+ {id:'villa4',    x:109,y:20, n:'UNE VILLA DU HAMEAU'}];
 /* les cinq maisons de lisiere, alignees le long des trous 4 et 5 */
 const LISIERE=[
  {id:'webb',      y:42, n:'CHEZ LES WEBB',      into:'webb'},
@@ -1614,7 +1614,7 @@ const LOCKED=[
  {x:102,y:12,who:'UNE VILLA DU HAMEAU',d:["Volets clos toute l'année. Même en août.","Victor dit qu'il y a une piscine derrière. Personne n'a vérifié."]},
  {x:112,y:13,who:'UNE VILLA DU HAMEAU',d:["Celle-là, tout le monde sait ce qu'il y a dedans. Enfin, qui.","On n'entre pas. On passe devant. Très lentement."]},
  {x:92,y:21,who:'CHEZ PERRINE DUTREUIL',d:["La grand-mère des Lutreau. Ça sent le gâteau depuis l'allée."]},
- {x:112,y:21,who:'CHEZ LES BERNARDINI',d:["Un panier de basket vissé au-dessus du garage. Le filet est en lambeaux."]},
+ {x:112,y:21,who:'UNE VILLA DU HAMEAU',d:["Un panier de basket vissé au-dessus du garage. Le filet est en lambeaux.","Personne n'a jamais vu quelqu'un tirer dedans."]},
  {x:46,y:42,who:'PRO SHOP',d:["Le pro shop. Cathy est devant, elle te voit venir de loin."]},
  {x:39,y:42,who:'SECRÉTARIAT',d:["Le secrétariat. Deux personnes derrière le comptoir, jamais les mêmes."]},
  {x:75,y:56,who:'VESTIAIRES PISCINE',d:["Vestiaires de la piscine. Un banc mouillé, trois serviettes, aucune à toi."]}
@@ -3962,8 +3962,9 @@ function veloEnd(){
 }
 
 /* ---------- le grass board ----------
-   Une descente en planche sur l'herbe. Pas d'obstacle a eviter : un slalom de
-   portes a passer, et des haies de chaque cote qui freinent sans tuer. */
+   Ca s'appelle le grass board et ca se passe sur une pente de terre, dans le bois
+   derriere le hameau. Personne n'a jamais releve. Pas d'obstacle a eviter : un
+   slalom de portes a passer, et des ronces de chaque cote qui freinent sans tuer. */
 const pente={x:0,vx:0,d:0,v:0,long:600,portes:[],n:0,rate:0,fin:0,crash:0,
              best:0,run:0,cri:'',criT:0,frotte:0,gerbes:[]};
 const CRIS=['GRASS BOARD','GRASS BOOOARD','VAS-Y','TOUT DROIT','GRASS BOARD !','LÂCHE RIEN'];
@@ -3975,7 +3976,7 @@ function startPente(invite){
   pente.crash=0;pente.cri='';pente.criT=0;pente.frotte=0;pente.gerbes=[];
   pente.portes=[];
   for(let i=0;i<10;i++)
-    pente.portes.push({d:55+i*52, x:Math.sin(i*1.7)*24, w:30, passe:0});
+    pente.portes.push({d:55+i*52, x:Math.sin(i*1.7)*16, w:30, passe:0});
   if(!invite)netSend({t:'invite',kind:'pente',from:game.hero.name});
   game.state=S.PENTE;
 }
@@ -3989,7 +3990,7 @@ function updatePente(){
       const l=[pente.n+' portes sur 10.'];
       if(pente.n===10)l.push("Sans en rater une. Personne ne l'avait jamais fait.");
       else if(pente.n>=7)l.push('Charles remonte la planche en courant. Il veut essayer de faire mieux.');
-      else if(pente.n>=4)l.push("Tu finis dans l'herbe, la planche à dix mètres. On refait.");
+      else if(pente.n>=4)l.push("Tu finis dans les fougères, la planche à dix mètres. On refait.");
       else l.push('Tu manges la terre au bout de trois portes. Kupi applaudit.');
       l.push(pente.run>=2?'Les autres remontent déjà la planche sans t\'attendre.'
                          :'On remonte. On remonte toujours.');
@@ -4004,13 +4005,13 @@ function updatePente(){
   pente.v=Math.min(1.5,0.6+pente.d*0.0014);
   pente.d+=pente.v;
   if(pente.frotte>0)pente.frotte--;
-  /* les haies freinent, elles ne tuent pas */
-  if(Math.abs(pente.x)>46){
-    pente.x=(pente.x<0?-46:46);
+  /* les ronces freinent, elles ne tuent pas */
+  if(Math.abs(pente.x)>34){
+    pente.x=(pente.x<0?-34:34);
     pente.vx*=-0.3; pente.d-=0.35; pente.frotte=12;
     if(pente.frotte===12&&game.tick%3===0)sfx('feuille');
   }
-  /* des gerbes d'herbe derriere la planche */
+  /* la terre qui gicle derriere la planche */
   if(game.tick%3===0)pente.gerbes.push({x:pente.x+(Math.random()-0.5)*6,y:0,a:1,
     vx:(Math.random()-0.5)*1.6-pente.vx*0.4});
   for(let i=pente.gerbes.length-1;i>=0;i--){
@@ -4027,109 +4028,150 @@ function updatePente(){
   if(consume('b'))pente.fin=1;
 }
 function drawPente(){
-  /* le ciel */
-  const g0=ctx.createLinearGradient(0,0,0,HZP);
-  g0.addColorStop(0,'#7ec8e6');g0.addColorStop(1,'#d3e8c4');
-  ctx.fillStyle=g0;ctx.fillRect(0,0,W,HZP);
-  /* la lisiere lointaine, en dents de scie */
-  ctx.fillStyle='#2a5c2e';
-  for(let i=0;i<24;i++){const h=5+((i*5+((pente.d*0.06)|0))%7);ctx.fillRect(i*10,HZP-h,10,h);}
-  ctx.fillStyle='#1c4023';ctx.fillRect(0,HZP,W,H-HZP);
-  /* la piste, ligne par ligne, avec ses bandes de tonte et ses haies */
+  /* la voute des arbres : on ne voit le ciel que par trous */
+  ctx.fillStyle='#16331a';ctx.fillRect(0,0,W,HZP);
+  const der=(pente.d*0.35)|0;
+  for(let i=0;i<13;i++){   /* les masses de feuillage */
+    const x=((i*29+der)%(W+44))-22, y=((i*7)%(HZP-8))-3,
+          w=16+((i*11)%20), h=9+((i*5)%8);
+    ctx.fillStyle=(i%3===0)?'#22522a':(i%3===1)?'#1b4420':'#2b6030';
+    ctx.fillRect(x+3,y,w-6,h);
+    ctx.fillRect(x,y+3,w,Math.max(1,h-6));
+    ctx.fillStyle='#316f34';
+    ctx.fillRect(x+3,y,Math.max(2,w-10),2);
+  }
+  for(let i=0;i<6;i++){   /* les trouees de ciel entre les feuilles */
+    const x=((i*47+((pente.d*0.5)|0))%(W+40))-20, y=2+((i*9)%13),
+          w=5+((i*3)%7), h=3+(i%3);
+    ctx.fillStyle='#a8d6e4';
+    ctx.fillRect(x+1,y,w-2,h);
+    ctx.fillRect(x,y+1,w,Math.max(1,h-2));
+  }
+  /* le bas de la voute, dentele, pour que ca ne coupe pas au couteau */
+  for(let i=0;i<20;i++){
+    const h=2+((i*5)%6);
+    ctx.fillStyle='#173a1b';ctx.fillRect(i*12,HZP-h,12,h);
+  }
+  ctx.fillStyle='#20361d';ctx.fillRect(0,HZP,W,H-HZP);
+  /* le sentier de terre, ligne par ligne */
   const dfix=(pente.d*2)|0;
   for(let sy=HZP;sy<H;sy++){
-    const sc=penteS(sy), hw=14+74*sc;   /* 46 unites de piste x 1.9 = la moitie a nos pieds */
+    const sc=penteS(sy), hw=10+55*sc;   /* 34 unites de sentier x 1.9 = la moitie a nos pieds */
     const dz=((YP-HZP)/Math.max(0.4,sy-HZP)-1)/0.055;
-    const bande=Math.floor((dz+pente.d)*0.16)&1;
     const x0=Math.round(W/2-hw), lw=Math.max(2,Math.round(hw*2));
-    ctx.fillStyle=bande?'#5d9e46':'#72b357';
+    /* la terre, plus ou moins claire selon la lumiere qui passe entre les feuilles */
+    const tache=Math.floor((dz+pente.d)*0.09)%3;
+    ctx.fillStyle=tache===0?'#7c5c39':(tache===1?'#6d5031':'#84673f');
     ctx.fillRect(x0,sy,lw,1);
-    /* la raie claire que laisse la tondeuse au milieu */
-    ctx.fillStyle=bande?'#69a94f':'#7ec062';
-    ctx.fillRect(Math.round(W/2-hw*0.16),sy,Math.max(1,Math.round(hw*0.32)),1);
-    /* le bord de tonte */
-    ctx.fillStyle='#9ad07a';ctx.fillRect(x0,sy,1,1);ctx.fillRect(x0+lw-1,sy,1,1);
-    /* les haies de chaque cote */
-    const ep=Math.max(2,Math.round(3+11*sc)), n=(sy*13+dfix*7)%7;
-    ctx.fillStyle=n<2?'#31702f':(n<5?'#276029':'#1f4c23');
-    ctx.fillRect(x0-ep,sy,ep,1); ctx.fillRect(x0+lw,sy,ep,1);
-    ctx.fillStyle='#3f8a3b';
-    ctx.fillRect(x0-ep,sy,1,1); ctx.fillRect(x0+lw+ep-1,sy,1,1);
+    /* les deux ornieres creusees par les planches */
+    ctx.fillStyle='#5b4128';
+    const orn=Math.max(1,Math.round(4*sc));
+    ctx.fillRect(Math.round(W/2-12*1.9*sc)-orn,sy,orn*2,1);
+    ctx.fillRect(Math.round(W/2+12*1.9*sc)-orn,sy,orn*2,1);
+    /* la bande de terre battue au milieu, la plus lisse */
+    ctx.fillStyle='#8a6b45';
+    ctx.fillRect(Math.round(W/2-hw*0.06),sy,Math.max(1,Math.round(hw*0.12)),1);
+    /* l herbe rase qui borde le sentier, puis les ronces */
+    const fr=Math.max(1,Math.round(2+4*sc)), ron=Math.max(2,Math.round(3+11*sc)), n=(sy*13+dfix*7)%7;
+    ctx.fillStyle='#4a7b32';
+    ctx.fillRect(x0-fr,sy,fr,1); ctx.fillRect(x0+lw,sy,fr,1);
+    ctx.fillStyle=n<2?'#26521f':(n<5?'#1e4520':'#183a1b');
+    ctx.fillRect(x0-fr-ron,sy,ron,1); ctx.fillRect(x0+lw+fr,sy,ron,1);
   }
-  /* les arbres qui defilent derriere les haies, c est eux qui donnent la vitesse */
+  /* cailloux, feuilles mortes et racines en travers, tout ce qui defile */
+  for(let i=0;i<26;i++){
+    const dz=((i*4.6-pente.d)%120+120)%120;
+    if(dz<0.5||dz>70)continue;
+    const sy=penteY(dz), sc=penteS(sy);
+    if(sc<0.06)continue;
+    const k=i%4, x=(((i*37)%58)-29);
+    if(k===3){
+      /* une racine en travers du sentier */
+      const w=Math.round(26*sc*1.9), h=Math.max(1,Math.round(3*sc));
+      ctx.fillStyle='#4d3620';
+      ctx.fillRect(Math.round(W/2+x*sc*1.9-w/2),Math.round(sy),w,h);
+      ctx.fillStyle='#6a4d2c';
+      ctx.fillRect(Math.round(W/2+x*sc*1.9-w/2),Math.round(sy),w,1);
+    }else{
+      const t=Math.max(1,Math.round((k===0?3:2)*sc));
+      ctx.fillStyle=k===0?'#8f8a80':(k===1?'#8a5a2a':'#5f4a2c');
+      ctx.fillRect(Math.round(W/2+x*sc*1.9),Math.round(sy),t,t);
+    }
+  }
+  /* les arbres du bois, serres des deux cotes */
   const arbres=[];
-  for(let i=0;i<12;i++){
-    const dz=((i*9-pente.d)%108+108)%108;   /* ils reviennent sans a-coup */
-    arbres.push({dz:dz,s:(i&1)?1:-1,k:i%3});
+  for(let i=0;i<14;i++){
+    const dz=((i*7.5-pente.d)%105+105)%105;   /* ils reviennent sans a-coup */
+    arbres.push({dz:dz,s:(i&1)?1:-1,k:i%3,d2:(i%5===0)});
   }
   arbres.filter(a=>a.dz>1&&a.dz<80).sort((a,b)=>b.dz-a.dz).forEach(a=>{
     const sy=penteY(a.dz), sc=penteS(sy);
     if(sc<0.05)return;
-    const x=W/2+a.s*(78*sc*1.9), h=Math.round(52*sc), w=Math.round(22*sc);
+    const ec=a.d2?74:52;
+    const x=W/2+a.s*(ec*sc*1.9), h=Math.round(62*sc), w=Math.round(20*sc);
     if(w<3||h<5)return;
     const x0=Math.round(x-w/2), y0=Math.round(sy-h), r=Math.max(1,Math.round(w*0.16));
-    ctx.fillStyle='#4a3220';
-    ctx.fillRect(Math.round(x-w*0.10),Math.round(sy-h*0.42),Math.max(1,Math.round(w*0.2)),Math.round(h*0.42));
-    /* la couronne, en trois etages comme les arbres du domaine */
-    const c=a.k===0?'#2f7a35':(a.k===1?'#27682e':'#357f36');
-    const et=Math.max(1,Math.round(h*0.20));
+    /* le tronc descend jusqu au sol, on est dans le bois */
+    const tw=Math.max(1,Math.round(w*0.26));
+    ctx.fillStyle='#3d2a18';ctx.fillRect(Math.round(x-tw/2),Math.round(sy-h*0.55),tw,Math.round(h*0.55));
+    ctx.fillStyle='#553a22';ctx.fillRect(Math.round(x-tw/2),Math.round(sy-h*0.55),Math.max(1,Math.round(tw*0.4)),Math.round(h*0.55));
+    const c=a.k===0?'#2a6a2e':(a.k===1?'#22592a':'#316f31');
+    const et=Math.max(1,Math.round(h*0.16));
     ctx.fillStyle=c;
     ctx.fillRect(x0+r,y0,w-r*2,et);
     ctx.fillRect(x0,y0+et,w,et);
     ctx.fillRect(x0+r,y0+et*2,w-r*2,et);
-    ctx.fillStyle='#43a047';
+    ctx.fillStyle='#3d8a3d';
     ctx.fillRect(x0+r,y0,Math.max(1,w-r*3),Math.max(1,Math.round(et*0.5)));
-    ctx.fillRect(x0,y0+et,Math.max(1,Math.round(w*0.3)),Math.max(1,Math.round(et*0.5)));
-    ctx.fillStyle='#1f5326';
-    ctx.fillRect(x0+r,y0+et*2+et-1,w-r*2,1);
+    ctx.fillStyle='#173d1c';
+    ctx.fillRect(x0+r,y0+et*3-1,w-r*2,1);
   });
-  /* les portes, des plus lointaines aux plus proches */
+  /* les portes : deux branches plantees et un ruban de chantier tendu entre */
   pente.portes.map(p=>({p:p,dz:p.d-pente.d})).filter(o=>o.dz>0.5&&o.dz<80)
    .sort((a,b)=>b.dz-a.dz).forEach(o=>{
     const sy=penteY(o.dz), sc=penteS(sy);
     const cx=W/2+o.p.x*sc*1.9, dw=Math.max(3,o.p.w*sc*1.9), hh=Math.max(4,30*sc);
     const y0=Math.round(sy-hh), ep=Math.max(1,Math.round(3*sc)+1);
-    /* l ombre au sol */
-    ctx.fillStyle='rgba(30,60,30,.25)';
+    ctx.fillStyle='rgba(20,34,18,.3)';
     ctx.fillRect(Math.round(cx-dw/2)-1,Math.round(sy),Math.round(dw)+2,Math.max(1,Math.round(2*sc)));
-    /* les deux piquets */
-    ctx.fillStyle='#f2efe4';
+    /* les deux branches */
+    ctx.fillStyle='#6b4a28';
     ctx.fillRect(Math.round(cx-dw/2),y0,ep,Math.round(hh));
     ctx.fillRect(Math.round(cx+dw/2)-ep,y0,ep,Math.round(hh));
-    ctx.fillStyle='#c9c3ae';
+    ctx.fillStyle='#8a6437';
     ctx.fillRect(Math.round(cx-dw/2),y0,1,Math.round(hh));
-    /* la banderole */
-    const ban=Math.max(2,Math.round(5*sc));
+    ctx.fillRect(Math.round(cx+dw/2)-ep,y0,1,Math.round(hh));
+    /* le ruban, raye tant qu on ne l a pas prise, vert une fois passee */
+    const ban=Math.max(2,Math.round(5*sc)), bx=Math.round(cx-dw/2), bw=Math.round(dw);
     ctx.fillStyle=o.p.passe===1?'#4ec24e':'#d8402f';
-    ctx.fillRect(Math.round(cx-dw/2),y0,Math.round(dw),ban);
-    ctx.fillStyle=o.p.passe===1?'#8de08d':'#f07a5f';
-    ctx.fillRect(Math.round(cx-dw/2),y0,Math.round(dw),1);
-    if(!o.p.passe&&sc>0.25){
-      ctx.fillStyle='rgba(255,255,255,.12)';
-      ctx.fillRect(Math.round(cx-dw/2)+ep,y0+ban,Math.round(dw)-ep*2,Math.round(hh)-ban);
+    ctx.fillRect(bx,y0,bw,ban);
+    if(o.p.passe!==1&&bw>6){
+      ctx.fillStyle='#f2efe4';
+      for(let i=0;i<bw;i+=6)ctx.fillRect(bx+i,y0,3,ban);
     }
+    ctx.fillStyle=o.p.passe===1?'#8de08d':'rgba(255,255,255,.35)';
+    ctx.fillRect(bx,y0,bw,1);
   });
-  /* les portes deja franchies s effacent en vert derriere nous */
-  /* les gerbes d herbe arrachees par la planche */
+  /* la terre que la planche arrache */
   for(const gg of pente.gerbes){
     const sy=Math.min(H-1,YP+gg.y), sc=penteS(sy);
     ctx.globalAlpha=Math.max(0,Math.min(1,gg.a));
-    ctx.fillStyle=(gg.a>0.55)?'#a8dd82':'#4d8f3c';
+    ctx.fillStyle=(gg.a>0.55)?'#a08258':'#5b4128';
     ctx.fillRect(Math.round(W/2+gg.x*sc*1.9),Math.round(sy),2,2);
   }
   ctx.globalAlpha=1;
   /* la planche et celui qui est dessus */
   const px=W/2+pente.x*1.9, incl=Math.max(-3,Math.min(3,Math.round(pente.vx*1.5)));
-  ctx.fillStyle='rgba(24,50,24,.28)';ctx.beginPath();ctx.ellipse(px,YP+16,12,3,0,0,7);ctx.fill();
+  ctx.fillStyle='rgba(30,24,14,.3)';ctx.beginPath();ctx.ellipse(px,YP+16,12,3,0,0,7);ctx.fill();
   drawPerso(game.heroId,0,1+((game.tick>>3)&1),Math.round(px-8+incl),YP-6,1,false);
   ctx.fillStyle='#5a3d22';ctx.fillRect(px-9,YP+14,4,2);ctx.fillRect(px+5,YP+14,4,2);
   ctx.fillStyle='#8a6238';ctx.fillRect(px-12,YP+10,24,4);
   ctx.fillStyle='#a8804f';ctx.fillRect(px-12,YP+10,24,2);
   ctx.fillStyle='#6d4a29';ctx.fillRect(px-12,YP+13,24,1);
-  /* on frotte la haie */
+  /* on part dans les ronces */
   if(pente.frotte>0){
     ctx.globalAlpha=Math.min(0.55,pente.frotte/16);
-    ctx.fillStyle='#3f8a3b';
+    ctx.fillStyle='#26521f';
     ctx.fillRect(pente.x<0?0:W-16,YP-22,16,44);
     ctx.globalAlpha=1;
   }
@@ -4138,19 +4180,18 @@ function drawPente(){
     ctx.save();ctx.globalAlpha=Math.min(1,pente.criT/12);
     font(13);const cw=ctx.measureText(pente.cri).width;
     const cx0=(W-cw)/2, cy0=48+((pente.criT>>2)&1);
-    ctx.fillStyle='rgba(20,30,16,.4)';ctx.fillRect(cx0-8,cy0-3,cw+16,19);
+    ctx.fillStyle='rgba(20,30,16,.45)';ctx.fillRect(cx0-8,cy0-3,cw+16,19);
     ctx.fillStyle='#16321f';ctx.textBaseline='top';ctx.fillText(pente.cri,cx0+1,cy0+1);
     ctx.fillStyle='#f4e2a8';ctx.fillText(pente.cri,cx0,cy0);
     ctx.restore();
   }
   /* le tableau de bord */
-  boxText('PORTES '+pente.n+' / 10',6,6,'#38405a',10);
+  boxText('PORTES '+pente.n+' / 10',6,6,'#3a3323',10);
   font(9);
   const reste=pente.portes.filter(p=>!p.passe).length;
   const info=(pente.fin>0)?'ARRIVÉE':('ENCORE '+reste);
   const w2=Math.round(ctx.measureText(info).width)+20;
-  boxText(info,W-w2-6,6,'#38405a',9);
-  /* la barre de descente */
+  boxText(info,W-w2-6,6,'#3a3323',9);
   ctx.fillStyle='rgba(20,24,32,.45)';ctx.fillRect(8,H-11,W-16,6);
   ctx.fillStyle='#f4e2a8';ctx.fillRect(9,H-10,Math.round((W-18)*Math.min(1,pente.d/pente.long)),4);
   if(pente.best)text('RECORD '+pente.best,8,H-23,'rgba(255,255,255,.75)',8);

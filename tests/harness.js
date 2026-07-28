@@ -572,7 +572,7 @@ check('toutes les portes ont ete jugees', t.pente.portes.every(p => p.passe > 0)
   t.pente.portes.filter(p => !p.passe).length + ' non jugee(s)');
 check('le compte des portes est coherent', t.pente.n + t.pente.rate === 10,
   t.pente.n + ' passees, ' + t.pente.rate + ' ratees');
-check('on ne peut pas sortir de la piste', Math.abs(t.pente.x) <= 46, 'x=' + t.pente.x.toFixed(1));
+check('on ne peut pas sortir du sentier', Math.abs(t.pente.x) <= 34, 'x=' + t.pente.x.toFixed(1));
 clear();
 check('ce qu ils gueulent parle de grass board',
   !t.pente.cri || t.CRIS.indexOf(t.pente.cri) >= 0);
