@@ -17,6 +17,7 @@ src = src.replace('chargeMonde().then(load).finally(loop);', `globalThis.__t={ga
   pers,dogSpr,BODY_SIDE,DOG_SIDE,sfx,ambiances,piscineOuverte,baignade,entreDansLeau,proposePartie,updateAttente,departDu1,hNow,AU_FEU,FEU_RING,FEU_TALK,feuMenu,eteindreLeFeu,bikeSpr,BIKE_DOWN,BIKE_UP,BIKE_SIDE,MISSIONS,ACTES,mission,missionCourante,niveau,chaparde,voleVoiturette,updateVoiturette,BUTIN,
   BASE,appliqueMonde,carteDe,TUILE_OVR,CORPS,CORPS_BASE,FICHES_BASE,tile,cache,MW_:MW,
   BIBLI,MIROIR,ROT,SAUT,MODELES,HOLES_BASE,DOORS_BASE,estDepart,VILLAS_:VILLAS,
+  PERSO0,BLOCS_PERSO,TIRADES,
   ITEMS_BASE,NPCS_BASE,MISSIONS_BASE,ACTES_BASE,LOCKED_BASE,EVENTS};`);
 
 /* ---------- faux canvas ---------- */
@@ -558,6 +559,31 @@ check('le depart revient a sa place', t.HOLES[0].tx === teeAvant.tx && t.HOLES[0
 check('le depart du 1 fait quatre cases',
   [[0,0],[1,0],[0,1],[1,1]].every(d => t.estDepart(at(t.HOLES[0].tx - 1 + d[0], t.HOLES[0].ty - 1 + d[1]))),
   'tuiles ' + [[0,0],[1,0],[0,1],[1,1]].map(d => at(t.HOLES[0].tx-1+d[0], t.HOLES[0].ty-1+d[1])).join(','));
+/* un bloc fabrique dans l'atelier : dessin, franchissabilite, tirade */
+const monBloc = {
+  id: t.PERSO0, n: 'Le grand orme', cat: 'vegetation', w: 2, h: 2, solide: 1, saut: 0,
+  qui: "L'ORME", tirade: ['Un orme, tout seul au milieu du fairway.'],
+  cases: [0,1,2,3].map(() => ({ pal: ['#2f6b34'], px: new Array(256).fill(0) }))
+};
+t.appliqueMonde({ v: 1, carte: {}, tuiles: {}, persos: {}, blocs: [monBloc] });
+check('un bloc fabrique entre dans la bibliotheque',
+  t.BIBLI.some(e => e.perso && e.n === 'Le grand orme' && e.w === 2 && e.h === 2));
+check('ses quatre cases se dessinent',
+  [0,1,2,3].every(i => !!t.tile(t.PERSO0 + i, 0, 0)));
+check('il arrete le joueur si on l a voulu',
+  [0,1,2,3].every(i => t.SOLID.has(t.PERSO0 + i)));
+check('sa tirade est attachee a chaque case',
+  [0,1,2,3].every(i => t.TIRADES[t.PERSO0 + i]));
+/* on le pose sur la carte et on va lui parler */
+clear(); tp(60, 20);
+[0,1,2,3].forEach(i => t.put(61 + (i % 2), 20 + ((i / 2) | 0), t.PERSO0 + i));
+check('on ne traverse pas le bloc', t.solidAt(61, 20));
+game.dir = 3; t.press('a'); frames(3); t.release('a'); frames(3);
+check('lui parler ouvre sa tirade', game.state === t.S.DIALOG, 'etat ' + game.state);
+clear();
+t.appliqueMonde({ v: 1, carte: {}, tuiles: {}, persos: {} });
+check('retirer le bloc le sort de la bibliotheque', !t.BIBLI.some(e => e.perso));
+check('et rend le passage', !t.SOLID.has(t.PERSO0) && !t.TIRADES[t.PERSO0]);
 check('la maison des Molina existe hors du hameau', !!t.INT.molina);
 check('les Molina ne sont plus au hameau', !t.VILLAS.some(v => v.id === 'molina'));
 clear();

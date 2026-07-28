@@ -19,6 +19,8 @@ html,body{margin:0;height:100%;background:#14161c;color:#e6e8ef;
   font:13px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
   -webkit-user-select:none;user-select:none;overflow:hidden}
 #ed{display:flex;flex-direction:column;height:100vh}
+/* la feuille du jeu etire tous les canvas ; ici on les laisse a leur taille */
+#ed canvas{width:auto;height:auto;aspect-ratio:auto;max-width:100%}
 header{display:flex;align-items:center;gap:12px;padding:0 16px 0 14px;height:46px;flex:0 0 46px;
   background:#1b1e26;border-bottom:1px solid #2b2f3a}
 header .titre{font-weight:700;letter-spacing:.13em;font-size:11px;color:#f4e2a8;text-transform:uppercase}
@@ -61,7 +63,7 @@ input[type=range]{width:100%}
   padding:3px 2px 12px;cursor:pointer;text-align:center}
 .bloc:hover{background:#2d323e}
 .bloc.on{border-color:#f4e2a8;background:#333a49}
-.bloc canvas{width:100%;height:auto;aspect-ratio:1;image-rendering:pixelated;border-radius:3px;display:block}
+.bloc canvas{width:100%!important;height:auto;image-rendering:pixelated;border-radius:3px;display:block}
 .bloc i{position:absolute;left:0;right:0;bottom:1px;font-style:normal;font-size:8px;color:#98a0b0;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 2px}
 .bloc.retouche i{color:#f4e2a8}
@@ -165,10 +167,10 @@ const CARTES=[{id:'domaine',n:'LE DOMAINE'}].concat(
 const ed={
   ong:'carte', carte:'domaine', outil:'pinceau', taille:1, bloc:T.ROUGH,
   z:6, camx:0, camy:0, grille:false, solides:false,
-  appuie:false, pan:false, panx:0, pany:0, sauve:true,
+  appuie:false, pan:false, panx:0, pany:0, sauve:true, enMain:false,
   hist:[], futur:[], trait:null,
   couleur:'#7cb85c', lettre:'K', blocEdit:-1, perso:'moi', partie:'BODY_DOWN',
-  cat:'pnj', sel:null, misOuv:-1, prog:'', progRep:null, progEnCours:false, apres:-1,
+  cat:'pnj', sel:null, misOuv:-1, blocPerso:null, prog:'', progRep:null, progEnCours:false, apres:-1,
   famille:'tout', passe:'tout', motif:null, presse:null, colle:null,
   selDeb:null, selRect:null, reperes:false, prise:null, cherche:''
 };
@@ -268,7 +270,7 @@ function dessine(){
   /* le curseur, ou l'apercu de ce qu'on va poser */
   if(ed.sx!=null){
     const p=ed.presse||ed.motif;
-    if(p&&ed.outil!=='select'){
+    if(p&&ed.outil!=='select'&&(ed.motif||ed.enMain)){
       const pw=p.w, ph=p.h, src=p.t||p.m;
       cx.globalAlpha=0.75;
       for(let j=0;j<ph;j++)for(let i=0;i<pw;i++)
@@ -348,7 +350,7 @@ function copie(coupe){
   const r=ed.selRect; if(!r)return;
   const w=r.x1-r.x0+1, h=r.y1-r.y0+1, t=[];
   for(let y=r.y0;y<=r.y1;y++)for(let x=r.x0;x<=r.x1;x++)t.push(tuileA(ed.carte,x,y));
-  ed.presse={w:w,h:h,t:t};
+  ed.presse={w:w,h:h,t:t}; ed.enMain=true;
   if(coupe){
     debutTrait();
     for(let y=r.y0;y<=r.y1;y++)for(let x=r.x0;x<=r.x1;x++)poseAvecHisto(x,y,A.T.ROUGH);
@@ -377,12 +379,16 @@ function miroirPresse(){
   ed.presse={w:p.w,h:p.h,t:t};
   majOutils();
 }
-function collePresse(x,y){
+function collePresse(x,y,garde){
   const p=ed.presse; if(!p)return;
   debutTrait();
   for(let j=0;j<p.h;j++)for(let i=0;i<p.w;i++)poseAvecHisto(x+i,y+j,p.t[j*p.w+i]);
   finTrait();
+  /* on la lache apres avoir pose, sinon elle suit le curseur sans qu'on sache
+     comment s'en debarrasser. Alt enfoncee, on la garde pour en poser plusieurs. */
+  if(!garde){ed.enMain=false;majOutils();}
 }
+function lache(){ed.enMain=false;ed.motif=null;majOutils();majPanneau();}
 function poseMotif(x,y){
   const m=ed.motif; if(!m)return;
   debutTrait();
@@ -400,7 +406,7 @@ cv.addEventListener('mousedown',e=>{
     ed.pan=true;ed.panx=e.clientX;ed.pany=e.clientY;cv.style.cursor='grabbing';return;
   }
   /* une tranche en attente se pose au clic, ou un repere se saisit */
-  if(ed.presse&&ed.outil!=='select'){collePresse(c.x,c.y);return;}
+  if(ed.presse&&ed.enMain&&ed.outil!=='select'){collePresse(c.x,c.y,e.altKey);return;}
   if(ed.reperes){const rp=repereSous(c.x,c.y); if(rp){ed.prise=rp;return;}}
   ed.appuie=true; debutTrait();
   if(ed.outil==='select'){ed.selDeb=[c.x,c.y];ed.selRect={x0:c.x,y0:c.y,x1:c.x,y1:c.y};return;}
@@ -478,7 +484,7 @@ window.addEventListener('keydown',e=>{
   if((e.metaKey||e.ctrlKey)&&k==='c'){e.preventDefault();copie(false);return;}
   if((e.metaKey||e.ctrlKey)&&k==='x'){e.preventDefault();copie(true);return;}
   if((e.metaKey||e.ctrlKey)&&k==='v'){e.preventDefault();
-    if(ed.presse&&ed.sx!=null)collePresse(ed.sx,ed.sy);return;}
+    if(ed.presse){ed.enMain=true;majOutils();}return;}
   if(ed.ong!=='carte')return;
   const pas=e.shiftKey?10:3;
   if(k==='arrowleft'){ed.camx-=pas;borne();e.preventDefault();}
@@ -493,7 +499,7 @@ window.addEventListener('keydown',e=>{
   else if(k==='e'){ed.outil='gomme';majOutils();}
   else if(k==='t'){tournePresse();}
   else if(k==='m'){miroirPresse();}
-  else if(k==='escape'){ed.presse=null;ed.motif=null;ed.selRect=null;majOutils();majPanneau();}
+  else if(k==='escape'){ed.enMain=false;ed.motif=null;ed.selRect=null;majOutils();majPanneau();}
   else if(k==='['){ed.taille=Math.max(1,ed.taille-2);majOutils();}
   else if(k===']'){ed.taille=Math.min(9,ed.taille+2);majOutils();}
 });
@@ -530,9 +536,15 @@ function majOutils(){
       <button id="bCoupe" ${ed.selRect?'':'disabled'}>Couper</button>
       <button id="bTourne" ${ed.presse?'':'disabled'}>Tourner</button>
       <button id="bMiroir" ${ed.presse?'':'disabled'}>Miroir</button>
+      <button id="bColle" ${ed.presse?'':'disabled'}>Reprendre</button>
+      <button id="bLache" ${(ed.enMain||ed.motif)?'':'disabled'}>Lâcher</button>
     </div>
-    ${ed.presse?'<div class="aide">Une tranche de '+ed.presse.w+'×'+ed.presse.h+
-      ' cases attend. Clique pour la poser.</div>':''}
+    ${(ed.enMain&&ed.presse)?'<div class="aide">Une tranche de '+ed.presse.w+'×'+ed.presse.h+
+      ' cases est en main. Un clic la pose et la lâche. <b>Alt + clic</b> pour en poser plusieurs. '+
+      '<kbd>Échap</kbd> pour la lâcher.</div>'
+      :(ed.presse?'<div class="aide">Une tranche de '+ed.presse.w+'×'+ed.presse.h+
+        ' cases est en mémoire. <b>Reprendre</b> ou <kbd>⌘V</kbd> pour la remettre en main.</div>':'')}
+    ${ed.motif?'<div class="aide">Motif <b>'+ed.motif.n+'</b> en main. <kbd>Échap</kbd> pour le lâcher.</div>':''}
     <h4>Historique</h4>
     <div class="o">
       <button id="bU" ${ed.hist.length?'':'disabled'}>Annuler</button>
@@ -550,7 +562,8 @@ function majOutils(){
       <kbd>⌘Z</kbd> annule, <kbd>⌘S</kbd> enregistre.
     </div>`;
   $('#selCarte').onchange=e=>{ed.carte=e.target.value;batPlanche();cadre();};
-  outils.querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{ed.outil=b.dataset.o;majOutils();});
+  outils.querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{
+    ed.outil=b.dataset.o; ed.enMain=false; ed.motif=null; majOutils(); majPanneau();});
   $('#rTaille').oninput=e=>{ed.taille=+e.target.value;majOutils();};
   $('#zM').onclick=()=>zoome(1/1.4);
   $('#zP').onclick=()=>zoome(1.4);
@@ -564,6 +577,8 @@ function majOutils(){
   $('#bCoupe').onclick=()=>copie(true);
   $('#bTourne').onclick=tournePresse;
   $('#bMiroir').onclick=miroirPresse;
+  $('#bColle').onclick=()=>{ed.enMain=true;majOutils();};
+  $('#bLache').onclick=lache;
   $('#bU').onclick=annule; $('#bR').onclick=refais;
   $('#bReset').onclick=()=>{
     if(!confirm("Effacer toutes les retouches de la carte et revenir au dessin d'origine ?"))return;
@@ -578,6 +593,8 @@ function vignette(t){
   c.getContext('2d').drawImage(A.tile(t,0,0),0,0); return c;
 }
 function majPanneau(){
+  if(ed.ong==='blocs'&&ed.blocPerso){pan.style.display='';pan.innerHTML='';
+    pan.appendChild(panneauFabrique());return;}
   if(ed.ong==='carte'||ed.ong==='blocs')panneauBlocs();
   else if(ed.ong==='persos')panneauPersos();
   else if(ed.ong==='textes')panneauTextes();
@@ -649,10 +666,20 @@ function panneauBlocs(){
     '<select id="pas" style="margin-bottom:7px">'+
       PASSES.map(f=>'<option value="'+f[0]+'"'+(f[0]===ed.passe?' selected':'')+'>'+f[1]+'</option>').join('')+
     '</select>'+
+    (ed.ong==='blocs'?'<div class="o" style="margin-bottom:7px">'+
+      [[1,1],[2,1],[1,2],[2,2],[3,1],[3,3]].map(d=>
+        '<button data-nb="'+d[0]+'x'+d[1]+'">Nouveau '+d[0]+'×'+d[1]+'</button>').join('')+
+      '</div>':'')+
     '<div class="blocs" id="lstBlocs"></div>'+
     '<div class="aide">Le bloc encadré est celui que le pinceau pose. Un motif de plusieurs '+
     'cases se pose d\'un seul clic.'+
-    (ed.ong==='blocs'?'<br>Ici, cliquer un bloc l\'ouvre pour le redessiner.':'')+'</div>';
+    (ed.ong==='blocs'?'<br>Ici, cliquer un bloc l\'ouvre pour le redessiner. Les blocs que tu '+
+      'fabriques portent un liseré doré.':'')+'</div>';
+  pan.querySelectorAll('[data-nb]').forEach(b=>b.onclick=()=>{
+    const d=b.dataset.nb.split('x');
+    ed.blocPerso=nouveauBloc(+d[0],+d[1]);
+    majPanneau(); majVue();
+  });
   const lst=$('#lstBlocs');
   function remplir(){
     lst.innerHTML='';
@@ -666,13 +693,19 @@ function panneauBlocs(){
       const t0=e.m?e.m[0]:e.t;
       const choisi=e.m?(ed.motif&&ed.motif.n===e.n):(!ed.motif&&t0===ed.bloc);
       const d=document.createElement('div');
-      d.className='bloc'+(choisi?' on':'')+(A.TUILE_OVR[t0]?' retouche':'');
+      d.className='bloc'+(choisi?' on':'')+((A.TUILE_OVR[t0]||e.perso)?' retouche':'');
       d.title=e.n+(e.m?'  ('+e.w+'×'+e.h+' cases)':'')+'  ['+
         ({libre:'on passe',bloc:'on ne passe pas',saut:'on saute par-dessus'})[passeDe(e)]+']';
       if(e.m){d.style.gridColumn='span '+Math.min(4,e.w);}
       d.appendChild(vignetteMotif(e));
       const i=document.createElement('i'); i.textContent=e.n; d.appendChild(i);
       d.onclick=()=>{
+        if(ed.ong==='blocs'&&e.perso){
+          const b=blocsPerso().find(x=>x.id===(e.m?e.m[0]:e.t));
+          if(b){ed.blocPerso=Object.assign({},b,{px:(b.px||[]).slice(),tirade:(b.tirade||[]).slice()});
+            if(!ed.blocPerso.px.length)ed.blocPerso.px=new Array(b.w*16*b.h*16).fill(null);
+            majPanneau();majVue();return;}
+        }
         if(e.m){ed.motif=e;ed.bloc=e.m[0];}
         else{ed.motif=null;ed.bloc=e.t;
           if(ed.ong==='blocs'){ed.blocEdit=e.t;ouvreBloc(e.t);}}
@@ -788,6 +821,186 @@ function majNuancier(){
   g.onclick=()=>{ed.gomme=true;majNuancier();};
   n.appendChild(g);
   const p=$('#cPick'); if(p&&!ed.gomme)p.value=ed.couleur;
+}
+
+/* ---------- fabriquer un bloc de toutes pieces ----------
+   On dessine le bloc entier d'un seul tenant sur une toile, et il est decoupe en
+   cases au moment de l'appliquer. On dit s'il arrete le joueur, s'il se saute, et
+   ce qu'il raconte quand on lui parle. */
+const CATS_BLOC=[['terrain','Terrain'],['golf','Golf'],['eau','Eau'],['vegetation','Végétation'],
+  ['cloture','Clôtures'],['route','Route'],['vehicule','Véhicules'],['batiment','Bâtiments'],
+  ['toiture','Toitures'],['exterieur','Extérieur'],['interieur','Intérieur']];
+function blocsPerso(){return (A.monde.blocs||[]).slice();}
+function idLibre(){
+  let m=A.PERSO0;
+  blocsPerso().forEach(b=>{const f=b.id+(b.w||1)*(b.h||1); if(f>m)m=f;});
+  return m;
+}
+function nouveauBloc(w,h){
+  return {id:idLibre(),n:'Nouveau bloc',cat:'terrain',w:w,h:h,
+    solide:0,saut:0,tirade:[],qui:'',
+    px:new Array(w*16*h*16).fill(null)};
+}
+function blocEnCases(b){
+  /* on decoupe la toile en cases de seize, avec une palette par case */
+  const cases=[];
+  for(let cy=0;cy<b.h;cy++)for(let cx=0;cx<b.w;cx++){
+    const pal=[], px=new Array(256).fill(-1);
+    for(let y=0;y<16;y++)for(let x=0;x<16;x++){
+      const c=b.px[(cy*16+y)*(b.w*16)+cx*16+x];
+      if(c==null)continue;
+      let k=pal.indexOf(c); if(k<0){k=pal.length;pal.push(c);}
+      px[y*16+x]=k;
+    }
+    cases.push({pal:pal,px:px});
+  }
+  return cases;
+}
+function enregistreBloc(b){
+  const l=blocsPerso().filter(x=>x.id!==b.id);
+  l.push({id:b.id,n:b.n,cat:b.cat,w:b.w,h:b.h,solide:b.solide?1:0,saut:b.saut?1:0,
+    qui:b.qui||'',tirade:b.tirade||[],cases:blocEnCases(b),px:b.px});
+  l.sort((x,y)=>x.id-y.id);
+  const m=Object.assign({},A.monde,{blocs:l});
+  A.appliqueMonde(m);
+  batPlanche(); sale(); majPanneau(); majVue();
+  dit('Bloc « '+b.n+' » ajouté à la bibliothèque.',true);
+}
+function supprimeBloc(id){
+  const l=blocsPerso().filter(x=>x.id!==id);
+  A.appliqueMonde(Object.assign({},A.monde,{blocs:l}));
+  ed.blocPerso=null; batPlanche(); sale(); majPanneau(); majVue();
+}
+function toilePixels(b){
+  /* une toile qu'on peint au pixel, avec le decoupage en cases visible */
+  const PW=b.w*16, PH=b.h*16;
+  const zoom=Math.max(4,Math.min(18,Math.floor(430/Math.max(PW,PH))));
+  const c=document.createElement('canvas');
+  c.width=PW*zoom; c.height=PH*zoom;
+  c.style.cssText='image-rendering:pixelated;border:2px solid #333a49;border-radius:4px;cursor:crosshair';
+  const g=c.getContext('2d');
+  function rendu(){
+    g.imageSmoothingEnabled=false;
+    for(let y=0;y<PH;y++)for(let x=0;x<PW;x++){
+      const v=b.px[y*PW+x];
+      g.fillStyle=v||(((x>>1)+(y>>1))%2?'#2b3040':'#232734');
+      g.fillRect(x*zoom,y*zoom,zoom,zoom);
+    }
+    g.strokeStyle='rgba(244,226,168,.45)'; g.lineWidth=1;
+    for(let i=0;i<=b.w;i++){g.beginPath();g.moveTo(i*16*zoom+.5,0);g.lineTo(i*16*zoom+.5,PH*zoom);g.stroke();}
+    for(let j=0;j<=b.h;j++){g.beginPath();g.moveTo(0,j*16*zoom+.5);g.lineTo(PW*zoom,j*16*zoom+.5);g.stroke();}
+  }
+  function pixel(e){
+    const r=c.getBoundingClientRect();
+    const x=Math.floor((e.clientX-r.left)/zoom), y=Math.floor((e.clientY-r.top)/zoom);
+    if(x<0||y<0||x>=PW||y>=PH)return null;
+    return y*PW+x;
+  }
+  c.onmousedown=e=>{
+    e.preventDefault();
+    const i=pixel(e); if(i==null)return;
+    if(e.altKey||e.buttons&2){const v=b.px[i]; if(v){ed.couleur=v;majTeintes();} return;}
+    b.px[i]=ed.gomme?null:ed.couleur; rendu();
+  };
+  c.onmousemove=e=>{
+    if(!e.buttons)return;
+    const i=pixel(e); if(i==null)return;
+    if(e.altKey)return;
+    b.px[i]=ed.gomme?null:ed.couleur; rendu();
+  };
+  c.oncontextmenu=e=>e.preventDefault();
+  rendu();
+  c.rendu=rendu;
+  return c;
+}
+function majTeintes(){
+  const n=$('#teintes'); if(!n)return;
+  const b=ed.blocPerso; if(!b)return;
+  const vues=[]; b.px.forEach(c=>{if(c&&vues.indexOf(c)<0)vues.push(c);});
+  const base=['#7cb85c','#4e8a3e','#2f6b34','#1c4023','#c9c0ae','#8a6238','#5a3d22',
+    '#e6e0cc','#f4f2ec','#3a3f47','#1b2030','#c2231f','#f2d24a','#3f6b5c','#8fbcd8'];
+  n.innerHTML='';
+  base.concat(vues.filter(c=>base.indexOf(c)<0)).forEach(c=>{
+    const bt=document.createElement('button');
+    bt.style.background=c; bt.className=(!ed.gomme&&c===ed.couleur)?'on':''; bt.title=c;
+    bt.onclick=()=>{ed.couleur=c;ed.gomme=false;majTeintes();};
+    n.appendChild(bt);
+  });
+  const gm=document.createElement('button');
+  gm.style.background=damier(null); gm.className=ed.gomme?'on':''; gm.title='Transparent';
+  gm.onclick=()=>{ed.gomme=true;majTeintes();};
+  n.appendChild(gm);
+  const p=$('#cPick2'); if(p&&!ed.gomme)p.value=ed.couleur;
+}
+function vueFabrique(){
+  const b=ed.blocPerso;
+  const w=document.createElement('div'); w.className='centre';
+  const h=document.createElement('div');
+  h.innerHTML='<b style="color:#f4e2a8">'+b.n+'</b> <span style="color:#79808f">'+
+    b.w+'×'+b.h+' case'+(b.w*b.h>1?'s':'')+' — clic pour peindre, alt pour reprendre une teinte</span>';
+  w.appendChild(h);
+  w.appendChild(toilePixels(b));
+  const n=document.createElement('div'); n.className='nuancier'; n.id='teintes'; w.appendChild(n);
+  const bar=document.createElement('div');
+  bar.style.cssText='display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center';
+  bar.innerHTML='<input type="color" id="cPick2" value="'+(ed.couleur||'#7cb85c')+
+    '" style="width:44px;height:30px;padding:0;border:1px solid #333a49;border-radius:4px;background:#252a35">'+
+    '<button class="b" id="bGomme2">Gomme</button>'+
+    '<button class="b" id="bVide">Tout effacer</button>'+
+    '<button class="b vert" id="bGarde">Enregistrer le bloc</button>';
+  w.appendChild(bar);
+  setTimeout(()=>{
+    majTeintes();
+    $('#cPick2').oninput=e=>{ed.couleur=e.target.value;ed.gomme=false;majTeintes();};
+    $('#bGomme2').onclick=()=>{ed.gomme=!ed.gomme;majTeintes();};
+    $('#bVide').onclick=()=>{b.px.fill(null);majVue();};
+    $('#bGarde').onclick=()=>enregistreBloc(b);
+  },0);
+  return w;
+}
+function panneauFabrique(){
+  const b=ed.blocPerso;
+  const d=document.createElement('div');
+  d.innerHTML='<h4>Le bloc qu\'on fabrique</h4>';
+  d.appendChild(champ('Nom',b.n,false,v=>{b.n=v;}));
+  const cs=document.createElement('div'); cs.className='champ';
+  cs.innerHTML='<span>Famille</span>';
+  const sel=document.createElement('select');
+  CATS_BLOC.forEach(c=>{const o=document.createElement('option');o.value=c[0];o.textContent=c[1];
+    if(c[0]===b.cat)o.selected=true;sel.appendChild(o);});
+  sel.onchange=()=>{b.cat=sel.value;};
+  cs.appendChild(sel); d.appendChild(cs);
+  const ps=document.createElement('div'); ps.className='champ';
+  ps.innerHTML='<span>On passe dessus ?</span>';
+  const sp=document.createElement('select');
+  [['libre','On passe'],['bloc','On ne passe pas'],['saut','On saute par-dessus']].forEach(o=>{
+    const op=document.createElement('option');op.value=o[0];op.textContent=o[1];
+    const cur=b.saut?'saut':(b.solide?'bloc':'libre');
+    if(o[0]===cur)op.selected=true;sp.appendChild(op);});
+  sp.onchange=()=>{b.saut=(sp.value==='saut')?1:0;b.solide=(sp.value!=='libre')?1:0;};
+  ps.appendChild(sp); d.appendChild(ps);
+  d.appendChild(champ('Qui parle (le cadre du haut)',b.qui||'',false,v=>{b.qui=v;}));
+  const t=document.createElement('div'); t.className='champ';
+  t.innerHTML='<span>Ce qu\'il raconte quand on lui parle</span>';
+  const ta=document.createElement('textarea');
+  ta.placeholder='Une phrase par ligne. Vide, il ne dit rien.';
+  ta.value=(b.tirade||[]).join('\n'); ta.rows=4;
+  ta.oninput=()=>{b.tirade=ta.value.split('\n').filter(x=>x.trim()!=='');};
+  t.appendChild(ta); d.appendChild(t);
+  const bar=document.createElement('div'); bar.style.cssText='display:flex;gap:6px;margin-top:8px';
+  const ok=document.createElement('button'); ok.className='b vert'; ok.style.flex='1';
+  ok.textContent='Enregistrer'; ok.onclick=()=>enregistreBloc(b);
+  const non=document.createElement('button'); non.className='b'; non.textContent='Fermer';
+  non.onclick=()=>{ed.blocPerso=null;majPanneau();majVue();};
+  bar.appendChild(ok); bar.appendChild(non); d.appendChild(bar);
+  if(blocsPerso().some(x=>x.id===b.id)){
+    const sup=document.createElement('button'); sup.className='b rouge';
+    sup.style.cssText='width:100%;margin-top:6px'; sup.textContent='Supprimer ce bloc';
+    sup.onclick=()=>{if(confirm('Supprimer « '+b.n+' » ? Les cases déjà posées deviendront vides.'))
+      supprimeBloc(b.id);};
+    d.appendChild(sup);
+  }
+  return d;
 }
 
 /* ---------- les personnages ---------- */
@@ -1298,7 +1511,7 @@ function majVue(){
   const vieux=vue.querySelector('.centre'); if(vieux)vieux.remove();
   cv.style.display=(ed.ong==='carte')?'':'none';
   infos.style.display=(ed.ong==='carte')?'':'none';
-  if(ed.ong==='blocs')vue.appendChild(vueBloc());
+  if(ed.ong==='blocs')vue.appendChild(ed.blocPerso?vueFabrique():vueBloc());
   else if(ed.ong==='persos')vue.appendChild(vuePersos());
   else if(ed.ong==='textes')vue.appendChild(vueTextes());
   else if(ed.ong==='trame')vue.appendChild(vueTrame());
@@ -1343,6 +1556,7 @@ function monde(){
   if(!mem(A.MISSIONS,A.MISSIONS_BASE))out.missions=A.MISSIONS;
   if(!mem(A.ACTES,A.ACTES_BASE))out.actes=A.ACTES;
   if(!mem(A.LOCKED,A.LOCKED_BASE))out.lieux=A.LOCKED;
+  if((A.monde.blocs||[]).length)out.blocs=A.monde.blocs;
   const trous=A.HOLES.map(h=>({tx:h.tx,ty:h.ty,gx:h.gx,gy:h.gy}));
   if(!mem(trous,A.HOLES_BASE))out.trous=trous;
   const portes=A.DOORS.map(d=>({x:d.x,y:d.y,to:d.to,tl:d.tl,sx:d.sx,sy:d.sy}));
@@ -1367,6 +1581,7 @@ async function enregistre(){
     const no=Object.keys(m.objets||{}).length; if(no)bouts.push(no+' objet'+(no>1?'s':''));
     if(m.missions)bouts.push('la trame');
     if(m.lieux)bouts.push('les lieux');
+    if(m.blocs)bouts.push(m.blocs.length+' bloc'+(m.blocs.length>1?'s':'')+' maison');
     if(m.trous)bouts.push('les départs');
     if(m.portes)bouts.push('les portes');
     dit('Enregistré'+(bouts.length?' : '+bouts.join(', ')+'.':'.'),true);

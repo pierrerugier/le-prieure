@@ -103,6 +103,26 @@ L'outil **Découper** trace un rectangle. Ensuite ⌘C ou ⌘X, puis ⌘V ou un 
 un sens (barrières, coins, voitures, canapés) se retournent **vraiment** : `MIROIR` et `ROT`
 disent quelle case remplace quelle case. Un bloc absent de ces tables reste tel quel.
 
+### Fabriquer un bloc
+
+Onglet **Blocs**, boutons **Nouveau 1×1** à **3×3**. On dessine le bloc **d'un seul tenant**
+sur une toile, il est découpé en cases au moment d'enregistrer. On lui donne un nom, une
+famille, sa franchissabilité (on passe / on ne passe pas / on saute par-dessus) et,
+facultativement, une **tirade** : ce qu'il raconte quand on lui parle, avec le nom du cadre.
+Il apparaît alors dans la bibliothèque, liseré doré, et se pose comme n'importe quel motif.
+
+Ces blocs vivent au-dessus de **400** pour ne jamais tomber sur un numéro du code, même quand
+on ajoutera d'autres blocs au jeu. Un bloc de plusieurs cases occupe des numéros qui se
+suivent, dans l'ordre de lecture. Ils s'enregistrent sous `blocs` dans le monde, avec leur
+dessin, et `interact()` sert la tirade avant tout le reste.
+
+### La tranche en main
+
+Une tranche découpée est **en main** ou **en mémoire**. En main, elle suit le curseur ; un clic
+la pose **et la lâche**. Alt + clic pour en poser plusieurs. `Reprendre` ou ⌘V la remet en main,
+`Lâcher` ou Échap la lâche, et changer d'outil la lâche aussi. Sans ça elle collait au curseur
+sans qu'on sache comment s'en débarrasser.
+
 ### La bibliothèque
 
 `BIBLI` (dans `index.html`) est la liste rangée : chaque entrée a une famille, un nom, et soit

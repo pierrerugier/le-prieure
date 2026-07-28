@@ -229,6 +229,7 @@ app.post('/api/monde', (req, res) => {
   if (Array.isArray(m.lieux)) monde.lieux = m.lieux;
   if (Array.isArray(m.trous)) monde.trous = m.trous;
   if (Array.isArray(m.portes)) monde.portes = m.portes;
+  if (Array.isArray(m.blocs)) monde.blocs = m.blocs;
   const surDisque = ecrisMonde(monde);
   diffuse({ t: 'monde', monde: monde });
   res.json({ ok: true, disque: surDisque });

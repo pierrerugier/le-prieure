@@ -455,6 +455,16 @@ ROT[T.CLOH]=T.CLOV; ROT[T.CLOV]=T.CLOH;
 ROT[T.PONTH]=T.PONTV; ROT[T.PONTV]=T.PONTH;
 tourne(T.CLONO,T.CLONE,T.CLOSE,T.CLOSO);
 
+/* ---------- les blocs fabriques dans l'atelier ----------
+   Ils vivent au-dessus de 400 pour ne jamais tomber sur un numero du code, meme
+   quand on en ajoutera d'autres. Un bloc de plusieurs cases occupe des numeros
+   qui se suivent, dans l'ordre de lecture. */
+const PERSO0=400;
+const BLOCS_PERSO={};        /* numero de la premiere case -> la fiche du bloc */
+const PERSO_CASE={};         /* numero d'une case -> la fiche du bloc auquel elle appartient */
+const TIRADES={};            /* numero d'une case -> ce qu'elle raconte */
+let PERSO_IDS=[];
+
 /* tout ce qui compte comme un arbre pour la balle : elle s'y perd pareil */
 const ARBRES=new Set([T.ARB1,T.ARB2,T.ARB3,T.ARBH1,T.ARBH2,T.ARBH3,T.ARBB1,T.ARBB2,T.ARBB3,
   T.CHENE1,T.CHENE2,T.CHENE3,T.CHENE4,T.PIN1,T.PIN2,T.PIN3,T.PIN4,T.BUIS1,T.BUIS2,T.BUIS3]);
@@ -1878,6 +1888,31 @@ function appliqueMonde(mo){
     const r=(MONDE.objets||{})[o.id];
     if(r)['n','trouve','txt','x','y','inside'].forEach(k=>{if(r[k]!==undefined)o[k]=r[k];});
   });
+  /* les blocs fabriques dans l'atelier : on retire les anciens avant de poser les nouveaux */
+  PERSO_IDS.forEach(id=>{SOLID.delete(id);SAUT.delete(id);delete TUILE_OVR[id];
+    delete PERSO_CASE[id];delete TIRADES[id];});
+  Object.keys(BLOCS_PERSO).forEach(k=>{delete BLOCS_PERSO[k];});
+  for(let i=BIBLI.length-1;i>=0;i--)if(BIBLI[i].perso)BIBLI.splice(i,1);
+  PERSO_IDS=[];
+  (MONDE.blocs||[]).forEach(b=>{
+    if(!b||!b.id||!b.cases)return;
+    BLOCS_PERSO[b.id]=b;
+    const n=(b.w||1)*(b.h||1);
+    for(let i=0;i<n;i++){
+      const id=b.id+i;
+      PERSO_IDS.push(id);
+      PERSO_CASE[id]=b;
+      if(b.cases[i])TUILE_OVR[id]=b.cases[i];
+      if(b.saut){SOLID.add(id);SAUT.add(id);}
+      else if(b.solide)SOLID.add(id);
+      if(b.tirade&&b.tirade.length)TIRADES[id]=b.tirade;
+    }
+    const cases=[];
+    for(let i=0;i<n;i++)cases.push(b.id+i);
+    if(n>1)BIBLI.push({cat:b.cat||'terrain',n:b.n||'Bloc',w:b.w,h:b.h,m:cases,perso:1});
+    else BIBLI.push({cat:b.cat||'terrain',n:b.n||'Bloc',t:b.id,perso:1});
+  });
+  videCacheTuiles();
   const remet=(dst,src)=>{dst.length=0;clone(src).forEach(v=>dst.push(v));};
   HOLES.forEach((h,i)=>{const b=HOLES_BASE[i]; if(b)Object.assign(h,b);});
   (MONDE.trous||[]).forEach((t,i)=>{if(HOLES[i]&&t)Object.assign(HOLES[i],t);});
@@ -2867,6 +2902,8 @@ function interact(){
     say(n.d[(Math.random()*n.d.length)|0],null,n.name);return;
   }
   const t=getTile(tx,ty), under=getTile(game.px,game.py);
+  /* un bloc fabrique dans l'atelier peut avoir sa propre tirade */
+  if(TIRADES[t]){const b=PERSO_CASE[t];say(TIRADES[t],null,(b&&b.qui)||(b&&b.n)||null);return;}
   if(t===T.STALL||under===T.STALL){
     askYN("Monter sur le toit du practice et taper de là-haut ?",'LE PRACTICE',()=>{
       mission('toit');
@@ -5747,6 +5784,7 @@ if(MODE_EDIT){
     NPCS_BASE:NPCS_BASE,ITEMS_BASE:ITEMS_BASE,MISSIONS_BASE:MISSIONS_BASE,
     ACTES_BASE:ACTES_BASE,LOCKED_BASE:LOCKED_BASE,
     BIBLI:BIBLI,MIROIR:MIROIR,ROT:ROT,SAUT:SAUT,MODELES:MODELES,
+    PERSO0:PERSO0,BLOCS_PERSO:BLOCS_PERSO,PERSO_CASE:PERSO_CASE,TIRADES:TIRADES,
     HOLES:HOLES,DOORS:DOORS,HOLES_BASE:HOLES_BASE,DOORS_BASE:DOORS_BASE,estDepart:estDepart,
     MONDEKEY:MONDEKEY,get monde(){return MONDE;},appliqueMonde:appliqueMonde
   };
