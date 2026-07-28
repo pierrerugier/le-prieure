@@ -111,6 +111,12 @@ famille, sa franchissabilité (on passe / on ne passe pas / on saute par-dessus)
 facultativement, une **tirade** : ce qu'il raconte quand on lui parle, avec le nom du cadre.
 Il apparaît alors dans la bibliothèque, liseré doré, et se pose comme n'importe quel motif.
 
+**Partir d'un bloc qui existe.** Le bouton `Partir du bloc choisi` (onglet Blocs) et
+`En faire un bloc` (colonne de la carte) relisent le dessin case par case, recomposent la toile
+entière et repartent de là avec un nouveau numéro. Ça marche pour un bloc du jeu, pour un bloc
+déjà fabriqué — dont on récupère alors la tirade et la franchissabilité — et pour **une tranche
+de terrain découpée sur la carte**. Six cases de côté au maximum.
+
 Ces blocs vivent au-dessus de **400** pour ne jamais tomber sur un numéro du code, même quand
 on ajoutera d'autres blocs au jeu. Un bloc de plusieurs cases occupe des numéros qui se
 suivent, dans l'ordre de lecture. Ils s'enregistrent sous `blocs` dans le monde, avec leur

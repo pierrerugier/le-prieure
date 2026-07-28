@@ -559,6 +559,7 @@ function majOutils(){
       <button id="bColle" ${ed.presse?'':'disabled'}>Reprendre</button>
       <button id="bLache" ${ed.enMain?'':'disabled'}>Lâcher</button>
     </div>
+    <button class="b" id="bDup2" style="width:100%;margin-top:5px" ${enMain()?'':'disabled'}>En faire un bloc</button>
     ${(ed.enMain&&enMain())?'<div class="aide">En main : <b>'+(enMain().n||('tranche de '+enMain().w+'×'+enMain().h))+
       '</b>, '+enMain().w+'×'+enMain().h+' case'+((enMain().w*enMain().h>1)?'s':'')+'.<br>'+
       '<kbd>T</kbd> la tourne, <kbd>M</kbd> la retourne.'+
@@ -599,6 +600,7 @@ function majOutils(){
   $('#bTourne').onclick=tourneMain;
   $('#bMiroir').onclick=miroirMain;
   $('#bColle').onclick=()=>{if(ed.presse)prendEnMain(ed.presse.w,ed.presse.h,ed.presse.t,'','presse');majOutils();};
+  $('#bDup2').onclick=dupliqueEnMain;
   $('#bLache').onclick=lache;
   $('#bU').onclick=annule; $('#bR').onclick=refais;
   $('#bReset').onclick=()=>{
@@ -687,15 +689,17 @@ function panneauBlocs(){
     '<select id="pas" style="margin-bottom:7px">'+
       PASSES.map(f=>'<option value="'+f[0]+'"'+(f[0]===ed.passe?' selected':'')+'>'+f[1]+'</option>').join('')+
     '</select>'+
-    (ed.ong==='blocs'?'<div class="o" style="margin-bottom:7px">'+
+    (ed.ong==='blocs'?'<div class="o" style="margin-bottom:5px">'+
       [[1,1],[2,1],[1,2],[2,2],[3,1],[3,3]].map(d=>
         '<button data-nb="'+d[0]+'x'+d[1]+'">Nouveau '+d[0]+'×'+d[1]+'</button>').join('')+
-      '</div>':'')+
+      '</div><button class="b" id="bDup" style="width:100%;margin-bottom:7px">'+
+      'Partir du bloc choisi</button>':'')+
     '<div class="blocs" id="lstBlocs"></div>'+
     '<div class="aide">Le bloc encadré est celui que le pinceau pose. Un motif de plusieurs '+
     'cases se pose d\'un seul clic.'+
     (ed.ong==='blocs'?'<br>Ici, cliquer un bloc l\'ouvre pour le redessiner. Les blocs que tu '+
       'fabriques portent un liseré doré.':'')+'</div>';
+  if($('#bDup'))$('#bDup').onclick=dupliqueEnMain;
   pan.querySelectorAll('[data-nb]').forEach(b=>b.onclick=()=>{
     const d=b.dataset.nb.split('x');
     ed.blocPerso=nouveauBloc(+d[0],+d[1]);
@@ -861,6 +865,48 @@ function nouveauBloc(w,h){
   return {id:idLibre(),n:'Nouveau bloc',cat:'terrain',w:w,h:h,
     solide:0,saut:0,tirade:[],qui:'',
     px:new Array(w*16*h*16).fill(null)};
+}
+/* Partir d'un bloc qui existe deja : on relit son dessin case par case, on
+   recompose la toile entiere, et on repart de la avec un nouveau numero. Ca marche
+   pour un bloc du jeu, pour un bloc deja fabrique, et pour une tranche de terrain. */
+function litCases(w,h,cases){
+  const PW=w*16, px=new Array(w*16*h*16).fill(null);
+  const c=document.createElement('canvas'); c.width=16;c.height=16;
+  const g=c.getContext('2d');
+  for(let cy=0;cy<h;cy++)for(let cx=0;cx<w;cx++){
+    g.clearRect(0,0,16,16);
+    g.drawImage(A.tile(cases[cy*w+cx],0,0),0,0);
+    const d=g.getImageData(0,0,16,16).data;
+    for(let y=0;y<16;y++)for(let x=0;x<16;x++){
+      const i=(y*16+x)*4;
+      if(d[i+3]<8)continue;
+      px[(cy*16+y)*PW+cx*16+x]='#'+[d[i],d[i+1],d[i+2]]
+        .map(v=>v.toString(16).padStart(2,'0')).join('');
+    }
+  }
+  return px;
+}
+function dupliqueEnMain(){
+  const p=enMain();
+  if(!p){dit('Choisis d\'abord un bloc, ou découpe une tranche.');return;}
+  if(p.w>6||p.h>6){dit('Trop grand pour être repris : six cases de côté au maximum.');return;}
+  const src=blocsPerso().find(b=>b.id===p.t[0]);
+  const e=A.BIBLI.find(x=>(x.m?x.m[0]:x.t)===p.t[0]);
+  const b=nouveauBloc(p.w,p.h);
+  b.n=(p.n||(e&&e.n)||'Tranche')+' (copie)';
+  b.cat=(src&&src.cat)||(e&&e.cat)||'terrain';
+  if(src&&src.px&&src.px.length===p.w*16*p.h*16)b.px=src.px.slice();
+  else b.px=litCases(p.w,p.h,p.t);
+  if(src){b.solide=src.solide;b.saut=src.saut;b.qui=src.qui||'';b.tirade=(src.tirade||[]).slice();}
+  else{b.saut=A.SAUT.has(p.t[0])?1:0;b.solide=A.SOLID.has(p.t[0])?1:0;}
+  ed.blocPerso=b;
+  if(ed.ong!=='blocs'){
+    document.querySelectorAll('nav button').forEach(x=>x.classList.remove('on'));
+    document.querySelector('nav button[data-ong="blocs"]').classList.add('on');
+    ed.ong='blocs'; majOutils();
+  }
+  majPanneau(); majVue();
+  dit('Copie de « '+((p.n||(e&&e.n))||'la tranche')+' » ouverte. Retouche-la et enregistre.');
 }
 function blocEnCases(b){
   /* on decoupe la toile en cases de seize, avec une palette par case */
