@@ -19,10 +19,10 @@
     -webkit-text-size-adjust:100%;}
   #sp,#pad,.dpad,.ab,#sys,.shoulders{touch-action:none;}
   #wrap{max-width:470px;margin:0 auto;padding:14px 10px 22px;}
-  @media (max-width:380px){
-    .dpad{grid-template-columns:repeat(3,46px);grid-template-rows:repeat(3,46px);}
-    .round{width:60px;height:60px;font-size:19px;}
-    .sh{width:72px;}
+  @media (max-width:340px){
+    .dpad{grid-template-columns:repeat(3,50px);grid-template-rows:repeat(3,50px);}
+    .round{width:64px;height:64px;font-size:20px;}
+    .sh{width:78px;}
   }
   /* --- coque Game Boy Advance SP --- */
   #sp{background:linear-gradient(180deg,#41454d 0%,#33373d 46%,#2b2e34 100%);
@@ -72,6 +72,57 @@
     font-style:italic;}
   #hint{max-width:430px;margin:14px auto 0;padding:0 14px;font-size:11px;line-height:1.65;color:#787e93;}
   #hint b{color:#a5abbd;font-weight:600;}
+  /* --- sur telephone, l'ecran prend toute la largeur ---
+     La coque reste, mais elle se met de cote : plus de marges, plus de coins
+     arrondis, plus de bandeau au-dessus de la vitre. On joue, on ne contemple
+     pas la console. Les encoches et la barre du bas sont respectees. */
+  @media (max-width:600px){
+    /* la console tient toute la largeur, et se cale au milieu de la hauteur :
+       pas de bande morte en bas de l'ecran */
+    body{min-height:100dvh;display:flex;flex-direction:column;justify-content:center;}
+    #wrap{max-width:none;width:100%;padding:env(safe-area-inset-top) 0 calc(8px + env(safe-area-inset-bottom));}
+    #sp{border-radius:0;padding:0 0 8px;box-shadow:0 6px 18px rgba(0,0,0,.5);}
+    #lid{border-radius:0;padding:3px 2px 4px;box-shadow:none;}
+    #lidtop{display:none;}
+    #screenwrap{border-radius:0;padding:2px;box-shadow:inset 0 0 0 2px #05060a;}
+    #screen{border-radius:0;}
+    #brand{font-size:7px;margin:4px 8px 0;}
+    #hinge{margin:8px 0 10px;}
+    #hinge i{height:7px;}
+    #hinge i:nth-child(1),#hinge i:nth-child(3){width:56px;}
+    #hinge i:nth-child(2){width:88px;}
+    .shoulders{margin:0 6px 14px;}
+    #base{padding:2px 8px 0;}
+    #nin{margin-top:22px;}
+    #hint{display:none;}
+    /* la place gagnee sous l'ecran va aux doigts */
+    .dpad{grid-template-columns:repeat(3,58px);grid-template-rows:repeat(3,58px);}
+    .round{width:76px;height:76px;font-size:23px;}
+    .ab{gap:18px;}
+    .sh{width:96px;height:28px;font-size:12px;}
+    .sys{padding:11px 26px;font-size:12px;}
+    #sys{margin-top:20px;}
+  }
+  /* telephone couche : la console s'ouvre en deux, l'ecran a gauche et les
+     boutons a droite, comme une manette. On ne perd pas de hauteur en chemin. */
+  @media (orientation:landscape) and (max-height:520px){
+    body{min-height:0;display:block;}
+    #wrap{max-width:none;width:100%;
+      padding:env(safe-area-inset-top) env(safe-area-inset-right) 4px env(safe-area-inset-left);}
+    #sp{display:flex;align-items:center;gap:10px;border-radius:0;padding:4px 8px;}
+    #lid{flex:1 1 auto;min-width:0;border-radius:0;padding:4px;box-shadow:none;}
+    #lidtop,#hinge,#brand,#nin,#hint{display:none;}
+    #screenwrap{border-radius:0;padding:2px;}
+    #screen{width:100%;border-radius:0;}
+    #base{flex:0 0 auto;width:42%;padding:0;}
+    .shoulders{margin:0 0 8px;}
+    .sh{width:70px;height:22px;font-size:10px;}
+    .dpad{grid-template-columns:repeat(3,44px);grid-template-rows:repeat(3,44px);}
+    .round{width:56px;height:56px;font-size:18px;}
+    .ab{gap:12px;}
+    #sys{margin-top:10px;gap:14px;}
+    .sys{padding:7px 16px;font-size:10px;}
+  }
 </style>
 </head>
 <body>
@@ -2462,11 +2513,47 @@ function caseLibrePres(x,y,r0){
     }
   return null;
 }
+/* ---------- ou l'on peut se tenir ----------
+   Un personnage se tient sur de l'herbe, une terrasse, une allee, de la terre.
+   Jamais sur un toit. Jamais dans un fourre, ou l'on ne verrait que son buste.
+   Et jamais en plein milieu d'un passage : on a besoin de passer. */
+const SOL_DEBOUT=new Set([T.FAIR,T.ROUGH,T.GREEN,T.LAWN,T.CHAMP,T.PATIO,T.TEE,T.MAT,
+  T.PATH,T.GRAVEL,T.DIRT,T.TERRE,T.DECK,T.PDECK,T.ASPH,T.PLAT,T.CARRP,T.ZEBRA,
+  T.TALUS,T.TALUH,T.FLOOR,T.PARQ,T.COCO,T.RUG,T.PLANK,T.BRIDGE,T.STONE,T.TRACE,
+  T.DEPTL,T.DEPTR,T.DEPBL,T.DEPBR,T.DEPVTL,T.DEPVTR,T.DEPVBL,T.DEPVBR]);
+const ALLEES=new Set([T.PATH,T.GRAVEL]);
+function dansLeHameau(x,y){
+  const z=zoneAt(x,y);
+  return z==='HAMEAU DU PRIEURÉ'||z==='MAISONS DE LISIÈRE'||z==='FORÊT DES HAMEAUX';
+}
+/* un couloir d'une seule case : si quelqu'un s'y plante, plus personne ne passe */
+function passageEtroit(x,y){
+  const g=solidAt(x-1,y), d=solidAt(x+1,y), h=solidAt(x,y-1), b=solidAt(x,y+1);
+  return (g&&d)||(h&&b);
+}
+function bonPoste(x,y){
+  if(x<2||y<2||x>MW-3||y>MH-3)return false;
+  const t=baseT(at(x,y));
+  if(SOLID.has(at(x,y)))return false;
+  if(!SOL_DEBOUT.has(t))return false;
+  /* dans le hameau, on ne stagne pas au milieu de l'allee */
+  if(ALLEES.has(t)&&dansLeHameau(x,y))return false;
+  if(passageEtroit(x,y))return false;
+  return true;
+}
+function caseDeboutPres(x,y,r0){
+  for(let r=r0||0;r<=7;r++)
+    for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){
+      if(Math.max(Math.abs(dx),Math.abs(dy))!==r)continue;
+      if(bonPoste(x+dx,y+dy))return [x+dx,y+dy];
+    }
+  return caseLibrePres(x,y,r0);
+}
 function recalePersonnages(){
   NPCS.forEach(n=>{
     if(n.inside)return;
-    if(!SOLID.has(at(n.x,n.y)))return;
-    const p=caseLibrePres(n.x,n.y,1);
+    if(bonPoste(n.x,n.y))return;
+    const p=caseDeboutPres(n.x,n.y,0);
     if(p){n.x=p[0];n.y=p[1];}
   });
   ITEMS.forEach(o=>{
@@ -2890,8 +2977,7 @@ function placesDuFeu(rmax){
   for(let dy=-4;dy<=4;dy++)for(let dx=-4;dx<=4;dx++){
     const r=Math.hypot(dx,dy); if(r<1.9||r>R)continue;
     const x=FEU.x+dx,y=FEU.y+dy;
-    if(x<1||y<1||x>=MW-1||y>=MH-1)continue;
-    if(SOLID.has(at(x,y)))continue;
+    if(!bonPoste(x,y))continue;
     places.push({x:x,y:y,a:Math.atan2(dy,dx)});
   }
   /* range par angle, en partant du nord : le cercle se lit dans le sens des aiguilles */
@@ -3445,13 +3531,34 @@ function tryMove(){
   }
   game.moving=true;game.ox=-dx*TS;game.oy=-dy*TS;game.px=nx;game.py=ny;
   if(!game.voiturette&&!game.nage){
-    const sol=getTile(nx,ny);
     game.pasG=!game.pasG;
-    sfx(sol===T.DENSE?'feuille':sol===T.SAND?'sable':'pas',game.pasG?1:0);
+    sfx(bruitDuSol(getTile(nx,ny)),game.pasG?1:0);
   }
   if(game.bike)sfx('velo');
   if(game.nage&&((game.tick>>0)%2===0))sfx('nage');
 }
+/* ---------- ce qu'on entend sous ses pieds ----------
+   Chaque famille de sol a son bruit. Une case inconnue tombe sur l'herbe :
+   on ne marche jamais en silence. */
+const SOL_BRUIT={};
+(function rangeLesSols(){
+  const mets=(son,liste)=>liste.forEach(t=>{if(t!==undefined)SOL_BRUIT[t]=son;});
+  mets('herbe',[T.FAIR,T.ROUGH,T.GREEN,T.LAWN,T.CHAMP,T.PATIO,T.TEE,T.MAT,T.TALUS,T.TALUH,
+    T.FLOW,T.FLEUR1,T.FLEUR2,T.FLEUR3]);
+  mets('feuille',[T.TREE,T.DENSE,T.ROSEAU,T.JONC,T.BUIS1,T.BUIS2,T.BUIS3,
+    T.BUIT1,T.BUIT2,T.BUIT3,T.MASS1,T.MASS2]);
+  mets('sable',[T.SAND]);
+  mets('gravier',[T.GRAVEL,T.PATH,T.STONE]);
+  mets('terre',[T.DIRT,T.TERRE,T.TRACE]);
+  mets('bois',[T.DECK,T.PDECK,T.PLANK,T.PARQ,T.BRIDGE,T.PONTH,T.PONTV,T.PONTR,
+    T.PASSG,T.PASSM,T.PASSD,T.PASSR,T.ESCAL,T.WOOD]);
+  mets('dur',[T.ASPH,T.ROAD,T.LINE,T.ZEBRA,T.CARRP,T.TENN,T.WALLI,T.STONEW,T.FLOOR,T.VITRINE]);
+  mets('feutre',[T.COCO,T.RUG]);
+  mets('flaque',[T.WATER,T.MARE,T.POOL,T.JACU]);
+  ARBRES.forEach(t=>{SOL_BRUIT[t]='feuille';});
+  for(let i=0;i<24;i++){SOL_BRUIT[T.TENQ+i]='dur';SOL_BRUIT[T.TENT+i]='terre';}
+})();
+function bruitDuSol(t){return SOL_BRUIT[baseT(t)]||'herbe';}
 function arrive(){
   const t=getTile(game.px,game.py);
   if(!game.inside){
@@ -5190,10 +5297,22 @@ function sfx(kind,f){
       blip(1800,t+0.11,0.09,'triangle',0.07,B,900); break;
     case 'wouf': blip(NOTE(52),t,0.09,'square',0.18,B); blip(NOTE(47),t+0.08,0.12,'square',0.16,B); break;
     case 'ok': blip(NOTE(76),t,0.07,'square',0.14,B); blip(NOTE(83),t+0.07,0.12,'square',0.14,B); break;
-    /* les pas */
-    case 'pas': souffle(t,0.055,(f?200:170),90,0.05,'lowpass'); break;
-    case 'feuille': souffle(t,0.14,2600,1100,0.055,'bandpass'); break;
-    case 'sable': souffle(t,0.12,3600,1600,0.05,'bandpass'); break;
+    /* les pas, une couleur par sol. f vaut 1 un pied sur deux : ca boite un peu,
+       comme une vraie marche. */
+    case 'pas': case 'herbe':
+      souffle(t,0.075,(f?1500:1300),420,0.045,'bandpass'); break;
+    case 'feuille': souffle(t,0.14,(f?2800:2400),1100,0.055,'bandpass'); break;
+    case 'sable': souffle(t,0.12,(f?3800:3400),1600,0.05,'bandpass'); break;
+    case 'gravier': noiseHit(t,0.055,0.035,B);
+      souffle(t,0.07,(f?2600:2200),900,0.045,'bandpass'); break;
+    case 'terre': souffle(t,0.07,(f?520:440),150,0.06,'lowpass'); break;
+    case 'bois': blip(f?196:174,t,0.045,'triangle',0.055,B,90);
+      souffle(t,0.045,(f?900:780),260,0.03,'bandpass'); break;
+    case 'dur': blip(f?1350:1180,t,0.028,'square',0.035,B,600);
+      souffle(t,0.035,(f?2400:2100),1200,0.028,'bandpass'); break;
+    case 'feutre': souffle(t,0.06,(f?340:300),110,0.035,'lowpass'); break;
+    case 'flaque': souffle(t,0.16,(f?1500:1300),300,0.07,'lowpass');
+      noiseHit(t,0.05,0.05,B); break;
     /* les coups de golf */
     case 'drive': noiseHit(t,0.22,0.05,B); blip(760,t,0.13,'square',0.13,B,180);
       souffle(t+0.01,0.22,1800,300,0.05,'bandpass'); break;
@@ -5754,7 +5873,7 @@ function placeAgenda(){
     n.inside=p.in||null;
     if(p.in){n.x=p.x;n.y=p.y;}
     else{
-      const q=caseLibrePres(p.x,p.y,0)||[p.x,p.y];
+      const q=caseDeboutPres(p.x,p.y,0)||[p.x,p.y];
       n.x=q[0];n.y=q[1];
     }
     n.hx=n.x;n.hy=n.y;
@@ -6879,10 +6998,10 @@ function roam(){
     if(n.hx===undefined){n.hx=n.x;n.hy=n.y;}
     const d=(Math.random()*4)|0,[dx,dy]=DV[d],nx=n.x+dx,ny=n.y+dy;
     if(Math.abs(nx-n.hx)>5||Math.abs(ny-n.hy)>5)continue;
-    if(SOLID.has(getTile(nx,ny))||npcAt(nx,ny))continue;
+    if(npcAt(nx,ny))continue;
     if(nx===game.px&&ny===game.py)continue;
-    const t=getTile(nx,ny);
-    if(t!==T.PATH&&t!==T.FAIR&&t!==T.DECK&&t!==T.ASPH&&t!==T.GRAVEL&&t!==T.ROUGH&&t!==T.FLOOR)continue;
+    if(n.inside){ if(SOLID.has(getTile(nx,ny)))continue; }
+    else if(!bonPoste(nx,ny))continue;
     n.x=nx;n.y=ny;n.dir=d;n.fr=1+(((n.fr||0)+1)%2);
   }
 }

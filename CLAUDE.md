@@ -113,6 +113,25 @@ Le feu de camp est **la ou il est peint sur la carte** (`trouveLeFeu`). Le cercl
 tout seul autour : les cases libres a deux pas, rangees par angle, une place laissee au sud
 pour le joueur.
 
+## Ou l'on se tient, et ce qu'on entend
+
+`bonPoste(x,y)` dit si un personnage a le droit de se tenir la : de l'herbe, une terrasse,
+une allee, de la terre. **Jamais un toit**, jamais un fourre ou l'on ne verrait que son
+buste, jamais une allee du hameau, et jamais un couloir d'une seule case, sinon il bouche
+le passage. `recalePersonnages()`, l'agenda, le cercle du feu et la flanerie passent tous
+par la.
+
+`bruitDuSol(tuile)` donne le pas qui va avec la surface : herbe, feuilles, sable, gravier,
+terre, bois, dur, feutre, flaque. **On ne marche jamais en silence** : une case inconnue
+tombe sur l'herbe.
+
+## La coque, sur telephone
+
+Sous 600 px de large, la console se met de cote : plus de marges, plus de coins arrondis,
+plus de bandeau au-dessus de la vitre. **L'ecran prend toute la largeur**, la coque se cale
+au milieu de la hauteur, et la place gagnee va aux doigts. Couche, la console s'ouvre en
+deux : l'ecran a gauche, les boutons a droite, comme une manette.
+
 ## Les gens et les portes
 
 `POSTES` dit où se tient chacun sur le domaine de Pierre : Alain devant sa cabane (39,62),

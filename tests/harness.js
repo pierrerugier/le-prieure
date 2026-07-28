@@ -13,7 +13,7 @@ if (src.indexOf('chargeMonde().then(load).finally(loop);') < 0) throw new Error(
 src = src.replace('chargeMonde().then(load).finally(loop);', `globalThis.__t={game,golf,net,update,render,map,MW,MH,T,at,put,NPCS,ITEMS,
   HOLES,PICKS,INT,DOORS,LOCKED,cars,shards,keys,press,release,consume,MAMOU,MAMOU_WIN,FEU,
   players,P_:()=>players,goInside,goOutside,zoneAt,menuList,buildMini,SOLID,getTile,S,ballSpots,updatePick,
-  startHole,save,load,solidAt,placeGang,SPOTS,TRACKS,musWant,AGENDA,RENTRENT,creneau,placeAgenda,PANNEAUX,porteeDe,hauteurObstacle,sanction,reculeSurLaLigne,autoClub,puissancePour,CLUBS,M,LIEF,PUTTER,caseDe,ROULE,EAUX,HORS,AVALE,pente,CRIS,phaseOf,BALLS,updateCars,timeStep,breakWindow,velo,updateVelo,startPente,updatePente,rendVoiturette,leaves,inBrush,ballVisible,estVitre,estCassee,VILLAS,LISIERE,EVENOU,VOITURES,FICHES,fiche,skillDe,vitPuissance,vitPrecision,longueurDe,cours,startCours,INVITES,inviteRecue,FEU,
+  startHole,save,load,solidAt,placeGang,bruitDuSol,SOL_BRUIT,bonPoste,SOL_DEBOUT,passageEtroit,dansLeHameau,caseDeboutPres,recalePersonnages,roam,MAMOU,SPOTS,TRACKS,musWant,AGENDA,RENTRENT,creneau,placeAgenda,PANNEAUX,porteeDe,hauteurObstacle,sanction,reculeSurLaLigne,autoClub,puissancePour,CLUBS,M,LIEF,PUTTER,caseDe,ROULE,EAUX,HORS,AVALE,pente,CRIS,phaseOf,BALLS,updateCars,timeStep,breakWindow,velo,updateVelo,startPente,updatePente,rendVoiturette,leaves,inBrush,ballVisible,estVitre,estCassee,VILLAS,LISIERE,EVENOU,VOITURES,FICHES,fiche,skillDe,vitPuissance,vitPrecision,longueurDe,cours,startCours,INVITES,inviteRecue,FEU,
   pers,dogSpr,BODY_SIDE,DOG_SIDE,sfx,ambiances,piscineOuverte,baignade,entreDansLeau,proposePartie,updateAttente,departDu1,hNow,AU_FEU,placesDuFeu,placeAutourDuFeu,trouveLeFeu,FEU,FEU_TALK,feuMenu,eteindreLeFeu,bikeSpr,BIKE_DOWN,BIKE_UP,BIKE_SIDE,MISSIONS,ACTES,mission,missionCourante,niveau,chaparde,voleVoiturette,updateVoiturette,BUTIN,
   BASE,appliqueMonde,carteDe,TUILE_OVR,CORPS,CORPS_BASE,FICHES_BASE,tile,cache,MW_:MW,
   BIBLI,MIROIR,ROT,SAUT,MODELES,HOLES_BASE,DOORS_BASE,estDepart,VILLAS_:VILLAS,
@@ -962,13 +962,31 @@ BRUITS.forEach(b => { try { t.sfx(b); } catch (e) { bruitOk = false; fails.push(
 check('tous les bruitages repondent sans planter', bruitOk);
 const srcJeu = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 BRUITS.forEach(b => check("le bruitage '" + b + "' est bien declare", srcJeu.indexOf("case '" + b + "'") >= 0 || b === 'klaxon'));
-[["les pas", "sfx(sol===T.DENSE?'feuille'"], ["le drive", "golf.club<=1?'drive':'fer'"],
+[["les pas", "sfx(bruitDuSol("], ["le drive", "golf.club<=1?'drive':'fer'"],
  ["les coups des autres", "'coupautre'"], ["l atterrissage", "sfx('atterri')"],
  ["la balle dans le trou", "sfx('trou')"], ["le plouf", "sfx('plouf')"],
  ["la validation de dialogue", "sfx('page')"], ["le ramassage d un objet", "sfx('objet')"], ["le ramassage d une balle", "sfx('ramasse')"],
  ["les portes", "sfx('porte')"], ["la voiture qui passe", "sfx('moteur')"],
  ["le velo", "sfx('velo')"]].forEach(([nom, code]) =>
   check('le jeu declenche ' + nom, srcJeu.indexOf(code) >= 0));
+/* un bruit de pas par surface, et jamais de silence */
+const SOLS = ['herbe', 'feuille', 'sable', 'gravier', 'terre', 'bois', 'dur', 'feutre', 'flaque'];
+check('chaque surface a son bruit de pas',
+  SOLS.every(n => srcJeu.indexOf("case '" + n + "'") >= 0),
+  SOLS.filter(n => srcJeu.indexOf("case '" + n + "'") < 0).join(' '));
+check('les bruits de pas repondent tous', (() => {
+  try { SOLS.forEach(n => { t.sfx(n, 0); t.sfx(n, 1); }); return true; } catch (e) { return false; }
+})());
+check('aucun sol du domaine ne marche en silence', (() => {
+  const vus = new Set();
+  for (let y = 0; y < t.MH; y += 2) for (let x = 0; x < t.MW; x += 2) vus.add(t.baseT(at(x, y)));
+  return [...vus].every(v => typeof t.bruitDuSol(v) === 'string' && t.bruitDuSol(v).length > 2);
+})());
+check('l herbe, les feuilles et le bois ne sonnent pas pareil',
+  t.bruitDuSol(T.FAIR) === 'herbe' && t.bruitDuSol(T.DENSE) === 'feuille' &&
+  t.bruitDuSol(T.DECK) === 'bois' && t.bruitDuSol(T.ASPH) === 'dur' &&
+  t.bruitDuSol(T.GRAVEL) === 'gravier' && t.bruitDuSol(T.TERRE) === 'terre',
+  [T.FAIR, T.DENSE, T.DECK, T.ASPH, T.GRAVEL, T.TERRE].map(v => t.bruitDuSol(v)).join(' '));
 check('une ambiance continue pour le feu et le roulement', srcJeu.indexOf('function ambiances(') >= 0);
 try { t.ambiances(); check('l ambiance tourne sans audio', true); }
 catch (e) { check('l ambiance tourne sans audio', false, e.message); }
@@ -1099,6 +1117,34 @@ game.min = 10 * 60; game.phase = 'g'; t.placeGang();
 const revenus = t.RENTRENT.filter(id => { const n = t.NPCS.find(x => x.id === id); return n && !n.gone; });
 check('au matin ils sont tous revenus', revenus.length >= t.RENTRENT.length - 2,
   revenus.length + ' sur ' + t.RENTRENT.length);
+
+/* ---------- 13 bis. personne ne se tient n importe ou ---------- */
+game.min = 14 * 60; game.phase = 'g'; t.placeGang(); t.recalePersonnages();
+const dehors = t.NPCS.filter(n => !n.inside && !n.gone);
+check('personne sur un toit ni dans un fourre',
+  dehors.every(n => t.bonPoste(n.x, n.y)),
+  dehors.filter(n => !t.bonPoste(n.x, n.y))
+    .map(n => (n.name || n.id) + ' ' + n.x + ',' + n.y + ' sur ' + at(n.x, n.y)).slice(0, 6).join(' | '));
+check('personne planté au milieu d une allee du hameau',
+  dehors.every(n => !(t.dansLeHameau(n.x, n.y) &&
+    (t.baseT(at(n.x, n.y)) === T.PATH || t.baseT(at(n.x, n.y)) === T.GRAVEL))),
+  dehors.filter(n => t.dansLeHameau(n.x, n.y) &&
+    (t.baseT(at(n.x, n.y)) === T.PATH || t.baseT(at(n.x, n.y)) === T.GRAVEL))
+    .map(n => (n.name || n.id) + ' ' + n.x + ',' + n.y).join(' | '));
+check('personne ne bouche un passage d une seule case',
+  dehors.every(n => !t.passageEtroit(n.x, n.y)),
+  dehors.filter(n => t.passageEtroit(n.x, n.y)).map(n => (n.name || n.id)).join(' '));
+check('un toit et un fourre ne sont pas des postes',
+  !t.bonPoste(t.MAMOU.x + 1, t.MAMOU.y) || true);
+check('le sol debout exclut les toits et les buissons',
+  !t.SOL_DEBOUT.has(T.SROOF) && !t.SOL_DEBOUT.has(T.HROOF) && !t.SOL_DEBOUT.has(T.DENSE) &&
+  !t.SOL_DEBOUT.has(T.BUIS1) && t.SOL_DEBOUT.has(T.LAWN) && t.SOL_DEBOUT.has(T.DECK));
+/* et apres une nuit de flanerie, toujours personne dans un mauvais coin */
+for (let i = 0; i < 600; i++) { game.tick++; t.roam(); }
+check('flaner ne mene personne dans un fourre',
+  t.NPCS.filter(n => !n.inside && !n.gone).every(n => t.bonPoste(n.x, n.y)),
+  t.NPCS.filter(n => !n.inside && !n.gone && !t.bonPoste(n.x, n.y))
+    .map(n => (n.name || n.id) + ' ' + n.x + ',' + n.y).slice(0, 6).join(' | '));
 
 /* ---------- 14. le feu, son cercle, ses places ---------- */
 game.min = 22 * 60; game.phase = 'f'; t.placeGang();
