@@ -178,20 +178,25 @@ sur quoi on pose. Un bloc fabriqué dans l'atelier peut l'être, il le dit lui-m
 
 ### Les voitures
 
-Sept modèles, de profil, sur quatre cases. Chacun a sa **ligne de toit**, donnée par quelques
-points de contrôle qu'on relie (`PROFILS`) : c'est ça qui fait qu'une 911 n'est pas une berline
-et qu'un 4x4 n'est pas une Polo. La caisse se peint colonne par colonne entre cette ligne et le
-seuil, cernée en haut et en bas, avec un filet de lumière sur le pli.
+⚠️ **Vues d'en haut, capot vers le nord.** Le domaine se regarde de dessus : une voiture de
+profil jure sur une route vue du ciel, ça a été essayé et c'était raté. Ne pas y revenir.
+C'est le quart de tour de l'atelier qui les oriente, et il tombe juste puisque la vue est
+orthographique.
 
-Deux pièges déjà tombés dedans :
+Sept modèles sur quatre cases. Chacun a son **profil de demi-largeur** le long de la caisse
+(`TOPS`), du capot au coffre : c'est ça qui distingue une berline d'un 4x4 et d'une citadine.
+Longues et étroites, jamais trapues : environ deux fois plus longues que larges.
 
-- **Les passages de roue se découpent, ils ne se peignent pas en noir.** Peints, la voiture se
-  retrouve avec une grosse jupe noire. On efface (`clearRect`) une demi-lune au-dessus de
-  chaque roue, on pose la roue, puis on repasse un cerne pour la rattacher à la caisse.
-- **L'ombre est une tache sous chaque roue, jamais une bande d'un bout à l'autre.** La bande se
-  lisait comme un trait sous la voiture, et c'est justement ce qu'on ne veut pas.
+Trois pièges déjà tombés dedans :
 
-Le pavillon garde deux pixels de tôle avant le verre, sinon c'est une tente et pas une voiture.
+- **Les roues se posent avant la caisse et dépassent de deux pixels de chaque côté.** Sinon la
+  carrosserie les avale et la voiture n'a plus de roues.
+- **Les vitres sont encadrées de tôle.** Une bande de verre d'un bord à l'autre fait une barre
+  noire en travers, pas un pare-brise.
+- **Pas de trait blanc devant.** Les feux sont deux marques minuscules prises dans la
+  carrosserie, jamais un rectangle qui déborde.
+
+Rien ne peint de sol : elles sont dans `TRANSP` comme le reste du mobilier.
 
 ### La gamme d'arbres
 
