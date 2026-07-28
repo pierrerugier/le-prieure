@@ -171,7 +171,7 @@ const ed={
   hist:[], futur:[], trait:null,
   couleur:'#7cb85c', lettre:'K', blocEdit:-1, perso:'moi', partie:'BODY_DOWN',
   cat:'pnj', sel:null, misOuv:-1, blocPerso:null, prog:'', progRep:null, progEnCours:false, apres:-1,
-  famille:'tout', passe:'tout', motif:null, presse:null, colle:null,
+  famille:'tout', passe:'tout', main:null, presse:null,
   selDeb:null, selRect:null, reperes:false, prise:null, cherche:''
 };
 
@@ -269,9 +269,9 @@ function dessine(){
   }
   /* le curseur, ou l'apercu de ce qu'on va poser */
   if(ed.sx!=null){
-    const p=ed.presse||ed.motif;
-    if(p&&ed.outil!=='select'&&(ed.motif||ed.enMain)){
-      const pw=p.w, ph=p.h, src=p.t||p.m;
+    const p=enMain();
+    if(p&&ed.enMain&&ed.outil!=='select'&&(p.w>1||p.h>1)){
+      const pw=p.w, ph=p.h, src=p.t;
       cx.globalAlpha=0.75;
       for(let j=0;j<ph;j++)for(let i=0;i<pw;i++)
         cx.drawImage(A.tile(src[j*pw+i],0,0),
@@ -350,7 +350,8 @@ function copie(coupe){
   const r=ed.selRect; if(!r)return;
   const w=r.x1-r.x0+1, h=r.y1-r.y0+1, t=[];
   for(let y=r.y0;y<=r.y1;y++)for(let x=r.x0;x<=r.x1;x++)t.push(tuileA(ed.carte,x,y));
-  ed.presse={w:w,h:h,t:t}; ed.enMain=true;
+  ed.presse={w:w,h:h,t:t};
+  prendEnMain(w,h,t,'',"presse");
   if(coupe){
     debutTrait();
     for(let y=r.y0;y<=r.y1;y++)for(let x=r.x0;x<=r.x1;x++)poseAvecHisto(x,y,A.T.ROUGH);
@@ -359,42 +360,58 @@ function copie(coupe){
   dit('Tranche de '+w+'×'+h+' cases. Clique pour la poser.');
   majOutils();
 }
-function tournePresse(){
-  const p=ed.presse; if(!p)return;
+/* Ce qu'on tient en main, motif de la bibliotheque ou tranche decoupee, c'est la
+   meme chose : une grille de cases. Donc ca se tourne et ca se retourne pareil. */
+function enMain(){return ed.main;}
+function prendEnMain(w,h,cases,nom,src){
+  ed.main={w:w,h:h,t:cases.slice(),n:nom||'',src:src||'bibli'};
+  ed.bloc=cases[0];
+  ed.enMain=true;
+}
+/* une case qui fait partie d'un dessin de plusieurs cases et qui n'a pas de
+   correspondance : la tourner melangerait le dessin, on refuse et on le dit */
+function bloquant(t,table){
+  for(const id of t)
+    if(A.ART_MULTI.has(id)&&table[id]===undefined)return id;
+  return -1;
+}
+function tourneMain(){
+  const p=enMain(); if(!p)return;
+  const ko=bloquant(p.t,A.ROT);
+  if(ko>=0){dit('Ce dessin ne se tourne pas. Il ne tient que dans ce sens.');return;}
   const t=new Array(p.w*p.h);
   for(let y=0;y<p.h;y++)for(let x=0;x<p.w;x++){
     const src=p.t[y*p.w+x];
     t[x*p.h+(p.h-1-y)]=(A.ROT[src]!==undefined)?A.ROT[src]:src;
   }
-  ed.presse={w:p.h,h:p.w,t:t};
-  majOutils();
+  ed.main={w:p.h,h:p.w,t:t,n:p.n,src:p.src};
+  if(p.src==='presse')ed.presse={w:p.h,h:p.w,t:t};
+  ed.bloc=t[0]; majOutils();
 }
-function miroirPresse(){
-  const p=ed.presse; if(!p)return;
+function miroirMain(){
+  const p=enMain(); if(!p)return;
+  const ko=bloquant(p.t,A.MIROIR);
+  if(ko>=0){dit('Ce dessin ne se retourne pas.');return;}
   const t=new Array(p.w*p.h);
   for(let y=0;y<p.h;y++)for(let x=0;x<p.w;x++){
     const src=p.t[y*p.w+x];
     t[y*p.w+(p.w-1-x)]=(A.MIROIR[src]!==undefined)?A.MIROIR[src]:src;
   }
-  ed.presse={w:p.w,h:p.h,t:t};
-  majOutils();
+  ed.main={w:p.w,h:p.h,t:t,n:p.n,src:p.src};
+  if(p.src==='presse')ed.presse={w:p.w,h:p.h,t:t};
+  ed.bloc=t[0]; majOutils();
 }
-function collePresse(x,y,garde){
-  const p=ed.presse; if(!p)return;
+function poseMain(x,y,garde){
+  const p=enMain(); if(!p)return;
   debutTrait();
   for(let j=0;j<p.h;j++)for(let i=0;i<p.w;i++)poseAvecHisto(x+i,y+j,p.t[j*p.w+i]);
   finTrait();
-  /* on la lache apres avoir pose, sinon elle suit le curseur sans qu'on sache
-     comment s'en debarrasser. Alt enfoncee, on la garde pour en poser plusieurs. */
-  if(!garde){ed.enMain=false;majOutils();}
+  /* une tranche decoupee se lache apres avoir ete posee, sinon elle suit le curseur
+     sans qu'on sache comment s'en debarrasser. Un motif de la bibliotheque reste en
+     main, c'est un pinceau. Alt enfoncee, la tranche reste aussi. */
+  if(p.src==='presse'&&!garde){ed.enMain=false;majOutils();}
 }
-function lache(){ed.enMain=false;ed.motif=null;majOutils();majPanneau();}
-function poseMotif(x,y){
-  const m=ed.motif; if(!m)return;
-  debutTrait();
-  for(let j=0;j<m.h;j++)for(let i=0;i<m.w;i++)poseAvecHisto(x+i,y+j,m.m[j*m.w+i]);
-  finTrait();
-}
+function lache(){ed.enMain=false;ed.main=null;majOutils();majPanneau();}
 
 cv.addEventListener('contextmenu',e=>e.preventDefault());
 cv.addEventListener('mousedown',e=>{
@@ -406,16 +423,19 @@ cv.addEventListener('mousedown',e=>{
     ed.pan=true;ed.panx=e.clientX;ed.pany=e.clientY;cv.style.cursor='grabbing';return;
   }
   /* une tranche en attente se pose au clic, ou un repere se saisit */
-  if(ed.presse&&ed.enMain&&ed.outil!=='select'){collePresse(c.x,c.y,e.altKey);return;}
+  const tenu=enMain();
+  if(tenu&&ed.enMain&&ed.outil==='pinceau'&&(tenu.w>1||tenu.h>1)){
+    poseMain(c.x,c.y,e.altKey); ed.appuie=false; return;
+  }
   if(ed.reperes){const rp=repereSous(c.x,c.y); if(rp){ed.prise=rp;return;}}
   ed.appuie=true; debutTrait();
   if(ed.outil==='select'){ed.selDeb=[c.x,c.y];ed.selRect={x0:c.x,y0:c.y,x1:c.x,y1:c.y};return;}
-  if(ed.outil==='pipette'){ed.bloc=tuileA(ed.carte,c.x,c.y);ed.motif=null;ed.outil='pinceau';
+  if(ed.outil==='pipette'){ed.bloc=tuileA(ed.carte,c.x,c.y);
+    prendEnMain(1,1,[ed.bloc],'',"bibli");ed.outil='pinceau';
     majOutils();majPanneau();ed.appuie=false;finTrait();return;}
   if(ed.outil==='remplir'){remplis(c.x,c.y,ed.bloc);ed.appuie=false;finTrait();return;}
   if(ed.outil==='rect'){ed.rect=[c.x,c.y];return;}
   if(ed.outil==='gomme'){pinceau(c.x,c.y,A.T.ROUGH);return;}
-  if(ed.motif){poseMotif(c.x,c.y);ed.appuie=false;return;}
   pinceau(c.x,c.y,ed.bloc);
 });
 window.addEventListener('mousemove',e=>{
@@ -497,9 +517,9 @@ window.addEventListener('keydown',e=>{
   else if(k==='i'){ed.outil='pipette';majOutils();}
   else if(k==='s'){ed.outil='select';majOutils();}
   else if(k==='e'){ed.outil='gomme';majOutils();}
-  else if(k==='t'){tournePresse();}
-  else if(k==='m'){miroirPresse();}
-  else if(k==='escape'){ed.enMain=false;ed.motif=null;ed.selRect=null;majOutils();majPanneau();}
+  else if(k==='t'){tourneMain();}
+  else if(k==='m'){miroirMain();}
+  else if(k==='escape'){lache();ed.selRect=null;majOutils();}
   else if(k==='['){ed.taille=Math.max(1,ed.taille-2);majOutils();}
   else if(k===']'){ed.taille=Math.min(9,ed.taille+2);majOutils();}
 });
@@ -534,17 +554,18 @@ function majOutils(){
     <div class="o">
       <button id="bCopie" ${ed.selRect?'':'disabled'}>Copier</button>
       <button id="bCoupe" ${ed.selRect?'':'disabled'}>Couper</button>
-      <button id="bTourne" ${ed.presse?'':'disabled'}>Tourner</button>
-      <button id="bMiroir" ${ed.presse?'':'disabled'}>Miroir</button>
+      <button id="bTourne" ${enMain()?'':'disabled'}>Tourner</button>
+      <button id="bMiroir" ${enMain()?'':'disabled'}>Miroir</button>
       <button id="bColle" ${ed.presse?'':'disabled'}>Reprendre</button>
-      <button id="bLache" ${(ed.enMain||ed.motif)?'':'disabled'}>Lâcher</button>
+      <button id="bLache" ${ed.enMain?'':'disabled'}>Lâcher</button>
     </div>
-    ${(ed.enMain&&ed.presse)?'<div class="aide">Une tranche de '+ed.presse.w+'×'+ed.presse.h+
-      ' cases est en main. Un clic la pose et la lâche. <b>Alt + clic</b> pour en poser plusieurs. '+
-      '<kbd>Échap</kbd> pour la lâcher.</div>'
+    ${(ed.enMain&&enMain())?'<div class="aide">En main : <b>'+(enMain().n||('tranche de '+enMain().w+'×'+enMain().h))+
+      '</b>, '+enMain().w+'×'+enMain().h+' case'+((enMain().w*enMain().h>1)?'s':'')+'.<br>'+
+      '<kbd>T</kbd> la tourne, <kbd>M</kbd> la retourne.'+
+      (enMain().src==='presse'?' Un clic la pose et la lâche, <b>Alt + clic</b> pour en poser plusieurs.':'')+
+      '</div>'
       :(ed.presse?'<div class="aide">Une tranche de '+ed.presse.w+'×'+ed.presse.h+
         ' cases est en mémoire. <b>Reprendre</b> ou <kbd>⌘V</kbd> pour la remettre en main.</div>':'')}
-    ${ed.motif?'<div class="aide">Motif <b>'+ed.motif.n+'</b> en main. <kbd>Échap</kbd> pour le lâcher.</div>':''}
     <h4>Historique</h4>
     <div class="o">
       <button id="bU" ${ed.hist.length?'':'disabled'}>Annuler</button>
@@ -563,7 +584,7 @@ function majOutils(){
     </div>`;
   $('#selCarte').onchange=e=>{ed.carte=e.target.value;batPlanche();cadre();};
   outils.querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{
-    ed.outil=b.dataset.o; ed.enMain=false; ed.motif=null; majOutils(); majPanneau();});
+    ed.outil=b.dataset.o; majOutils(); majPanneau();});
   $('#rTaille').oninput=e=>{ed.taille=+e.target.value;majOutils();};
   $('#zM').onclick=()=>zoome(1/1.4);
   $('#zP').onclick=()=>zoome(1.4);
@@ -575,9 +596,9 @@ function majOutils(){
   $('#tC').onclick=()=>{ed.selRect=null;majOutils();};
   $('#bCopie').onclick=()=>copie(false);
   $('#bCoupe').onclick=()=>copie(true);
-  $('#bTourne').onclick=tournePresse;
-  $('#bMiroir').onclick=miroirPresse;
-  $('#bColle').onclick=()=>{ed.enMain=true;majOutils();};
+  $('#bTourne').onclick=tourneMain;
+  $('#bMiroir').onclick=miroirMain;
+  $('#bColle').onclick=()=>{if(ed.presse)prendEnMain(ed.presse.w,ed.presse.h,ed.presse.t,'','presse');majOutils();};
   $('#bLache').onclick=lache;
   $('#bU').onclick=annule; $('#bR').onclick=refais;
   $('#bReset').onclick=()=>{
@@ -691,7 +712,8 @@ function panneauBlocs(){
       if(f&&e.n.toLowerCase().indexOf(f)<0)return;
       n++;
       const t0=e.m?e.m[0]:e.t;
-      const choisi=e.m?(ed.motif&&ed.motif.n===e.n):(!ed.motif&&t0===ed.bloc);
+      const m=enMain();
+      const choisi=!!m&&m.n===e.n&&m.t.length===(e.m?e.m.length:1)&&m.t[0]===t0;
       const d=document.createElement('div');
       d.className='bloc'+(choisi?' on':'')+((A.TUILE_OVR[t0]||e.perso)?' retouche':'');
       d.title=e.n+(e.m?'  ('+e.w+'×'+e.h+' cases)':'')+'  ['+
@@ -706,10 +728,9 @@ function panneauBlocs(){
             if(!ed.blocPerso.px.length)ed.blocPerso.px=new Array(b.w*16*b.h*16).fill(null);
             majPanneau();majVue();return;}
         }
-        if(e.m){ed.motif=e;ed.bloc=e.m[0];}
-        else{ed.motif=null;ed.bloc=e.t;
-          if(ed.ong==='blocs'){ed.blocEdit=e.t;ouvreBloc(e.t);}}
-        majPanneau();
+        prendEnMain(e.w||1,e.h||1,e.m||[e.t],e.n,'bibli');
+        if(!e.m&&ed.ong==='blocs'){ed.blocEdit=e.t;ouvreBloc(e.t);}
+        majPanneau(); majOutils();
       };
       lst.appendChild(d);
     });
@@ -1615,6 +1636,7 @@ window.addEventListener('beforeunload',e=>{
 
 /* ---------- en route ---------- */
 batPlanche();
+prendEnMain(1,1,[ed.bloc],'Rough','bibli'); ed.enMain=false;
 majOutils(); majPanneau(); majVue(); boucle();
 dit('Prêt.');
 })();

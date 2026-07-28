@@ -116,6 +116,24 @@ on ajoutera d'autres blocs au jeu. Un bloc de plusieurs cases occupe des numéro
 suivent, dans l'ordre de lecture. Ils s'enregistrent sous `blocs` dans le monde, avec leur
 dessin, et `interact()` sert la tirade avant tout le reste.
 
+### Tourner et retourner
+
+Ce qu'on tient en main, motif de la bibliothèque ou tranche découpée, c'est la même chose :
+une grille de cases. Donc <kbd>T</kbd> la tourne et <kbd>M</kbd> la retourne, dans les deux cas.
+
+Retourner ne se contente pas de renverser les positions : ça mélangerait un dessin qui tient
+sur plusieurs cases. Chaque case dit par quelle case elle est remplacée (`MIROIR`, `ROT`).
+Pour les véhicules, vus de profil, le dessin en miroir n'existait pas : il y a maintenant
+**quatre cases de plus par véhicule** (à partir de `T.MIR0`), dont le dessin est celui d'origine
+peint à l'envers (`MIR_ART`). La case qui se retrouve en haut à gauche du véhicule retourné,
+c'est le miroir de celle qui était en haut à droite, d'où le croisement dans les paires.
+
+Ce qui est symétrique (billard, arbres, départs, canapé) se retourne sans changer de dessin,
+mais la correspondance est déclarée quand même : sans elle l'atelier refuse l'opération.
+`ART_MULTI` liste les cases qui font partie d'un dessin de plusieurs cases ; si l'une d'elles
+n'a pas de correspondance, l'atelier **refuse et le dit** plutôt que de produire une bouillie.
+Une voiture ne se tourne pas d'un quart de tour : il n'existe pas de dessin vu de dessus.
+
 ### La tranche en main
 
 Une tranche découpée est **en main** ou **en mémoire**. En main, elle suit le curseur ; un clic

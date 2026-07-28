@@ -329,7 +329,10 @@ const T={FAIR:0,ROUGH:1,GREEN:2,SAND:3,WATER:4,PATH:5,TREE:6,DENSE:7,TEE:8,FLAG:
   PORTMOL:190,PORTAG:191,PORTAD:192,
   VOIT0:193,GOLFTL:221,GOLFTR:222,GOLFBL:223,GOLFBR:224,
   PICKTL:225,PICKTR:226,PICKBL:227,PICKBR:228,
-  DEPVTL:229,DEPVTR:230,DEPVBL:231,DEPVBR:232};
+  DEPVTL:229,DEPVTR:230,DEPVBL:231,DEPVBR:232,
+  /* les vehicules vus dans l'autre sens : quatre cases chacun, a partir de 240.
+     Leur dessin est celui d'origine, peint en miroir. */
+  MIR0:240};
 /* Sept voitures de profil, quatre cases chacune, a partir de VOIT0 :
    quatre identifiants d'affilee par modele, dans l'ordre haut-gauche, haut-droit,
    bas-gauche, bas-droit. */
@@ -342,6 +345,8 @@ const MODELES=[
  {n:'4x4 BMW',        c:'#7a5f3c',c2:'#54412a',v:'#16181e',haut:1},
  {n:'Polo verte',     c:'#2f6b4a',c2:'#204a33',v:'#181c22',court:1}];
 const VOIT_ID=(m,q)=>114+79+m*4+q;
+/* une case peut n'etre que le miroir d'une autre : on peint l'originale et on la retourne */
+const MIR_ART={};
 const SOLID=new Set([T.TREE,T.WATER,T.CAR,T.SWALL,T.SWIN,T.HEDGE,T.PARA,T.POOL,
   T.HWALL,T.HROOF,T.SIGN,T.FLAG,T.STALL,T.FOUNT,T.LOCKER,T.BAR,T.TABLE,T.SHOP,T.WALLI,T.SROOF,T.FIRE,T.LOG,
   T.SWINB,T.WOOD,T.BAIE,T.FLATR,T.BROOF,T.TNET,T.SOFA,T.TVGC,T.BED,T.KITCH,T.EASEL,T.JACU,
@@ -449,11 +454,49 @@ paire(T.DEPTL,T.DEPTR); paire(T.DEPBL,T.DEPBR);
 paire(T.DEPVTL,T.DEPVTR); paire(T.DEPVBL,T.DEPVBR);
 paire(T.CHENE1,T.CHENE2); paire(T.CHENE3,T.CHENE4);
 paire(T.PIN1,T.PIN2); paire(T.PIN3,T.PIN4);
+/* Pour chaque vehicule, quatre cases de plus, peintes en miroir. La case qui se
+   retrouve en haut a gauche du vehicule retourne, c'est le miroir de celle qui
+   etait en haut a droite : d'ou le croisement. */
+(function miroirsVehicules(){
+  const jeux=[];
+  for(let m=0;m<MODELES.length;m++)jeux.push([T.VOIT0+m*4,T.VOIT0+m*4+1,T.VOIT0+m*4+2,T.VOIT0+m*4+3]);
+  jeux.push([T.GOLFTL,T.GOLFTR,T.GOLFBL,T.GOLFBR]);
+  jeux.push([T.PICKTL,T.PICKTR,T.PICKBL,T.PICKBR]);
+  jeux.forEach((q,i)=>{
+    const M=[T.MIR0+i*4,T.MIR0+i*4+1,T.MIR0+i*4+2,T.MIR0+i*4+3];
+    MIR_ART[M[0]]=q[1]; MIR_ART[M[1]]=q[0]; MIR_ART[M[2]]=q[3]; MIR_ART[M[3]]=q[2];
+    M.forEach(id=>SOLID.add(id));
+    paire(q[0],M[1]); paire(q[1],M[0]); paire(q[2],M[3]); paire(q[3],M[2]);
+  });
+})();
+/* Ce qui est symetrique se retourne sans changer de dessin : on le dit quand meme,
+   sinon l'atelier refuse de retourner la tranche. */
+paire(T.BIL1,T.BIL2); paire(T.BIL3,T.BIL4); paire(T.BIL5,T.BIL6);
+paire(T.CANV1,T.CANV1); paire(T.CANV2,T.CANV2); paire(T.CANV3,T.CANV3);
+paire(T.MURCLB,T.MURCLB); paire(T.MURCLH,T.MURCLH);
+paire(T.PONTH,T.PONTH); paire(T.PONTV,T.PONTV); paire(T.PASSM,T.PASSM); paire(T.PASSR,T.PASSR);
 const ROT={};
 const tourne=(a,b,c,d)=>{ROT[a]=b;ROT[b]=c;ROT[c]=d;ROT[d]=a;};
 ROT[T.CLOH]=T.CLOV; ROT[T.CLOV]=T.CLOH;
 ROT[T.PONTH]=T.PONTV; ROT[T.PONTV]=T.PONTH;
 tourne(T.CLONO,T.CLONE,T.CLOSE,T.CLOSO);
+ROT[T.CANH1]=T.CANV1; ROT[T.CANH2]=T.CANV2; ROT[T.CANH3]=T.CANV3;
+ROT[T.CANV1]=T.CANH1; ROT[T.CANV2]=T.CANH2; ROT[T.CANV3]=T.CANH3;
+ROT[T.MURCLB]=T.MURCLB; ROT[T.MURCLH]=T.MURCLH;
+/* Tout ce qui fait partie d'un dessin de plusieurs cases : si une de ces cases n'a
+   pas de correspondance, tourner ou retourner la tranche melangerait le dessin.
+   L'atelier prefere le dire que produire une bouillie. */
+const ART_MULTI=new Set([]);
+[[T.CHENE1,T.CHENE2,T.CHENE3,T.CHENE4],[T.PIN1,T.PIN2,T.PIN3,T.PIN4],
+ [T.DEPTL,T.DEPTR,T.DEPBL,T.DEPBR],[T.DEPVTL,T.DEPVTR,T.DEPVBL,T.DEPVBR],
+ [T.BIL1,T.BIL2,T.BIL3,T.BIL4,T.BIL5,T.BIL6],
+ [T.CANH1,T.CANH2,T.CANH3],[T.CANV1,T.CANV2,T.CANV3],
+ [T.GOLFTL,T.GOLFTR,T.GOLFBL,T.GOLFBR],[T.PICKTL,T.PICKTR,T.PICKBL,T.PICKBR],
+ [T.ARBH1,T.ARBB1],[T.ARBH2,T.ARBB2],[T.ARBH3,T.ARBB3],
+ [T.TRANPG,T.TRANPD],[T.PORTAG,T.PORTAD],[T.LAMPH,T.LAMPB],
+ [T.PASSG,T.PASSM,T.PASSD]].forEach(g=>g.forEach(id=>ART_MULTI.add(id)));
+for(let i=0;i<MODELES.length*4;i++)ART_MULTI.add(T.VOIT0+i);
+for(let i=0;i<9*4;i++)ART_MULTI.add(T.MIR0+i);
 
 /* ---------- les blocs fabriques dans l'atelier ----------
    Ils vivent au-dessus de 400 pour ne jamais tomber sur un numero du code, meme
@@ -625,6 +668,13 @@ function canvasOvr(o){
 function tile(id,v,f){
   const key=id+':'+v+':'+(f||0); if(cache[key])return cache[key];
   if(TUILE_OVR[id]){const c=canvasOvr(TUILE_OVR[id]);cache[key]=c;return c;}
+  if(MIR_ART[id]!==undefined){
+    const src=tile(MIR_ART[id],v,f);
+    const c=document.createElement('canvas'); c.width=TS;c.height=TS;
+    const g=c.getContext('2d');
+    g.translate(TS,0); g.scale(-1,1); g.drawImage(src,0,0);
+    cache[key]=c; return c;
+  }
   const c=document.createElement('canvas'); c.width=TS;c.height=TS;
   const g=c.getContext('2d'), R=(col,x,y,w,h)=>{g.fillStyle=col;g.fillRect(x,y,w,h);};
   let sd=id*131+v*37+11; const nr=()=>{sd=(sd*1103515245+12345)&0x7fffffff;return (sd>>9)/4194304%1;};
@@ -5783,7 +5833,7 @@ if(MODE_EDIT){
     NPCS:NPCS,ITEMS:ITEMS,LOCKED:LOCKED,MISSIONS:MISSIONS,ACTES:ACTES,EVENTS:EVENTS,
     NPCS_BASE:NPCS_BASE,ITEMS_BASE:ITEMS_BASE,MISSIONS_BASE:MISSIONS_BASE,
     ACTES_BASE:ACTES_BASE,LOCKED_BASE:LOCKED_BASE,
-    BIBLI:BIBLI,MIROIR:MIROIR,ROT:ROT,SAUT:SAUT,MODELES:MODELES,
+    BIBLI:BIBLI,MIROIR:MIROIR,ROT:ROT,SAUT:SAUT,MODELES:MODELES,ART_MULTI:ART_MULTI,
     PERSO0:PERSO0,BLOCS_PERSO:BLOCS_PERSO,PERSO_CASE:PERSO_CASE,TIRADES:TIRADES,
     HOLES:HOLES,DOORS:DOORS,HOLES_BASE:HOLES_BASE,DOORS_BASE:DOORS_BASE,estDepart:estDepart,
     MONDEKEY:MONDEKEY,get monde(){return MONDE;},appliqueMonde:appliqueMonde

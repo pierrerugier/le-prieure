@@ -17,7 +17,7 @@ src = src.replace('chargeMonde().then(load).finally(loop);', `globalThis.__t={ga
   pers,dogSpr,BODY_SIDE,DOG_SIDE,sfx,ambiances,piscineOuverte,baignade,entreDansLeau,proposePartie,updateAttente,departDu1,hNow,AU_FEU,FEU_RING,FEU_TALK,feuMenu,eteindreLeFeu,bikeSpr,BIKE_DOWN,BIKE_UP,BIKE_SIDE,MISSIONS,ACTES,mission,missionCourante,niveau,chaparde,voleVoiturette,updateVoiturette,BUTIN,
   BASE,appliqueMonde,carteDe,TUILE_OVR,CORPS,CORPS_BASE,FICHES_BASE,tile,cache,MW_:MW,
   BIBLI,MIROIR,ROT,SAUT,MODELES,HOLES_BASE,DOORS_BASE,estDepart,VILLAS_:VILLAS,
-  PERSO0,BLOCS_PERSO,TIRADES,
+  PERSO0,BLOCS_PERSO,TIRADES,ART_MULTI,MIR_ART,
   ITEMS_BASE,NPCS_BASE,MISSIONS_BASE,ACTES_BASE,LOCKED_BASE,EVENTS};`);
 
 /* ---------- faux canvas ---------- */
@@ -545,6 +545,29 @@ check('on passe sur le chemin de terre et le carrelage',
   !t.SOLID.has(T.TERRE) && !t.SOLID.has(T.CARRP) && !t.SOLID.has(T.JONC));
 check('la mare arrete', t.SOLID.has(T.MARE));
 check('le miroir renvoie bien les paires', t.MIROIR[T.CLONO] === T.CLONE && t.MIROIR[T.CLONE] === T.CLONO);
+/* retourner une voiture doit vraiment la retourner, pas la laisser telle quelle */
+const q = [T.VOIT0, T.VOIT0 + 1, T.VOIT0 + 2, T.VOIT0 + 3];
+const retourne = (w, h, tt, table) => {
+  const o = new Array(w * h);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const src = tt[y * w + x];
+    o[y * w + (w - 1 - x)] = (table[src] !== undefined) ? table[src] : src;
+  }
+  return o;
+};
+const miroite = retourne(2, 2, q, t.MIROIR);
+check('une voiture retournee change vraiment de cases',
+  miroite.every((id, i) => id !== q[i]), miroite.join(',') + ' contre ' + q.join(','));
+check('la retourner deux fois la remet comme avant',
+  retourne(2, 2, miroite, t.MIROIR).join(',') === q.join(','));
+check('les cases en miroir se dessinent', miroite.every(id => !!t.tile(id, 0, 0)));
+check('et elles arretent le joueur comme les autres', miroite.every(id => t.SOLID.has(id)));
+/* un dessin de plusieurs cases sans correspondance ne doit pas etre melange */
+check('le billard sait se retourner', [T.BIL1,T.BIL2,T.BIL3,T.BIL4,T.BIL5,T.BIL6]
+  .every(id => t.MIROIR[id] !== undefined));
+check('le canape sait se coucher', t.ROT[T.CANH1] === T.CANV1 && t.ROT[T.CANV1] === T.CANH1);
+check('une voiture est marquee comme dessin de plusieurs cases', t.ART_MULTI.has(T.VOIT0));
+check('une voiture ne se tourne pas d un quart de tour', t.ROT[T.VOIT0] === undefined);
 check('le quart de tour redresse la cloture', t.ROT[T.CLOH] === T.CLOV && t.ROT[T.CLOV] === T.CLOH);
 check('les neuf departs sont des reperes deplacables',
   t.HOLES.length === 9 && t.HOLES_BASE.length === 9);
