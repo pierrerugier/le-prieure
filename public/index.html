@@ -309,7 +309,39 @@ const T={FAIR:0,ROUGH:1,GREEN:2,SAND:3,WATER:4,PATH:5,TREE:6,DENSE:7,TEE:8,FLAG:
   PROOF:75,FTOP:76,FACADE:77,FWIN:78,FDOOR:79,FLOW:80,BDOOR:81,
   CHEM:82,TBAS:83,FAUT:84,BIBLI:85,FRIGO:86,EVIER:87,BUFFET:88,
   HRIDGE:89,HEAVE:90,HWIN:91,HWINB:92,HBAIE:93,LUC:94,STORE:95,PLAT:96,TRANSAT:97,CANETTE:98,ESCAL:99,VITRINE:100,WC:101,CHAMP:102,MINIG:103,CABW:104,CABR:105,
-  HANG:106,HANGR:107,HANGW:108,TRACE:109,PICKUP:110,CHARIOT:111,TALUS:112,TALUH:113};
+  HANG:106,HANGR:107,HANGW:108,TRACE:109,PICKUP:110,CHARIOT:111,TALUS:112,TALUH:113,
+  /* ---- ajouts de l'atelier. On ajoute a la suite, on ne renumerote jamais :
+         les cartes deja enregistrees parlent en numeros. ---- */
+  MARE:114,MAREB:115,ROSEAU:116,TERRE:117,CARRP:118,TOITP:119,JONC:120,
+  PONTH:121,PONTV:122,PONTR:123,PASSG:124,PASSM:125,PASSD:126,PASSR:127,
+  ARB1:128,ARB2:129,ARB3:130,
+  ARBH1:131,ARBB1:132,ARBH2:133,ARBB2:134,ARBH3:135,ARBB3:136,
+  CHENE1:137,CHENE2:138,CHENE3:139,CHENE4:140,
+  PIN1:141,PIN2:142,PIN3:143,PIN4:144,
+  BUIS1:145,BUIS2:146,BUIS3:147,FLEUR1:148,FLEUR2:149,FLEUR3:150,
+  CLOH:151,CLOV:152,CLONO:153,CLONE:154,CLOSO:155,CLOSE:156,CLOP:157,
+  LAMPH:158,LAMPB:159,BARBEC:160,TABLB:161,FAUTB:162,TRANSB:163,
+  TRANPG:164,TRANPD:165,TABEXT:166,CHAIEXT:167,
+  CANH1:168,CANH2:169,CANH3:170,CANV1:171,CANV2:172,CANV3:173,
+  TBASB:174,MURCLB:175,MURCLH:176,FAUTCUIR:177,CADRE1:178,CADRE2:179,
+  BIL1:180,BIL2:181,BIL3:182,BIL4:183,BIL5:184,BIL6:185,
+  DEPTL:186,DEPTR:187,DEPBL:188,DEPBR:189,
+  PORTMOL:190,PORTAG:191,PORTAD:192,
+  VOIT0:193,GOLFTL:221,GOLFTR:222,GOLFBL:223,GOLFBR:224,
+  PICKTL:225,PICKTR:226,PICKBL:227,PICKBR:228,
+  DEPVTL:229,DEPVTR:230,DEPVBL:231,DEPVBR:232};
+/* Sept voitures de profil, quatre cases chacune, a partir de VOIT0 :
+   quatre identifiants d'affilee par modele, dans l'ordre haut-gauche, haut-droit,
+   bas-gauche, bas-droit. */
+const MODELES=[
+ {n:'BMW grise',      c:'#9aa0a8',c2:'#6e747c',v:'#1e2530'},
+ {n:'Ferrari rouge',  c:'#c2231f',c2:'#8c1512',v:'#1a1a20'},
+ {n:'Porsche grise',  c:'#b8bcc2',c2:'#83878d',v:'#20242c'},
+ {n:'Porsche sombre', c:'#2a2f38',c2:'#1a1e25',v:'#12141a'},
+ {n:'4x4 Mercedes',   c:'#3c4048',c2:'#26292f',v:'#14161c',haut:1},
+ {n:'4x4 BMW',        c:'#7a5f3c',c2:'#54412a',v:'#16181e',haut:1},
+ {n:'Polo verte',     c:'#2f6b4a',c2:'#204a33',v:'#181c22',court:1}];
+const VOIT_ID=(m,q)=>114+79+m*4+q;
 const SOLID=new Set([T.TREE,T.WATER,T.CAR,T.SWALL,T.SWIN,T.HEDGE,T.PARA,T.POOL,
   T.HWALL,T.HROOF,T.SIGN,T.FLAG,T.STALL,T.FOUNT,T.LOCKER,T.BAR,T.TABLE,T.SHOP,T.WALLI,T.SROOF,T.FIRE,T.LOG,
   T.SWINB,T.WOOD,T.BAIE,T.FLATR,T.BROOF,T.TNET,T.SOFA,T.TVGC,T.BED,T.KITCH,T.EASEL,T.JACU,
@@ -317,7 +349,256 @@ const SOLID=new Set([T.TREE,T.WATER,T.CAR,T.SWALL,T.SWIN,T.HEDGE,T.PARA,T.POOL,
   T.PROOF,T.FTOP,T.FACADE,T.FWIN,T.FLOW,
   T.CHEM,T.TBAS,T.FAUT,T.BIBLI,T.FRIGO,T.EVIER,T.BUFFET,
   T.HRIDGE,T.HEAVE,T.HWIN,T.HWINB,T.HBAIE,T.LUC,T.STORE,T.PLAT,T.VITRINE,T.WC,T.CABW,T.CABR,
-  T.HANG,T.HANGR,T.HANGW,T.PICKUP,T.CHARIOT]);
+  T.HANG,T.HANGR,T.HANGW,T.PICKUP,T.CHARIOT,
+  T.MARE,T.ARB1,T.ARB2,T.ARB3,T.ARBH1,T.ARBB1,T.ARBH2,T.ARBB2,T.ARBH3,T.ARBB3,
+  T.CHENE1,T.CHENE2,T.CHENE3,T.CHENE4,T.PIN1,T.PIN2,T.PIN3,T.PIN4,
+  T.BUIS1,T.BUIS2,T.BUIS3,T.ROSEAU,
+  T.CLOH,T.CLOV,T.CLONO,T.CLONE,T.CLOSO,T.CLOSE,T.CLOP,
+  T.LAMPH,T.LAMPB,T.BARBEC,T.TABLB,T.FAUTB,T.TRANSB,T.TRANPG,T.TRANPD,
+  T.TABEXT,T.CHAIEXT,T.CANH1,T.CANH2,T.CANH3,T.CANV1,T.CANV2,T.CANV3,
+  T.TBASB,T.MURCLB,T.MURCLH,T.FAUTCUIR,T.CADRE1,T.CADRE2,
+  T.BIL1,T.BIL2,T.BIL3,T.BIL4,T.BIL5,T.BIL6,
+  T.PORTAG,T.PORTAD,T.PASSR,T.PONTR,
+  T.GOLFTL,T.GOLFTR,T.GOLFBL,T.GOLFBR,T.PICKTL,T.PICKTR,T.PICKBL,T.PICKBR]);
+for(let i=0;i<MODELES.length*4;i++)SOLID.add(T.VOIT0+i);
+/* ---------- la bibliotheque, rangee par familles ----------
+   Chaque entree est soit une case unique, soit un motif de plusieurs cases que
+   l'atelier pose d'un coup. C'est cette liste que l'atelier affiche. */
+const BIBLI=[];
+function bib(cat,liste){liste.forEach(e=>BIBLI.push({cat:cat,n:e[1],t:e[0]}));}
+function motif(cat,n,w,h,t){BIBLI.push({cat:cat,n:n,w:w,h:h,m:t});}
+bib('terrain',[[T.FAIR,'Fairway'],[T.ROUGH,'Rough'],[T.GREEN,'Green'],[T.SAND,'Bunker'],
+ [T.TEE,'Tapis de départ'],[T.LAWN,'Pelouse'],[T.DIRT,'Terre battue'],[T.TERRE,'Chemin de terre abîmé'],
+ [T.PATH,'Allée sablée'],[T.GRAVEL,'Gravier'],[T.CHAMP,'Champ'],[T.TALUS,'Talus'],[T.TALUH,'Haut de talus'],
+ [T.TRACE,'Trace de pneu'],[T.CARRP,'Carrelage de piscine'],[T.MINIG,'Mini-golf']]);
+bib('golf',[[T.FLAG,'Drapeau'],[T.MAT,'Tapis de practice'],[T.STALL,'Séparation de practice'],
+ [T.CART,'Voiturette'],[T.CHARIOT,'Chariot'],[T.PICKUP,'Pick-up']]);
+motif('golf','Départ, trou vers le bas',2,2,[T.DEPTL,T.DEPTR,T.DEPBL,T.DEPBR]);
+motif('golf','Départ, trou sur le côté',2,2,[T.DEPVTL,T.DEPVTR,T.DEPVBL,T.DEPVBR]);
+motif('golf','Voiturette de golf',2,2,[T.GOLFTL,T.GOLFTR,T.GOLFBL,T.GOLFBR]);
+motif('golf','Pick-up du greenkeeper',2,2,[T.PICKTL,T.PICKTR,T.PICKBL,T.PICKBR]);
+bib('eau',[[T.WATER,'Eau'],[T.MARE,'Mare'],[T.MAREB,'Berge'],[T.ROSEAU,'Roseaux'],
+ [T.POOL,'Bassin'],[T.PDECK,'Plage de piscine'],[T.JACU,'Jacuzzi']]);
+motif('eau','Petit pont, en long',1,2,[T.PONTR,T.PONTH]);
+bib('eau',[[T.PONTH,'Pont, planches en travers'],[T.PONTV,'Pont, planches en long'],[T.PONTR,'Rambarde de pont']]);
+bib('vegetation',[[T.TREE,'Arbre simple'],[T.DENSE,'Sous-bois'],[T.HEDGE,'Haie'],
+ [T.ARB1,'Arbre vert'],[T.ARB2,'Arbre bleuté'],[T.ARB3,'Arbre olive'],
+ [T.BUIS1,'Buisson vert'],[T.BUIS2,'Buisson bleuté'],[T.BUIS3,'Buisson clair'],
+ [T.FLEUR1,'Massif rouge'],[T.FLEUR2,'Massif jaune'],[T.FLEUR3,'Massif lavande'],
+ [T.PLAT,'Platane'],[T.FLOW,'Jardinière'],[T.PLANT,'Plante en pot']]);
+motif('vegetation','Arbre haut, vert',1,2,[T.ARBH1,T.ARBB1]);
+motif('vegetation','Arbre haut, bleuté',1,2,[T.ARBH2,T.ARBB2]);
+motif('vegetation','Arbre haut, olive',1,2,[T.ARBH3,T.ARBB3]);
+motif('vegetation','Grand chêne',2,2,[T.CHENE1,T.CHENE2,T.CHENE3,T.CHENE4]);
+motif('vegetation','Grand pin',2,2,[T.PIN1,T.PIN2,T.PIN3,T.PIN4]);
+bib('cloture',[[T.CLOH,'Barrière, en travers'],[T.CLOV,'Barrière, en long'],
+ [T.CLONO,'Barrière, coin nord-ouest'],[T.CLONE,'Barrière, coin nord-est'],
+ [T.CLOSO,'Barrière, coin sud-ouest'],[T.CLOSE,'Barrière, coin sud-est'],
+ [T.CLOP,'Poteau de barrière'],[T.GATE,'Portillon'],[T.SIGN,'Panneau']]);
+motif('cloture','Enclos carré',3,3,[T.CLOSE,T.CLOH,T.CLOSO, T.CLOV,T.LAWN,T.CLOV, T.CLONE,T.CLOH,T.CLONO]);
+motif('cloture','Portail à code',2,1,[T.PORTAG,T.PORTAD]);
+bib('route',[[T.ROAD,'Route'],[T.LINE,'Ligne blanche'],[T.ASPH,'Bitume'],[T.CAR,'Voiture garée'],
+ [T.BRIDGE,'Passerelle, ancienne'],[T.PASSG,'Passerelle, rampe gauche'],[T.PASSM,'Passerelle, tablier'],
+ [T.PASSD,'Passerelle, rampe droite'],[T.PASSR,'Passerelle, garde-corps']]);
+motif('route','Passerelle complète',3,2,[T.PASSR,T.PASSR,T.PASSR, T.PASSG,T.PASSM,T.PASSD]);
+MODELES.forEach((m,i)=>motif('vehicule',m.n,2,2,
+  [T.VOIT0+i*4,T.VOIT0+i*4+1,T.VOIT0+i*4+2,T.VOIT0+i*4+3]));
+bib('batiment',[[T.STONE,'Pierre'],[T.SWALL,'Mur crépi'],[T.SWIN,'Fenêtre'],[T.SWINB,'Fenêtre basse'],
+ [T.SDOOR,'Porte simple'],[T.BDOOR,'Porte de villa'],[T.PORTMOL,'Porte de chez Molina'],
+ [T.HWALL,'Mur de maison'],[T.HWIN,'Fenêtre de maison'],[T.HWINB,'Fenêtre basse de maison'],
+ [T.HBAIE,'Baie vitrée'],[T.BAIE,'Baie de villa'],[T.VASIS,'Vasistas'],[T.LUC,'Lucarne'],
+ [T.STORE,'Volet roulant'],[T.WOOD,'Bardage bois'],[T.WHITE,'Mur blanc'],[T.STONEW,'Pile de pierre'],
+ [T.FACADE,'Façade du prieuré'],[T.FWIN,'Fenêtre cintrée'],[T.FDOOR,'Porte du club house'],
+ [T.ARCH,'Arcade'],[T.WALLI,'Mur intérieur'],[T.ESCAL,'Escalier'],[T.VITRINE,'Vitrine']]);
+bib('toiture',[[T.HROOF,'Tuiles'],[T.HRIDGE,'Faîtage'],[T.HEAVE,'Débord de toit'],
+ [T.SROOF,'Toit de dépendance'],[T.BROOF,'Toit de villa'],[T.WROOF,'Toit blanc'],
+ [T.FLATR,'Toit plat bois'],[T.TOITP,'Toit plat gris'],[T.PROOF,'Toit du prieuré'],
+ [T.FTOP,'Corniche'],[T.HANGR,'Toit de hangar'],[T.CABR,'Toit de cabane']]);
+bib('exterieur',[[T.PATIO,'Dallage'],[T.DECK,'Terrasse bois'],[T.PARA,'Parasol'],
+ [T.TABLE,'Table du club'],[T.TRANSAT,'Transat'],[T.TRANSB,'Transat en bois'],
+ [T.TABLB,'Table ronde blanche'],[T.FAUTB,'Fauteuil de jardin'],[T.TABEXT,'Table de jardin en bois'],
+ [T.CHAIEXT,'Chaise de jardin'],[T.BARBEC,'Barbecue'],[T.CANETTE,'Canette'],
+ [T.FOUNT,'Fontaine'],[T.FIRE,'Feu de camp'],[T.LOG,'Rondin'],[T.TENN,'Court de tennis'],[T.TNET,'Filet']]);
+motif('exterieur','Transat en plastique',2,1,[T.TRANPG,T.TRANPD]);
+motif('exterieur','Lampadaire',1,2,[T.LAMPH,T.LAMPB]);
+bib('interieur',[[T.FLOOR,'Parquet clair'],[T.PARQ,'Parquet'],[T.COCO,'Coco'],[T.JONC,'Jonc de mer'],
+ [T.RUG,'Tapis'],[T.SOFA,'Canapé'],[T.TBAS,'Table basse'],[T.TBASB,'Table basse en bois'],
+ [T.FAUT,'Fauteuil'],[T.FAUTCUIR,'Fauteuil club en cuir'],[T.CHAIR,'Chaise'],[T.BENCH,'Banc'],
+ [T.BED,'Lit'],[T.BIBLI,'Bibliothèque'],[T.BUFFET,'Buffet'],[T.CHEM,'Cheminée'],
+ [T.KITCH,'Cuisine'],[T.EVIER,'Évier'],[T.FRIGO,'Frigo'],[T.WC,'Toilettes'],[T.LOCKER,'Casier'],
+ [T.BAR,'Bar'],[T.STOOL,'Tabouret'],[T.DESK,'Bureau'],[T.SHOP,'Rayonnage'],[T.EASEL,'Chevalet'],
+ [T.TVGC,'Télé et GameCube'],[T.BILL,'Billard, ancien'],[T.MURCLB,'Mur club, lambris'],
+ [T.MURCLH,'Mur club, toile verte'],[T.CADRE1,'Cadre, paysage'],[T.CADRE2,'Cadre, portrait'],
+ [T.EXIT,'Sortie']]);
+motif('interieur','Canapé beige, en long',3,1,[T.CANH1,T.CANH2,T.CANH3]);
+motif('interieur','Canapé beige, en travers',1,3,[T.CANV1,T.CANV2,T.CANV3]);
+motif('interieur','Billard',2,3,[T.BIL1,T.BIL2,T.BIL3,T.BIL4,T.BIL5,T.BIL6]);
+motif('interieur','Mur du club',1,2,[T.MURCLH,T.MURCLB]);
+/* Ce qui se retourne : la case qu'on obtient en miroir horizontal, puis en quart de tour. */
+const MIROIR={};
+const paire=(a,b)=>{MIROIR[a]=b;MIROIR[b]=a;};
+paire(T.CLONO,T.CLONE); paire(T.CLOSO,T.CLOSE);
+paire(T.PASSG,T.PASSD); paire(T.TRANPG,T.TRANPD);
+paire(T.CANH1,T.CANH3); paire(T.PORTAG,T.PORTAD);
+for(let m=0;m<MODELES.length;m++){
+  paire(T.VOIT0+m*4,T.VOIT0+m*4+1); paire(T.VOIT0+m*4+2,T.VOIT0+m*4+3);
+}
+paire(T.GOLFTL,T.GOLFTR); paire(T.GOLFBL,T.GOLFBR);
+paire(T.PICKTL,T.PICKTR); paire(T.PICKBL,T.PICKBR);
+paire(T.DEPTL,T.DEPTR); paire(T.DEPBL,T.DEPBR);
+paire(T.DEPVTL,T.DEPVTR); paire(T.DEPVBL,T.DEPVBR);
+paire(T.CHENE1,T.CHENE2); paire(T.CHENE3,T.CHENE4);
+paire(T.PIN1,T.PIN2); paire(T.PIN3,T.PIN4);
+const ROT={};
+const tourne=(a,b,c,d)=>{ROT[a]=b;ROT[b]=c;ROT[c]=d;ROT[d]=a;};
+ROT[T.CLOH]=T.CLOV; ROT[T.CLOV]=T.CLOH;
+ROT[T.PONTH]=T.PONTV; ROT[T.PONTV]=T.PONTH;
+tourne(T.CLONO,T.CLONE,T.CLOSE,T.CLOSO);
+
+/* tout ce qui compte comme un arbre pour la balle : elle s'y perd pareil */
+const ARBRES=new Set([T.ARB1,T.ARB2,T.ARB3,T.ARBH1,T.ARBH2,T.ARBH3,T.ARBB1,T.ARBB2,T.ARBB3,
+  T.CHENE1,T.CHENE2,T.CHENE3,T.CHENE4,T.PIN1,T.PIN2,T.PIN3,T.PIN4,T.BUIS1,T.BUIS2,T.BUIS3]);
+
+/* toutes les cases qui font un depart de trou : l'ancien tapis et les quatre
+   cases du vrai depart, dans les deux orientations */
+const DEPARTS=new Set([T.TEE,T.DEPTL,T.DEPTR,T.DEPBL,T.DEPBR,T.DEPVTL,T.DEPVTR,T.DEPVBL,T.DEPVBR]);
+const estDepart=t=>DEPARTS.has(t);
+
+/* ce par-dessus quoi on peut sauter avec A : les haies et toute la cloture blanche */
+const SAUT=new Set([T.HEDGE,T.GATE,T.CLOH,T.CLOV,T.CLONO,T.CLONE,T.CLOSO,T.CLOSE,T.CLOP]);
+/* ---------- les blocs qui tiennent sur plusieurs cases ----------
+   On dessine le motif entier dans son propre repere, et chaque case n'en montre
+   qu'un quart, un sixieme, un tiers. Comme ca le dessin reste d'un seul tenant. */
+function grand(g,q,cols,peintre){
+  g.save(); g.translate(-(q%cols)*16, -((q/cols)|0)*16); peintre(g); g.restore();
+}
+function dessineVoiture(g,m){
+  const R=(c,x,y,w,h)=>{g.fillStyle=c;g.fillRect(x,y,w,h);};
+  R('#6d6d78',0,0,32,32);
+  for(let i=0;i<10;i++)R(i%2?'#63636e':'#787883',(i*7+3)%31,(i*11+5)%31,1,1);
+  const haut=m.haut?2:0, lg=m.court?26:30, x0=(32-lg)>>1;
+  R('rgba(20,22,28,.30)',x0,27-haut,lg,4);
+  /* la caisse */
+  R(m.c2,x0,17-haut,lg,9);
+  R(m.c,x0+1,15-haut,lg-2,9);
+  R(m.c,x0+2,13-haut,lg-4,3);
+  /* le pavillon */
+  const rx=x0+7, rw=lg-15;
+  R(m.c2,rx-1,7-haut,rw+2,7);
+  R(m.c,rx,6-haut,rw,7);
+  /* les vitres */
+  R(m.v,rx+1,8-haut,rw-2,5);
+  R('#8fbcd8',rx+2,8-haut,4,3);
+  R('#8fbcd8',rx+rw-7,8-haut,5,3);
+  /* la ligne de caisse, les poignees, les feux */
+  R(m.c2,x0+1,20-haut,lg-2,1);
+  R('#e8e4d8',x0+1,18-haut,2,1); R('#c2231f',x0+lg-3,18-haut,2,1);
+  /* les roues */
+  [x0+4,x0+lg-9].forEach(rxw=>{
+    R('#14161a',rxw,23-haut,6,6); R('#14161a',rxw-1,24-haut,8,4);
+    R('#3a3f47',rxw+2,25-haut,2,2);
+  });
+}
+function dessineVoiturette(g){
+  const R=(c,x,y,w,h)=>{g.fillStyle=c;g.fillRect(x,y,w,h);};
+  R('#7cb85c',0,0,32,32);
+  for(let y=0;y<32;y+=4)R('#86c266',0,y,32,2);
+  R('rgba(20,40,20,.28)',3,26,26,4);
+  R('#f4f2ec',3,17,26,8); R('#dcd8cc',3,23,26,2);      /* la caisse */
+  R('#2b5f3a',5,19,10,4);                               /* le siege */
+  R('#c9c3ae',4,7,2,11); R('#c9c3ae',26,7,2,11);        /* les montants */
+  R('#f4f2ec',2,4,28,4); R('#d8d3c4',2,7,28,1);         /* le toit */
+  R('#8a8f98',18,14,9,4);                               /* le plateau a sacs */
+  [6,23].forEach(x=>{R('#14161a',x,24,5,5);R('#3a3f47',x+1,25,3,3);});
+}
+function dessinePickup(g){
+  const R=(c,x,y,w,h)=>{g.fillStyle=c;g.fillRect(x,y,w,h);};
+  R('#b9ae95',0,0,32,32);
+  for(let i=0;i<14;i++)R(i%2?'#a89d84':'#c9bfa8',(i*9+2)%31,(i*13+3)%31,1,1);
+  R('rgba(30,26,18,.28)',2,27,28,4);
+  R('#3f5d3a',2,16,28,10); R('#2f472c',2,24,28,2);      /* la caisse */
+  R('#2a3a28',15,18,14,6);                              /* la benne */
+  R('#3f5d3a',4,8,11,9); R('#2f472c',4,15,11,2);        /* la cabine */
+  R('#1e2530',5,9,9,5); R('#8fbcd8',6,10,3,3);
+  R('#e8e4d8',2,19,2,1);
+  [5,22].forEach(x=>{R('#14161a',x,23,6,6);R('#14161a',x-1,24,8,4);R('#3a3f47',x+2,25,2,2);});
+}
+function dessineChene(g){
+  const R=(c,x,y,w,h)=>{g.fillStyle=c;g.fillRect(x,y,w,h);};
+  R('#4e8a3e',0,0,32,32);
+  R('#3d2a18',14,22,4,9); R('#553a22',14,22,2,9);
+  R('rgba(20,40,20,.25)',10,29,12,3);
+  R('#1c4023',6,3,20,20); R('#1c4023',3,7,26,12);
+  R('#2f6b34',7,4,18,18); R('#2f6b34',4,8,24,10);
+  R('#3d8543',9,5,13,12); R('#4b9a4f',11,6,8,6);
+  for(let i=0;i<10;i++)R('#24502a',5+((i*7)%22),5+((i*11)%16),2,2);
+}
+function dessinePin(g){
+  const R=(c,x,y,w,h)=>{g.fillStyle=c;g.fillRect(x,y,w,h);};
+  R('#4e8a3e',0,0,32,32);
+  R('#4a3220',14,24,4,7); R('#66492c',14,24,2,7);
+  R('rgba(20,40,20,.25)',11,30,10,2);
+  R('#173a1b',10,1,12,7); R('#173a1b',7,7,18,8); R('#173a1b',4,14,24,10);
+  R('#245c28',11,2,10,6); R('#245c28',8,8,16,7); R('#245c28',5,15,22,8);
+  R('#317335',13,3,6,4); R('#317335',10,9,11,4); R('#317335',7,16,15,4);
+}
+function dessineBillard(g){
+  const R=(c,x,y,w,h)=>{g.fillStyle=c;g.fillRect(x,y,w,h);};
+  R('#5a3d22',0,0,32,48);
+  R('#6b4a2c',1,1,30,46);
+  R('#8a6238',2,2,28,44);                       /* le cadre */
+  R('#1e5c34',5,5,22,38);                       /* le tapis */
+  R('#2a6b3f',6,6,20,36);
+  for(const [x,y] of [[6,6],[24,6],[6,24],[24,24],[6,40],[24,40]])R('#14161a',x,y,2,2);
+  R('#f4f2ec',15,12,2,2); R('#c2231f',14,20,2,2); R('#f2d24a',17,22,2,2);
+  R('#1e2530',15,26,2,2); R('#3d6bb5',13,29,2,2);
+  R('#5a3d22',3,44,26,2);
+  R('#4a3220',4,45,3,3); R('#4a3220',25,45,3,3);
+}
+function dessineDepart(g,vertical){
+  const R=(c,x,y,w,h)=>{g.fillStyle=c;g.fillRect(x,y,w,h);};
+  R('#4e8a3e',0,0,32,32);
+  /* le talus qui souleve le depart */
+  R('#3f7332',1,22,30,8); R('#5c9b45',1,20,30,4);
+  /* la zone tondue, rase et reguliere */
+  R('#6fae54',2,3,28,19);
+  for(let y=3;y<22;y+=3)R('#7cbb60',2,y,28,2);
+  R('#5c9b45',2,3,28,1); R('#5c9b45',2,21,28,1);
+  R('#86c266',3,4,26,1);
+  /* les deux boules rouges, alignees perpendiculairement au trou */
+  if(vertical){
+    [7,17].forEach(y=>{
+      R('#7c2828',14,y,5,4); R('#c2231f',14,y-1,5,4);
+      R('#e8603f',15,y-1,2,1);
+    });
+  } else {
+    [7,24].forEach(x=>{
+      R('#7c2828',x-2,12,5,4); R('#c2231f',x-2,11,5,4);
+      R('#e8603f',x-1,11,2,1);
+    });
+  }
+}
+function dessineCanape(g,vert){
+  const R=(c,x,y,w,h)=>{g.fillStyle=c;g.fillRect(x,y,w,h);};
+  const W=vert?16:48, H=vert?48:16;
+  R('#c9c0ae',0,0,W,H);
+  if(vert){
+    R('#8a7a5c',2,1,12,46);                 /* l'ombre */
+    R('#d8c9a8',2,0,12,46);                 /* l'assise */
+    R('#e6dcc0',4,2,9,42);
+    R('#c9b894',2,0,12,3); R('#c9b894',2,44,12,3);
+    R('#d8c9a8',0,3,3,40); R('#d8c9a8',13,3,3,40);   /* les accoudoirs */
+    R('#e6dcc0',0,4,2,38); R('#e6dcc0',14,4,2,38);
+    for(let y=7;y<44;y+=14)R('#cdbd9a',4,y,9,1);
+  } else {
+    R('#8a7a5c',1,3,46,12);
+    R('#d8c9a8',0,2,46,12);
+    R('#e6dcc0',2,4,42,9);
+    R('#c9b894',0,2,3,12); R('#c9b894',44,2,3,12);
+    R('#d8c9a8',3,0,40,3); R('#e6dcc0',4,0,38,2);
+    for(let x=7;x<44;x+=14)R('#cdbd9a',x,4,1,9);
+  }
+}
 const cache={};
 /* les blocs redessines dans l'editeur : {pal:[couleurs], px:[256 indices, -1 = transparent]} */
 const TUILE_OVR={};
@@ -337,6 +618,11 @@ function tile(id,v,f){
   const c=document.createElement('canvas'); c.width=TS;c.height=TS;
   const g=c.getContext('2d'), R=(col,x,y,w,h)=>{g.fillStyle=col;g.fillRect(x,y,w,h);};
   let sd=id*131+v*37+11; const nr=()=>{sd=(sd*1103515245+12345)&0x7fffffff;return (sd>>9)/4194304%1;};
+  if(id>=T.VOIT0&&id<T.VOIT0+MODELES.length*4){
+    const m=MODELES[(id-T.VOIT0)>>2], q=(id-T.VOIT0)&3;
+    grand(g,q,2,gg=>dessineVoiture(gg,m));
+    cache[key]=c; return c;
+  }
   switch(id){
     case T.FAIR: R('#7cb85c',0,0,16,16);
       for(let y=0;y<16;y+=4) if(((y/4)+v)%2===0) R('#86c266',0,y,16,4);
@@ -728,6 +1014,213 @@ function tile(id,v,f){
       R('#eef2f5',5,1,6,3); R('#8a9098',7,3,2,1); break;
     case T.GATE: R('#4e8a3e',0,0,16,16); R('#5a4632',0,0,2,16); R('#5a4632',14,0,2,16);
       for(let x=3;x<14;x+=3) R('#7a6244',x,2,2,12); R('#7a6244',2,3,12,2); R('#7a6244',2,10,12,2); break;
+    /* ---------- ce que l'atelier a ajoute ---------- */
+    case T.MARE: R('#3f6b5c',0,0,16,16); R('#4d7f6c',0,f?2:9,16,2);
+      R('#69a08c',f?9:3,f?11:5,4,1); R('#2f5548',f?2:10,f?6:12,5,1);
+      R('#2f5548',0,14,16,2); break;
+    case T.MAREB: R('#6b5b42',0,0,16,16);
+      for(let i=0;i<14;i++) R(nr()>0.5?'#5a4b35':'#7d6b4e',(nr()*16)|0,(nr()*16)|0,2,1);
+      R('#4e8a3e',0,0,16,2); R('#3f6b5c',0,14,16,2); break;
+    case T.ROSEAU: R('#3f6b5c',0,0,16,16); R('#2f5548',0,11,16,5);
+      for(let i=0;i<7;i++){const x=1+i*2+((v+i)%2);
+        R('#5f7a3a',x,3+((i*3)%5),1,11); R('#7d9a4e',x,2+((i*3)%5),1,4);
+        if(i%2===0)R('#b8a05a',x,1+((i*3)%5),1,2);} break;
+    case T.TERRE: R('#7c5c39',0,0,16,16);
+      R('#6d5031',0,4,16,3); R('#6d5031',0,11,16,2);
+      for(let i=0;i<10;i++) R(nr()>0.5?'#8a6b45':'#5b4128',(nr()*16)|0,(nr()*16)|0,2,1);
+      for(let i=0;i<3;i++) R('#8f8a80',(nr()*15)|0,(nr()*15)|0,2,2); break;
+    case T.CARRP: R('#e6dcc0',0,0,16,16);
+      R('#d4c8a8',0,7,16,1); R('#d4c8a8',7,0,1,16);
+      R('#f0e8d2',1,1,6,6); R('#f0e8d2',9,9,6,6); break;
+    case T.TOITP: R('#8a8f98',0,0,16,16);
+      for(let y=0;y<16;y+=5)R('#7a7f88',0,y,16,1);
+      R('#9aa0a8',1,1,6,3); break;
+    case T.JONC: R('#c9b894',0,0,16,16);
+      for(let y=0;y<16;y+=2)R('#bdab84',0,y,16,1);
+      for(let x=0;x<16;x+=4)R('#d6c6a2',x,0,1,16); break;
+    case T.PONTH: R('#3f6b5c',0,0,16,16); R('#6b4a2c',0,2,16,12);
+      R('#8a6238',0,3,16,10);
+      for(let x=0;x<16;x+=4)R('#6b4a2c',x,3,1,10); break;
+    case T.PONTV: R('#3f6b5c',0,0,16,16); R('#6b4a2c',2,0,12,16);
+      R('#8a6238',3,0,10,16);
+      for(let y=0;y<16;y+=4)R('#6b4a2c',3,y,10,1); break;
+    case T.PONTR: R('#8a6238',0,0,16,16); R('#a37c4c',0,0,16,4);
+      R('#6b4a2c',0,4,16,2); R('#c9c3ae',1,6,2,10); R('#c9c3ae',13,6,2,10);
+      R('#e6e0cc',1,8,14,2); break;
+    case T.PASSG: R('#4a4a52',0,0,16,16); R('#8a6238',4,0,12,16);
+      R('#a37c4c',6,2,10,12); R('#6b4a2c',4,0,2,16); break;
+    case T.PASSM: R('#8a6238',0,0,16,16); R('#a37c4c',0,2,16,12);
+      for(let y=2;y<14;y+=3)R('#8a6238',0,y,16,1);
+      R('#6b4a2c',0,0,16,2); R('#6b4a2c',0,14,16,2); break;
+    case T.PASSD: R('#4a4a52',0,0,16,16); R('#8a6238',0,0,12,16);
+      R('#a37c4c',0,2,10,12); R('#6b4a2c',10,0,2,16); break;
+    case T.PASSR: R('#8a6238',0,0,16,16); R('#a37c4c',0,9,16,7);
+      R('#c9c3ae',0,0,16,2); R('#e6e0cc',0,0,16,1);
+      for(let x=1;x<16;x+=5)R('#c9c3ae',x,2,2,7); break;
+    case T.ARB1: case T.ARB2: case T.ARB3:{
+      const cl=(id===T.ARB1)?['#23502a','#2f6b34','#3d8543']
+        :(id===T.ARB2)?['#1e4a2f','#2a6340','#397d4f']:['#2b4a1c','#3c6626','#4f8033'];
+      R('#4e8a3e',0,0,16,16); R('#4a3220',7,12,2,4);
+      R(cl[0],2,1,12,13); R(cl[0],1,3,14,9);
+      R(cl[1],3,2,10,11); R(cl[1],2,4,12,7);
+      R(cl[2],4,3,6,5); break;}
+    case T.ARBH1: case T.ARBH2: case T.ARBH3:{
+      const cl=(id===T.ARBH1)?['#23502a','#2f6b34','#3d8543']
+        :(id===T.ARBH2)?['#1e4a2f','#2a6340','#397d4f']:['#2b4a1c','#3c6626','#4f8033'];
+      R('#4e8a3e',0,0,16,16);
+      R(cl[0],2,2,12,14); R(cl[0],1,5,14,11);
+      R(cl[1],3,3,10,13); R(cl[1],2,6,12,9);
+      R(cl[2],5,4,5,6); break;}
+    case T.ARBB1: case T.ARBB2: case T.ARBB3:{
+      const cl=(id===T.ARBB1)?['#23502a','#2f6b34']
+        :(id===T.ARBB2)?['#1e4a2f','#2a6340']:['#2b4a1c','#3c6626'];
+      R('#4e8a3e',0,0,16,16);
+      R(cl[0],2,0,12,5); R(cl[1],3,0,10,4);
+      R('#3d2a18',7,4,3,9); R('#553a22',7,4,1,9);
+      R('rgba(20,40,20,.25)',5,13,7,2); break;}
+    case T.CHENE1: grand(g,0,2,dessineChene); break;
+    case T.CHENE2: grand(g,1,2,dessineChene); break;
+    case T.CHENE3: grand(g,2,2,dessineChene); break;
+    case T.CHENE4: grand(g,3,2,dessineChene); break;
+    case T.PIN1: grand(g,0,2,dessinePin); break;
+    case T.PIN2: grand(g,1,2,dessinePin); break;
+    case T.PIN3: grand(g,2,2,dessinePin); break;
+    case T.PIN4: grand(g,3,2,dessinePin); break;
+    case T.BUIS1: case T.BUIS2: case T.BUIS3:{
+      const cl=(id===T.BUIS1)?['#2f6b34','#3d8543']
+        :(id===T.BUIS2)?['#3f7a4e','#54996a']:['#4a6b2a','#5f8a38'];
+      R('#4e8a3e',0,0,16,16);
+      R(cl[0],1,5,14,10); R(cl[0],3,3,10,12);
+      R(cl[1],2,6,12,7); R(cl[1],4,4,8,9);
+      R('#1c4023',2,14,12,1); break;}
+    case T.FLEUR1: case T.FLEUR2: case T.FLEUR3:{
+      const fl=(id===T.FLEUR1)?['#c2231f','#e8603f','#f4f2ec']
+        :(id===T.FLEUR2)?['#e0a72a','#f2d24a','#fdf3c0']:['#6b4a9e','#9a7ac6','#d6c6e8'];
+      R('#4e8a3e',0,0,16,16);
+      R('#3f7332',1,2,14,12); R('#2f6b34',2,3,12,10);
+      for(let i=0;i<11;i++){const x=2+((i*5)%12),y=3+((i*7)%10);
+        R(fl[i%3],x,y,2,2); R(fl[(i+1)%3],x+1,y+1,1,1);} break;}
+    case T.CLOH: R('#4e8a3e',0,0,16,16);
+      R('#e6e0cc',0,5,16,2); R('#e6e0cc',0,9,16,2);
+      R('#c9c3ae',0,7,16,1); R('#c9c3ae',0,11,16,1);
+      R('#f4f2ec',2,3,2,10); R('#f4f2ec',11,3,2,10);
+      R('#c9c3ae',2,12,2,2); R('#c9c3ae',11,12,2,2); break;
+    case T.CLOV: R('#4e8a3e',0,0,16,16);
+      R('#e6e0cc',5,0,2,16); R('#e6e0cc',9,0,2,16);
+      R('#c9c3ae',7,0,1,16); R('#c9c3ae',11,0,1,16);
+      R('#f4f2ec',3,2,10,2); R('#f4f2ec',3,11,10,2); break;
+    case T.CLONO: case T.CLONE: case T.CLOSO: case T.CLOSE:{
+      R('#4e8a3e',0,0,16,16);
+      const est=(id===T.CLONO||id===T.CLOSO), sud=(id===T.CLONO||id===T.CLONE);
+      if(est){R('#e6e0cc',7,5,9,2);R('#e6e0cc',7,9,9,2);R('#c9c3ae',7,7,9,1);}
+      else{R('#e6e0cc',0,5,9,2);R('#e6e0cc',0,9,9,2);R('#c9c3ae',0,7,9,1);}
+      if(sud){R('#e6e0cc',5,7,2,9);R('#e6e0cc',9,7,2,9);R('#c9c3ae',7,7,1,9);}
+      else{R('#e6e0cc',5,0,2,9);R('#e6e0cc',9,0,2,9);R('#c9c3ae',7,0,1,9);}
+      R('#f4f2ec',5,5,6,6); R('#dcd6c0',5,10,6,1); break;}
+    case T.CLOP: R('#4e8a3e',0,0,16,16);
+      R('#f4f2ec',5,1,6,13); R('#dcd6c0',5,12,6,2);
+      R('#c9c3ae',6,3,4,1); R('#c9c3ae',6,7,4,1); break;
+    case T.LAMPH: R('#4e8a3e',0,0,16,16);
+      R('#2b2f36',6,7,4,9);
+      R('#3a3f47',5,3,6,5); R('#22262c',5,2,6,2);
+      R('#f2e2a8',6,4,4,3); R('#fdf3c0',7,5,2,1);
+      R('#22262c',4,1,8,1); break;
+    case T.LAMPB: R('#4e8a3e',0,0,16,16);
+      R('#2b2f36',6,0,4,13); R('#3a3f47',6,0,1,13);
+      R('#22262c',4,13,8,3); R('#3a3f47',5,13,6,1); break;
+    case T.BARBEC: R('#c9c0ae',0,0,16,16);
+      R('#3a3f47',3,4,10,7); R('#22262c',3,10,10,2);
+      R('#8f8a80',4,5,8,5);
+      for(let x=4;x<12;x+=2)R('#5a5f68',x,5,1,5);
+      R('#c2231f',5,6,2,2); R('#e8603f',9,7,2,2);
+      R('#3a3f47',4,12,2,4); R('#3a3f47',10,12,2,4); break;
+    case T.TABLB: R('#c9b894',0,0,16,16);
+      R('#8a6238',3,4,10,9); R('#e6e0cc',2,3,12,9);
+      R('#f4f2ec',4,4,8,6); R('#c9c3ae',3,10,10,2); break;
+    case T.FAUTB: R('#c9b894',0,0,16,16);
+      R('#c9c3ae',3,6,10,8); R('#e6e0cc',4,7,8,6);
+      R('#e6e0cc',3,2,10,5); R('#f4f2ec',4,3,8,3);
+      R('#a8a294',3,13,10,2); break;
+    case T.TRANSB: R('#c9b894',0,0,16,16);
+      R('#8a6238',2,3,12,11); R('#a37c4c',3,4,10,9);
+      for(let y=4;y<13;y+=3)R('#6b4a2c',3,y,10,1);
+      R('#a37c4c',2,1,12,3); R('#6b4a2c',2,14,12,2); break;
+    case T.TRANPG: R('#e6dcc0',0,0,16,16);
+      R('#c9c3ae',2,4,14,8); R('#f4f2ec',3,5,13,6);
+      R('#dcd6c0',4,3,10,3); R('#a8a294',2,12,14,2);
+      R('#c9c3ae',3,14,2,2); break;
+    case T.TRANPD: R('#e6dcc0',0,0,16,16);
+      R('#c9c3ae',0,4,14,8); R('#f4f2ec',0,5,13,6);
+      R('#dcd6c0',0,3,4,6); R('#a8a294',0,12,14,2);
+      R('#c9c3ae',11,14,2,2); break;
+    case T.TABEXT: R('#c9b894',0,0,16,16);
+      R('#6b4a2c',2,3,12,10); R('#8a6238',2,2,12,10);
+      for(let x=3;x<14;x+=3)R('#6b4a2c',x,3,1,8);
+      R('#5a3d22',3,12,2,4); R('#5a3d22',11,12,2,4); break;
+    case T.CHAIEXT: R('#c9b894',0,0,16,16);
+      R('#6b4a2c',4,7,8,6); R('#8a6238',4,6,8,6);
+      R('#8a6238',4,2,8,5); R('#6b4a2c',5,3,6,1); R('#6b4a2c',5,5,6,1);
+      R('#5a3d22',4,13,2,3); R('#5a3d22',10,13,2,3); break;
+    case T.CANH1: grand(g,0,3,gg=>dessineCanape(gg,0)); break;
+    case T.CANH2: grand(g,1,3,gg=>dessineCanape(gg,0)); break;
+    case T.CANH3: grand(g,2,3,gg=>dessineCanape(gg,0)); break;
+    case T.CANV1: grand(g,0,1,gg=>dessineCanape(gg,1)); break;
+    case T.CANV2: grand(g,1,1,gg=>dessineCanape(gg,1)); break;
+    case T.CANV3: grand(g,2,1,gg=>dessineCanape(gg,1)); break;
+    case T.TBASB: R('#c9b894',0,0,16,16);
+      R('#5a3d22',2,5,12,8); R('#8a6238',2,4,12,8);
+      R('#a37c4c',3,5,10,5); R('#6b4a2c',3,12,2,3); R('#6b4a2c',11,12,2,3); break;
+    case T.MURCLB: R('#6b4a2c',0,0,16,16); R('#8a6238',0,0,16,13);
+      for(let x=0;x<16;x+=4)R('#6b4a2c',x,0,1,13);
+      R('#a37c4c',0,0,16,2); R('#4a3220',0,13,16,3); break;
+    case T.MURCLH: R('#2c5e3a',0,0,16,16);
+      for(let i=0;i<16;i++)R(i%2?'#285534':'#316a41',0,i,16,1);
+      R('#8a6238',0,13,16,3); R('#a37c4c',0,13,16,1); break;
+    case T.FAUTCUIR: R('#7a5433',0,0,16,16);
+      R('#4a2a1c',2,5,12,9); R('#6b3f28',3,4,10,9);
+      R('#7d4d31',4,5,8,5); R('#4a2a1c',2,2,12,4); R('#6b3f28',3,2,10,3);
+      R('#3a2016',2,14,12,2); break;
+    case T.CADRE1: R('#b5a894',0,0,16,16);
+      R('#4a3220',3,2,10,11); R('#8a6238',4,3,8,9); R('#e6dcc0',5,4,6,7);
+      R('#2f6b34',6,7,4,3); R('#8fbcd8',6,5,4,2); break;
+    case T.CADRE2: R('#b5a894',0,0,16,16);
+      R('#3a2f22',2,4,12,8); R('#6b4a2c',3,5,10,6); R('#dcd6c0',4,6,8,4);
+      R('#7a5433',5,7,6,2); break;
+    case T.BIL1: grand(g,0,2,dessineBillard); break;
+    case T.BIL2: grand(g,1,2,dessineBillard); break;
+    case T.BIL3: grand(g,2,2,dessineBillard); break;
+    case T.BIL4: grand(g,3,2,dessineBillard); break;
+    case T.BIL5: grand(g,4,2,dessineBillard); break;
+    case T.BIL6: grand(g,5,2,dessineBillard); break;
+    case T.DEPTL: grand(g,0,2,gg=>dessineDepart(gg,0)); break;
+    case T.DEPTR: grand(g,1,2,gg=>dessineDepart(gg,0)); break;
+    case T.DEPBL: grand(g,2,2,gg=>dessineDepart(gg,0)); break;
+    case T.DEPBR: grand(g,3,2,gg=>dessineDepart(gg,0)); break;
+    case T.DEPVTL: grand(g,0,2,gg=>dessineDepart(gg,1)); break;
+    case T.DEPVTR: grand(g,1,2,gg=>dessineDepart(gg,1)); break;
+    case T.DEPVBL: grand(g,2,2,gg=>dessineDepart(gg,1)); break;
+    case T.DEPVBR: grand(g,3,2,gg=>dessineDepart(gg,1)); break;
+    case T.PORTMOL: R('#b5a894',0,0,16,16);
+      R('#3a2f22',3,2,10,14); R('#5a3d22',4,3,8,13);
+      R('#6b4a2c',5,4,6,5); R('#6b4a2c',5,10,6,5);
+      R('#f2d24a',10,9,2,2); R('#c9c3ae',4,1,8,2); break;
+    case T.PORTAG: R('#b9ae95',0,0,16,16);
+      R('#2b2f36',10,0,4,16); R('#3a3f47',10,0,1,16);
+      R('#22262c',9,2,2,12);
+      R('#3a3f47',2,5,7,6); R('#1e2530',3,6,5,4);
+      R('#8de08d',4,7,1,1); R('#f2d24a',6,7,1,1); break;
+    case T.PORTAD: R('#b9ae95',0,0,16,16);
+      R('#2b2f36',2,0,4,16); R('#3a3f47',2,0,1,16);
+      R('#22262c',5,2,2,12);
+      for(let y=3;y<14;y+=3)R('#3a3f47',7,y,9,2); break;
+    case T.GOLFTL: grand(g,0,2,dessineVoiturette); break;
+    case T.GOLFTR: grand(g,1,2,dessineVoiturette); break;
+    case T.GOLFBL: grand(g,2,2,dessineVoiturette); break;
+    case T.GOLFBR: grand(g,3,2,dessineVoiturette); break;
+    case T.PICKTL: grand(g,0,2,dessinePickup); break;
+    case T.PICKTR: grand(g,1,2,dessinePickup); break;
+    case T.PICKBL: grand(g,2,2,dessinePickup); break;
+    case T.PICKBR: grand(g,3,2,dessinePickup); break;
     default: R('#7cb85c',0,0,16,16);
   }
   cache[key]=c; return c;
@@ -735,7 +1228,7 @@ function tile(id,v,f){
 
 /* ---------- domaine ---------- */
 const MW=120, MH=96;
-const map=new Uint8Array(MW*MH);
+const map=new Uint16Array(MW*MH);
 let rs=19940712;
 const rnd=()=>{rs=(rs*1664525+1013904223)>>>0;return rs/4294967296;};
 const at=(x,y)=>(x<0||y<0||x>=MW||y>=MH)?T.TREE:map[y*MW+x];
@@ -770,7 +1263,12 @@ function carve(h){
   ell(h.gx+px*4.4-ax*1.5, h.gy+py*4.4-ay*1.5, 1.8,1.6, T.SAND);
   ell(h.gx-px*4.2-ax*2.5, h.gy-py*4.2-ay*2.5, 1.6,1.4, T.SAND);
   if(h.par>=4) ell(h.tx+ax*d*0.55+px*4, h.ty+ay*d*0.55+py*4, 1.7,1.5, T.SAND);
-  rect(Math.round(h.tx-1),Math.round(h.ty-1),3,2,T.TEE);
+  /* un vrai depart : quatre cases tondues, surelevees, avec les deux boules
+     rouges en travers de la ligne de jeu */
+  const vert=Math.abs(ax)>Math.abs(ay);
+  const q=vert?[T.DEPVTL,T.DEPVTR,T.DEPVBL,T.DEPVBR]:[T.DEPTL,T.DEPTR,T.DEPBL,T.DEPBR];
+  const dx0=Math.round(h.tx)-1, dy0=Math.round(h.ty)-1;
+  put(dx0,dy0,q[0]); put(dx0+1,dy0,q[1]); put(dx0,dy0+1,q[2]); put(dx0+1,dy0+1,q[3]);
   put(h.gx,h.gy,T.FLAG);
 }
 /* ---------- les voitures du parking ---------- */
@@ -807,7 +1305,7 @@ const FENETRE={x:0,y:0,vu:0};
 const VILLAS=[
  {id:'lutreau',   x:89, y:4,  n:'CHEZ LES LUTREAU',   into:'lutreau'},
  {id:'jungers',   x:99, y:3,  n:'CHEZ TOI',           into:'jungers'},
- {id:'molina',    x:109,y:4,  n:'CHEZ MONSIEUR MOLINA'},
+ {id:'villa5',    x:109,y:4,  n:'UNE VILLA DU HAMEAU'},
  {id:'villa1',    x:89, y:12, n:'UNE VILLA DU HAMEAU'},
  {id:'villa2',    x:99, y:11, n:'UNE VILLA DU HAMEAU'},
  {id:'villa3',    x:109,y:12, n:'UNE VILLA DU HAMEAU', fenetre:1},
@@ -1082,7 +1580,7 @@ function buildWorld(){
     for(let j=0;j<h;j++)for(let i=0;i<w;i++){
       const x=x0+i,y=y0+j;
       const t0=at(x,y);
-      if(t0===T.GREEN||t0===T.FLAG||t0===T.TEE||t0===T.SAND||t0===T.WATER)continue;
+      if(t0===T.GREEN||t0===T.FLAG||estDepart(t0)||t0===T.SAND||t0===T.WATER)continue;
       if(t0===T.POOL||t0===T.PDECK||t0===T.TRANSAT)continue;
       if(SOLID.has(t0)&&t0!==T.TREE&&t0!==T.HEDGE)continue;
       if(t0===T.PATH||t0===T.GRAVEL||t0===T.ASPH||t0===T.ROAD||t0===T.LINE)continue;
@@ -1131,7 +1629,7 @@ let iw=0,ih=0,imap=null;
 const iput=(x,y,t)=>{if(x>=0&&y>=0&&x<iw&&y<ih)imap[y*iw+x]=t;};
 function irect(x,y,w,h,t){for(let j=0;j<h;j++)for(let i=0;i<w;i++)iput(x+i,y+j,t);}
 function makeInt(id,w,h,name,sx,sy,ox,oy,fn){
-  iw=w;ih=h;imap=new Uint8Array(w*h);fn();
+  iw=w;ih=h;imap=new Uint16Array(w*h);fn();
   INT[id]={w:w,h:h,map:imap,name:name,sx:sx,sy:sy,ox:ox,oy:oy};
 }
 function curMap(){return game.inside?INT[game.inside]:null;}
@@ -1299,6 +1797,28 @@ makeInt('jungers',16,10,'CHEZ TOI',7,8,102,5,function(){
   for(const x of [3,4,5,10,11,12]) iput(x,9,T.BAIE);
   iput(7,9,T.EXIT);iput(8,9,T.EXIT);
 });
+makeInt('molina',18,12,'CHEZ LES MOLINA',9,10,63,44,function(){
+  imap.fill(T.WALLI);
+  irect(1,1,16,9,T.PARQ);
+  for(let y=1;y<10;y++){iput(0,y,T.STONEW);iput(17,y,T.STONEW);}
+  /* le bureau du directeur, cote est */
+  irect(11,1,6,4,T.JONC);
+  iput(13,2,T.DESK); iput(15,2,T.BIBLI); iput(12,2,T.CHAIR);
+  iput(16,4,T.PLANT);
+  /* le salon, cote ouest, canape beige et table basse */
+  irect(1,1,8,5,T.JONC);
+  iput(2,1,T.CHEM); iput(3,1,T.CHEM);
+  iput(2,3,T.CANH1); iput(3,3,T.CANH2); iput(4,3,T.CANH3);
+  iput(3,5,T.TBASB);
+  iput(6,2,T.FAUTCUIR); iput(7,4,T.FAUTCUIR);
+  iput(1,6,T.CADRE1); iput(8,1,T.CADRE2);
+  /* la cuisine, au fond */
+  iput(11,7,T.KITCH); iput(12,7,T.EVIER); iput(13,7,T.FRIGO);
+  iput(12,9,T.TABLE); iput(11,9,T.CHAIR); iput(13,9,T.CHAIR);
+  /* la baie sur le parcours */
+  for(const x of [3,4,5,6]) iput(x,10,T.BAIE);
+  iput(8,10,T.EXIT); iput(9,10,T.EXIT);
+});
 Object.keys(INT).forEach(k=>{BASE[k]=INT[k].map.slice();});
 
 /* ---------- les retouches de l'editeur ----------
@@ -1359,6 +1879,11 @@ function appliqueMonde(mo){
     if(r)['n','trouve','txt','x','y','inside'].forEach(k=>{if(r[k]!==undefined)o[k]=r[k];});
   });
   const remet=(dst,src)=>{dst.length=0;clone(src).forEach(v=>dst.push(v));};
+  HOLES.forEach((h,i)=>{const b=HOLES_BASE[i]; if(b)Object.assign(h,b);});
+  (MONDE.trous||[]).forEach((t,i)=>{if(HOLES[i]&&t)Object.assign(HOLES[i],t);});
+  HOLES.forEach(h=>{h.len=Math.round(Math.hypot(h.gx-h.tx,h.gy-h.ty)*14);});
+  DOORS.length=0;
+  clone((MONDE.portes&&MONDE.portes.length)?MONDE.portes:DOORS_BASE).forEach(d=>DOORS.push(d));
   remet(MISSIONS,(MONDE.missions&&MONDE.missions.length)?MONDE.missions:MISSIONS_BASE);
   remet(ACTES,(MONDE.actes&&MONDE.actes.length)?MONDE.actes:ACTES_BASE);
   remet(LOCKED,(MONDE.lieux&&MONDE.lieux.length)?MONDE.lieux:LOCKED_BASE);
@@ -1703,7 +2228,7 @@ const LOCKED=[
  {x:100,y:89,who:'CHEZ LES EVENOU',d:["Ça sent le barbecue et le briquet. Arthur traîne devant, comme toujours."]},
  {x:107,y:89,who:'CHEZ LES EVENOU',d:["La deuxième maison. C'est celle de l'oncle, celui qui a la piscine hors sol."]},
  {x:114,y:89,who:'CHEZ LES EVENOU',d:["La troisième. Camille dort là quand elle vient. Elle vient rarement."]},
- {x:112,y:5,who:'CHEZ MONSIEUR MOLINA',d:["Le directeur du golf habite là. On ne sonne pas chez le directeur."]},
+ {x:112,y:5,who:'UNE VILLA DU HAMEAU',d:["Une de plus. Personne ne sait qui, personne ne demande."]},
  {x:92,y:13,who:'UNE VILLA DU HAMEAU',d:["Une villa comme les autres. On n'a jamais su qui habitait là.","Une voiture différente chaque été, et jamais la même plaque."]},
  {x:102,y:12,who:'UNE VILLA DU HAMEAU',d:["Volets clos toute l'année. Même en août.","Victor dit qu'il y a une piscine derrière. Personne n'a vérifié."]},
  {x:112,y:13,who:'UNE VILLA DU HAMEAU',d:["Celle-là, tout le monde sait ce qu'il y a dedans. Enfin, qui.","On n'entre pas. On passe devant. Très lentement."]},
@@ -1859,6 +2384,10 @@ const ACTES=['','ON N\'A PLUS L\'ÂGE','LE KING AND JACK','LE GOLF POUR DE VRAI'
 const NPCS_BASE={}; NPCS.forEach(n=>{NPCS_BASE[n.id]={name:n.name,x:n.x,y:n.y,inside:n.inside||null,d:clone(n.d||[])};});
 const ITEMS_BASE={}; ITEMS.forEach(o=>{ITEMS_BASE[o.id]={n:o.n,trouve:o.trouve,txt:o.txt,x:o.x,y:o.y,inside:o.inside||null};});
 const MISSIONS_BASE=clone(MISSIONS), ACTES_BASE=ACTES.slice(), LOCKED_BASE=clone(LOCKED);
+/* les reperes : ce qui est de la logique et pas de la peinture. Deplacer un depart
+   deplace l'endroit ou la partie commence, pas l'herbe tondue autour. */
+const HOLES_BASE=HOLES.map(h=>({tx:h.tx,ty:h.ty,gx:h.gx,gy:h.gy}));
+const DOORS_BASE=clone(DOORS);
 /* tout ce qu'une mission peut attendre du joueur */
 const EVENTS=[
  {ev:'bande',q:"parler a quelqu'un de la bande"},{ev:'parle',q:'parler a un personnage precis',qui:1},
@@ -2311,7 +2840,7 @@ function sauteHaie(){
   if(game.inside||game.hop)return false;
   const[dx,dy]=DV[game.dir];
   const devant=getTile(game.px+dx,game.py+dy);
-  if(devant!==T.HEDGE&&devant!==T.GATE)return false;
+  if(!SAUT.has(devant))return false;
   const nx=game.px+dx*2, ny=game.py+dy*2;
   if(nx<1||ny<1||nx>MW-2||ny>MH-2)return false;
   if(solidAt(nx,ny))return false;
@@ -2366,7 +2895,7 @@ function interact(){
         "ARTHUR : Ça a brûlé toute la nuit, j'te jure."],null,'LE FEU D\'ARTHUR');
     },()=>say(["ARTHUR : Comme tu veux. Moi je l'aurais fait."],null,'ARTHUR'));
     return;}
-  if(t===T.TEE||under===T.TEE){departDu1();return;}
+  if(estDepart(t)||estDepart(under)){departDu1();return;}
   if(t===T.MAT||under===T.MAT){startPractice();return;}
   if(t===T.TVGC){gamecube();return;}
   if(tx===49&&ty===61){chaparde();return;}
@@ -2522,7 +3051,7 @@ function updateVoiturette(){
   if(!game.voiturette||game.inside)return;
   /* on laboure tout ce qui est tondu */
   const t=at(game.px,game.py);
-  if(t===T.FAIR||t===T.GREEN||t===T.ROUGH||t===T.TEE){
+  if(t===T.FAIR||t===T.GREEN||t===T.ROUGH||estDepart(t)){
     put(game.px,game.py,T.TRACE);miniC=null;
     game.traces=(game.traces||0)+1;
     if(game.traces===12)mission('traces');
@@ -2661,9 +3190,9 @@ function lieAt(x,y){
   const t=getTile(Math.round(x),Math.round(y));
   if(t===T.GREEN)return 'green';
   if(t===T.SAND)return 'bunker';
-  if(t===T.FAIR||t===T.TEE||t===T.MAT)return 'fairway';
-  if(t===T.TREE||t===T.DENSE)return 'bois';
-  if(t===T.WATER)return 'eau';
+  if(t===T.FAIR||estDepart(t)||t===T.MAT)return 'fairway';
+  if(t===T.TREE||t===T.DENSE||ARBRES.has(t))return 'bois';
+  if(t===T.WATER||t===T.MARE)return 'eau';
   return 'rough';
 }
 const LIEF={tee:1,fairway:1,green:1,rough:0.76,bunker:0.6,bois:0.45,eau:0.5};
@@ -3535,8 +4064,8 @@ function updateCars(){
   if(carClock>=600){
     carClock=0; carSide^=1;
     cars.push(carSide
-      ?{x:32,y:MH+2,v:-0.26,c:(cars.length+1)%CAR_PALS.length,honk:0}
-      :{x:30,y:-2,v:0.26,c:(cars.length+3)%CAR_PALS.length,honk:0});
+      ?{x:32,y:MH+2,v:-0.12,c:(cars.length+1)%CAR_PALS.length,honk:0}
+      :{x:30,y:-2,v:0.12,c:(cars.length+3)%CAR_PALS.length,honk:0});
   }
   for(let i=cars.length-1;i>=0;i--){
     const c=cars[i]; c.y+=c.v;
@@ -3663,10 +4192,13 @@ function drawClope(){
   const mx=hx+(game.dir===2?3:cote?11:9), my=hy+7;
   ctx.fillStyle='#f4f2ec';ctx.fillRect(mx,my,2,1);
   ctx.fillStyle=(game.tick>>3)%2?'#e0503a':'#f2a03d';ctx.fillRect(game.dir===2?mx-1:mx+2,my,1,1);
+  /* la fumee : des carres de deux pixels, pas des ronds flous */
   for(const p of clope.puffs){
-    ctx.globalAlpha=Math.max(0,p.a)*0.65;
-    ctx.fillStyle='#e8e8ef';
-    ctx.beginPath();ctx.arc(mx+1+p.x,my-2+p.y,p.r,0,7);ctx.fill();
+    const al=Math.max(0,p.a);
+    ctx.globalAlpha=al>0.55?0.7:(al>0.28?0.45:0.22);
+    ctx.fillStyle=al>0.55?'#e8e8ef':'#c6ccda';
+    const r=Math.max(2,Math.round(p.r)*2);
+    ctx.fillRect(Math.round((mx+1+p.x)/2)*2-(r>>1),Math.round((my-2+p.y)/2)*2-(r>>1),r,r);
   }
   ctx.globalAlpha=1;
   drawClock();
@@ -3679,18 +4211,28 @@ function drawClope(){
 let miniC=null;
 function miniColor(t){
   switch(t){
-    case T.FAIR:case T.TEE:case T.MAT:case T.PATIO:case T.LAWN:return '#7cb85c';
+    case T.FAIR:case T.TEE:case T.MAT:case T.PATIO:case T.LAWN:
+    case T.DEPTL:case T.DEPTR:case T.DEPBL:case T.DEPBR:
+    case T.DEPVTL:case T.DEPVTR:case T.DEPVBL:case T.DEPVBR:return '#7cb85c';
     case T.GREEN:return '#a4dd7d';
     case T.TENN:case T.TNET:return '#3f6f5a';
     case T.SAND:return '#ecdfb0';
     case T.WATER:case T.POOL:return '#4a86c8';
-    case T.PATH:case T.GRAVEL:case T.BRIDGE:case T.DIRT:return '#cbbc9b';
+    case T.PATH:case T.GRAVEL:case T.BRIDGE:case T.DIRT:case T.TERRE:
+    case T.PONTH:case T.PONTV:case T.PASSM:return '#cbbc9b';
+    case T.MARE:return '#3f6b5c';
+    case T.ROSEAU:return '#5f7a3a';
     case T.ROAD:case T.LINE:case T.ZEBRA:case T.ASPH:case T.CAR:return '#6d6d78';
-    case T.TREE:return '#2f6b34';
+    case T.TREE:case T.ARB1:case T.ARB2:case T.ARB3:
+    case T.ARBH1:case T.ARBH2:case T.ARBH3:case T.ARBB1:case T.ARBB2:case T.ARBB3:
+    case T.CHENE1:case T.CHENE2:case T.CHENE3:case T.CHENE4:
+    case T.PIN1:case T.PIN2:case T.PIN3:case T.PIN4:
+    case T.BUIS1:case T.BUIS2:case T.BUIS3:return '#2f6b34';
     case T.DENSE:return '#1c4023';
     case T.FLAG:return '#d8402f';
     case T.FIRE:return '#f2a03d';
-    case T.HEDGE:return '#2c5e2b';
+    case T.HEDGE:case T.CLOH:case T.CLOV:case T.CLONO:case T.CLONE:
+    case T.CLOSO:case T.CLOSE:case T.CLOP:return '#2c5e2b';
     case T.DECK:case T.PDECK:case T.STONE:return '#d8c9a8';
     case T.ROUGH:return '#4e8a3e';
     default:return '#b58a6a';
@@ -3898,21 +4440,74 @@ function placeAccueil(){
       n.x=38+k*2;n.y=43;n.dir=0;}
   });
 }
+/* ---------- la nuit et ses lumieres ----------
+   Pas de halo doux : la Game Boy Advance n'en fait pas. On perce le noir sur une
+   toile deux fois plus petite, par paliers nets, et on la recolle sans lissage.
+   Les gros pixels qui en sortent, c'est exactement ce qu'on veut. */
+const FENETRES_ALLUMEES=new Set([T.HBAIE,T.BAIE,T.HWIN,T.HWINB,T.SWIN,T.SWINB,T.FWIN,T.VASIS,T.LUC]);
+let lumC=null,lumG=null;
+function heureLampes(){const h=hNow();return (h>=19||h<7);}
+function heureFenetres(){const h=hNow();return (h>=19&&h<23);}
 function nightTint(cx,cy){
   const h=hNow();let a=0;
   if(h>=19&&h<21.5)a=(h-19)/2.5*0.6;
   else if(h>=21.5||h<5)a=0.6;
   else if(h>=5&&h<7)a=(7-h)/2*0.6;
   if(a<=0.02)return;
-  ctx.fillStyle='rgba(8,16,44,'+a.toFixed(2)+')';ctx.fillRect(0,0,W,H);
-  if(cx!==undefined&&!game.inside){
-    const fx=FEU.x*TS+8-cx,fy=FEU.y*TS+8-cy;
-    if(fx>-60&&fx<W+60&&fy>-60&&fy<H+60){
-      const fl=1+Math.sin(game.tick/7)*0.12;
-      for(let r=54;r>8;r-=9){
-        ctx.fillStyle='rgba(240,150,60,'+(0.055*fl).toFixed(3)+')';
-        ctx.beginPath();ctx.ellipse(fx,fy,r*fl,r*0.7*fl,0,0,7);ctx.fill();}
+  const LW=W>>1, LH=H>>1;
+  if(!lumC){lumC=document.createElement('canvas');lumC.width=LW;lumC.height=LH;lumG=lumC.getContext('2d');}
+  lumG.globalCompositeOperation='source-over';
+  lumG.fillStyle='#08102c'; lumG.fillRect(0,0,LW,LH);
+  /* on perce, par paliers francs */
+  lumG.globalCompositeOperation='destination-out';
+  const sources=[];
+  const trou=(x,y,r,force)=>{
+    for(let k=0;k<3;k++){
+      const rr=r*(1-k*0.33), al=force*(0.34+k*0.28);
+      lumG.fillStyle='rgba(0,0,0,'+al.toFixed(3)+')';
+      lumG.beginPath();lumG.arc(Math.round(x),Math.round(y),Math.max(1,Math.round(rr)),0,7);lumG.fill();
     }
+  };
+  if(cx!==undefined&&!game.inside){
+    /* le feu, quand il brule */
+    if(game.phase==='f'&&!game.feuEteint){
+      const fl=1+Math.sin(game.tick/9)*0.10;
+      sources.push({x:(FEU.x*TS+8-cx)/2,y:(FEU.y*TS+8-cy)/2,r:26*fl,f:1,c:'#f0963c'});
+    }
+    /* les lampadaires du hameau et les baies vitrees des maisons */
+    const t0x=Math.floor(cx/TS), t0y=Math.floor(cy/TS);
+    const lampes=heureLampes(), fen=heureFenetres();
+    for(let j=-1;j<=11;j++)for(let i=-1;i<=16;i++){
+      const x=t0x+i,y=t0y+j; if(x<0||y<0||x>=MW||y>=MH)continue;
+      const t=map[y*MW+x];
+      if(lampes&&t===T.LAMPH)
+        sources.push({x:(x*TS+8-cx)/2,y:(y*TS+10-cy)/2,r:15,f:0.92,c:'#f2e2a8'});
+      else if(fen&&FENETRES_ALLUMEES.has(t))
+        /* la lumiere tombe devant la maison, donc un peu plus bas que la vitre */
+        sources.push({x:(x*TS+8-cx)/2,y:(y*TS+16-cy)/2,r:11,f:0.72,c:'#f2d08a',vitre:[x,y]});
+    }
+  }
+  sources.forEach(o=>trou(o.x,o.y,o.r,o.f));
+  lumG.globalCompositeOperation='source-over';
+  ctx.save();
+  ctx.globalAlpha=a; ctx.imageSmoothingEnabled=false;
+  ctx.drawImage(lumC,0,0,LW,LH,0,0,W,H);
+  ctx.restore();
+  /* la teinte chaude, en gros pixels elle aussi */
+  ctx.save();
+  ctx.globalAlpha=a*0.5;
+  sources.forEach(o=>{
+    ctx.fillStyle=o.c;
+    const r=Math.round(o.r*0.5)*2;
+    ctx.fillRect(Math.round(o.x*2-r/2),Math.round(o.y*2-r/2),r,r);
+  });
+  ctx.restore();
+  /* la vitre elle-meme s'allume */
+  if(cx!==undefined&&!game.inside&&heureFenetres()){
+    ctx.save(); ctx.globalAlpha=a*0.85; ctx.fillStyle='#f2d08a';
+    sources.forEach(o=>{ if(!o.vitre)return;
+      ctx.fillRect(o.vitre[0]*TS-cx+3,o.vitre[1]*TS-cy+4,10,7); });
+    ctx.restore();
   }
 }
 /* un rappel discret de la mission en cours, en haut a gauche */
@@ -4730,8 +5325,14 @@ function updatePick(){
     game.state=S.WORLD;
     game.zone=game.inside?INT[game.inside].name:zoneAt(game.px,game.py);
     game.banner=game.zone;game.bannerT=0;
-    /* ?demo=pente ouvre directement le grass board, pratique pour regarder le rendu */
-    try{if(new URLSearchParams(location.search).get('demo')==='pente'){startPente(1);return;}}catch(e){}
+    /* ?demo=pente ouvre directement le grass board, ?h=21 cale l'heure du domaine :
+       de quoi regarder un rendu sans attendre que la journee tourne */
+    try{
+      const q=new URLSearchParams(location.search);
+      const hh=parseFloat(q.get('h'));
+      if(!isNaN(hh)){game.min=Math.max(0,Math.min(1439,hh*60));game.phase=phaseOf();placeGang();}
+      if(q.get('demo')==='pente'){startPente(1);return;}
+    }catch(e){}
     const m0=missionCourante();
     say(INTRO.concat(p.intro).concat(m0?[
       '— '+ACTES[m0.a]+' —',
@@ -5007,7 +5608,7 @@ function update(){
         if(consume('a')){
           if(game.feuCall&&!game.inside){
             const[fx,fy]=DV[game.dir],tt=getTile(game.px+fx,game.py+fy),ut=getTile(game.px,game.py);
-            if(!npcAt(game.px+fx,game.py+fy)&&tt!==T.TEE&&ut!==T.TEE&&tt!==T.MAT&&ut!==T.MAT&&
+            if(!npcAt(game.px+fx,game.py+fy)&&!estDepart(tt)&&!estDepart(ut)&&tt!==T.MAT&&ut!==T.MAT&&
                tt!==T.SDOOR&&tt!==T.TVGC&&!SOLID.has(tt)){goFeu();break;}
           }
           interact();break;}
@@ -5145,6 +5746,8 @@ if(MODE_EDIT){
     NPCS:NPCS,ITEMS:ITEMS,LOCKED:LOCKED,MISSIONS:MISSIONS,ACTES:ACTES,EVENTS:EVENTS,
     NPCS_BASE:NPCS_BASE,ITEMS_BASE:ITEMS_BASE,MISSIONS_BASE:MISSIONS_BASE,
     ACTES_BASE:ACTES_BASE,LOCKED_BASE:LOCKED_BASE,
+    BIBLI:BIBLI,MIROIR:MIROIR,ROT:ROT,SAUT:SAUT,MODELES:MODELES,
+    HOLES:HOLES,DOORS:DOORS,HOLES_BASE:HOLES_BASE,DOORS_BASE:DOORS_BASE,estDepart:estDepart,
     MONDEKEY:MONDEKEY,get monde(){return MONDE;},appliqueMonde:appliqueMonde
   };
   chargeMonde().finally(function(){

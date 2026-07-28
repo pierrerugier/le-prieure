@@ -86,6 +86,51 @@ retouchés, la trame si elle a bougé. Vider le fichier remet tout d'aplomb, et
 retouche en comparant les positions. L'atelier note ce qu'on modifie à la main, il ne compare
 pas.
 
+### Peinture et logique, deux choses différentes
+
+Un départ de trou, un green, une porte, ce n'est pas de la peinture : c'est de la **logique**.
+Repeindre un tapis de départ ailleurs ne déplace pas l'endroit où la partie commence. D'où
+l'onglet **Départs, portes** de la carte : les neuf départs, les neuf greens et toutes les
+portes s'affichent en pastilles qu'on **attrape et déplace** à la souris. C'est ça qui bouge la
+logique. L'herbe autour, c'est au pinceau, séparément.
+
+`HOLES` et `DOORS` s'enregistrent dans le monde sous `trous` et `portes`.
+
+### Découper une tranche de terrain
+
+L'outil **Découper** trace un rectangle. Ensuite ⌘C ou ⌘X, puis ⌘V ou un clic pour poser.
+<kbd>T</kbd> tourne la tranche d'un quart de tour, <kbd>M</kbd> la retourne. Les blocs qui ont
+un sens (barrières, coins, voitures, canapés) se retournent **vraiment** : `MIROIR` et `ROT`
+disent quelle case remplace quelle case. Un bloc absent de ces tables reste tel quel.
+
+### La bibliothèque
+
+`BIBLI` (dans `index.html`) est la liste rangée : chaque entrée a une famille, un nom, et soit
+une case unique, soit un **motif** de plusieurs cases posé d'un seul clic. L'atelier filtre par
+famille et par **franchissabilité** (on passe, on ne passe pas, on saute par-dessus), déduite
+de `SOLID` et `SAUT`.
+
+Les gros motifs (arbres 2×2, voitures, billard, canapé, départ de trou) sont dessinés **d'un
+seul tenant** par une fonction, et chaque case n'en montre qu'un morceau via `grand()`. Ajouter
+un motif, c'est ajouter la fonction de dessin, les identifiants à la suite dans `T`, les `case`
+dans `tile()`, et la ligne `motif(...)` dans `BIBLI`.
+
+⚠️ **On ajoute les identifiants à la suite, on ne renumérote jamais** : les cartes déjà
+enregistrées parlent en numéros. La carte est un `Uint16Array` pour avoir de la place.
+
+### La nuit
+
+Pas de halo doux : la Game Boy Advance n'en fait pas. `nightTint` peint le noir sur une toile
+deux fois plus petite, y perce des trous **par paliers francs**, et recolle sans lissage. Les
+gros pixels qui en sortent, c'est le rendu voulu. Même principe pour la fumée de cigarette.
+
+- le feu de camp éclaire quand il brûle,
+- les **lampadaires** (`T.LAMPH`) éclairent de 19 h à 7 h,
+- les **baies vitrées** s'allument de 19 h à 23 h et éclairent un peu devant elles, puis
+  s'éteignent pour le reste de la nuit.
+
+`?h=21` dans l'URL cale l'heure du domaine, pratique pour regarder un rendu de nuit.
+
 Le serveur garde ça dans `data/monde.json` (`GET`/`POST /api/monde`) et prévient les joueurs
 connectés, qui appliquent la retouche sans recharger. **Sur Render le disque est effacé à
 chaque déploiement** : pour qu'une carte survive, l'exporter depuis l'atelier et committer le

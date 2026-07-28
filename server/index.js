@@ -227,6 +227,8 @@ app.post('/api/monde', (req, res) => {
   if (Array.isArray(m.missions)) monde.missions = m.missions;
   if (Array.isArray(m.actes)) monde.actes = m.actes;
   if (Array.isArray(m.lieux)) monde.lieux = m.lieux;
+  if (Array.isArray(m.trous)) monde.trous = m.trous;
+  if (Array.isArray(m.portes)) monde.portes = m.portes;
   const surDisque = ecrisMonde(monde);
   diffuse({ t: 'monde', monde: monde });
   res.json({ ok: true, disque: surDisque });

@@ -165,10 +165,12 @@ const CARTES=[{id:'domaine',n:'LE DOMAINE'}].concat(
 const ed={
   ong:'carte', carte:'domaine', outil:'pinceau', taille:1, bloc:T.ROUGH,
   z:6, camx:0, camy:0, grille:false, solides:false,
-  presse:false, pan:false, panx:0, pany:0, sauve:true,
+  appuie:false, pan:false, panx:0, pany:0, sauve:true,
   hist:[], futur:[], trait:null,
   couleur:'#7cb85c', lettre:'K', blocEdit:-1, perso:'moi', partie:'BODY_DOWN',
-  cat:'pnj', sel:null, misOuv:-1, prog:'', progRep:null, progEnCours:false, apres:-1
+  cat:'pnj', sel:null, misOuv:-1, prog:'', progRep:null, progEnCours:false, apres:-1,
+  famille:'tout', passe:'tout', motif:null, presse:null, colle:null,
+  selDeb:null, selRect:null, reperes:false, prise:null, cherche:''
 };
 
 /* Les personnages se deplacent tout seuls quand le jeu tourne. On ne peut donc pas
@@ -251,11 +253,35 @@ function dessine(){
       if(base[y*d.w+x]!==tuileA(ed.carte,x,y))
         cx.strokeRect(Math.round((x-ed.camx)*z)+.5,Math.round((y-ed.camy)*z)+.5,Math.ceil(z)-1,Math.ceil(z)-1);
   }
-  /* le curseur */
+  dessineReperes();
+  /* la tranche decoupee */
+  if(ed.selRect){
+    const r=ed.selRect;
+    cx.strokeStyle='#8fb0d8';cx.lineWidth=2;cx.setLineDash([5,4]);
+    cx.strokeRect(Math.round((r.x0-ed.camx)*z),Math.round((r.y0-ed.camy)*z),
+      (r.x1-r.x0+1)*z,(r.y1-r.y0+1)*z);
+    cx.setLineDash([]);
+    cx.fillStyle='rgba(143,176,216,.14)';
+    cx.fillRect(Math.round((r.x0-ed.camx)*z),Math.round((r.y0-ed.camy)*z),
+      (r.x1-r.x0+1)*z,(r.y1-r.y0+1)*z);
+  }
+  /* le curseur, ou l'apercu de ce qu'on va poser */
   if(ed.sx!=null){
-    const n=ed.taille, o=(n-1)>>1;
-    cx.strokeStyle='#f4e2a8';cx.lineWidth=2;
-    cx.strokeRect(Math.round((ed.sx-o-ed.camx)*z)+1,Math.round((ed.sy-o-ed.camy)*z)+1,z*n-2,z*n-2);
+    const p=ed.presse||ed.motif;
+    if(p&&ed.outil!=='select'){
+      const pw=p.w, ph=p.h, src=p.t||p.m;
+      cx.globalAlpha=0.75;
+      for(let j=0;j<ph;j++)for(let i=0;i<pw;i++)
+        cx.drawImage(A.tile(src[j*pw+i],0,0),
+          Math.round((ed.sx+i-ed.camx)*z),Math.round((ed.sy+j-ed.camy)*z),Math.ceil(z),Math.ceil(z));
+      cx.globalAlpha=1;
+      cx.strokeStyle='#f4e2a8';cx.lineWidth=2;
+      cx.strokeRect(Math.round((ed.sx-ed.camx)*z)+1,Math.round((ed.sy-ed.camy)*z)+1,z*pw-2,z*ph-2);
+    } else {
+      const n=(ed.outil==='select')?1:ed.taille, o=(n-1)>>1;
+      cx.strokeStyle='#f4e2a8';cx.lineWidth=2;
+      cx.strokeRect(Math.round((ed.sx-o-ed.camx)*z)+1,Math.round((ed.sy-o-ed.camy)*z)+1,z*n-2,z*n-2);
+    }
   }
 }
 function boucle(){dessine();requestAnimationFrame(boucle);}
@@ -317,6 +343,53 @@ function refais(){
   ed.hist.push(h); sale(); majOutils();
 }
 
+/* ---------- decouper, deplacer, coller, tourner une tranche de terrain ---------- */
+function copie(coupe){
+  const r=ed.selRect; if(!r)return;
+  const w=r.x1-r.x0+1, h=r.y1-r.y0+1, t=[];
+  for(let y=r.y0;y<=r.y1;y++)for(let x=r.x0;x<=r.x1;x++)t.push(tuileA(ed.carte,x,y));
+  ed.presse={w:w,h:h,t:t};
+  if(coupe){
+    debutTrait();
+    for(let y=r.y0;y<=r.y1;y++)for(let x=r.x0;x<=r.x1;x++)poseAvecHisto(x,y,A.T.ROUGH);
+    finTrait();
+  }
+  dit('Tranche de '+w+'×'+h+' cases. Clique pour la poser.');
+  majOutils();
+}
+function tournePresse(){
+  const p=ed.presse; if(!p)return;
+  const t=new Array(p.w*p.h);
+  for(let y=0;y<p.h;y++)for(let x=0;x<p.w;x++){
+    const src=p.t[y*p.w+x];
+    t[x*p.h+(p.h-1-y)]=(A.ROT[src]!==undefined)?A.ROT[src]:src;
+  }
+  ed.presse={w:p.h,h:p.w,t:t};
+  majOutils();
+}
+function miroirPresse(){
+  const p=ed.presse; if(!p)return;
+  const t=new Array(p.w*p.h);
+  for(let y=0;y<p.h;y++)for(let x=0;x<p.w;x++){
+    const src=p.t[y*p.w+x];
+    t[y*p.w+(p.w-1-x)]=(A.MIROIR[src]!==undefined)?A.MIROIR[src]:src;
+  }
+  ed.presse={w:p.w,h:p.h,t:t};
+  majOutils();
+}
+function collePresse(x,y){
+  const p=ed.presse; if(!p)return;
+  debutTrait();
+  for(let j=0;j<p.h;j++)for(let i=0;i<p.w;i++)poseAvecHisto(x+i,y+j,p.t[j*p.w+i]);
+  finTrait();
+}
+function poseMotif(x,y){
+  const m=ed.motif; if(!m)return;
+  debutTrait();
+  for(let j=0;j<m.h;j++)for(let i=0;i<m.w;i++)poseAvecHisto(x+i,y+j,m.m[j*m.w+i]);
+  finTrait();
+}
+
 cv.addEventListener('contextmenu',e=>e.preventDefault());
 cv.addEventListener('mousedown',e=>{
   if(ed.ong!=='carte')return;
@@ -326,10 +399,17 @@ cv.addEventListener('mousedown',e=>{
     if(e.altKey&&e.button===0){ed.bloc=tuileA(ed.carte,c.x,c.y);majPanneau();return;}
     ed.pan=true;ed.panx=e.clientX;ed.pany=e.clientY;cv.style.cursor='grabbing';return;
   }
-  ed.presse=true; debutTrait();
-  if(ed.outil==='pipette'){ed.bloc=tuileA(ed.carte,c.x,c.y);ed.outil='pinceau';majOutils();majPanneau();ed.presse=false;finTrait();return;}
-  if(ed.outil==='remplir'){remplis(c.x,c.y,ed.bloc);ed.presse=false;finTrait();return;}
+  /* une tranche en attente se pose au clic, ou un repere se saisit */
+  if(ed.presse&&ed.outil!=='select'){collePresse(c.x,c.y);return;}
+  if(ed.reperes){const rp=repereSous(c.x,c.y); if(rp){ed.prise=rp;return;}}
+  ed.appuie=true; debutTrait();
+  if(ed.outil==='select'){ed.selDeb=[c.x,c.y];ed.selRect={x0:c.x,y0:c.y,x1:c.x,y1:c.y};return;}
+  if(ed.outil==='pipette'){ed.bloc=tuileA(ed.carte,c.x,c.y);ed.motif=null;ed.outil='pinceau';
+    majOutils();majPanneau();ed.appuie=false;finTrait();return;}
+  if(ed.outil==='remplir'){remplis(c.x,c.y,ed.bloc);ed.appuie=false;finTrait();return;}
   if(ed.outil==='rect'){ed.rect=[c.x,c.y];return;}
+  if(ed.outil==='gomme'){pinceau(c.x,c.y,A.T.ROUGH);return;}
+  if(ed.motif){poseMotif(c.x,c.y);ed.appuie=false;return;}
   pinceau(c.x,c.y,ed.bloc);
 });
 window.addEventListener('mousemove',e=>{
@@ -344,13 +424,24 @@ window.addEventListener('mousemove',e=>{
     ed.camx-=(e.clientX-ed.panx)/ed.z; ed.camy-=(e.clientY-ed.pany)/ed.z;
     ed.panx=e.clientX;ed.pany=e.clientY;borne();return;
   }
-  if(!ed.presse)return;
+  if(ed.prise){
+    ed.prise.pose(c.x,c.y); sale(); return;
+  }
+  if(!ed.appuie)return;
+  if(ed.outil==='select'&&ed.selDeb){
+    ed.selRect={x0:Math.min(ed.selDeb[0],c.x),y0:Math.min(ed.selDeb[1],c.y),
+                x1:Math.max(ed.selDeb[0],c.x),y1:Math.max(ed.selDeb[1],c.y)};
+    return;
+  }
   if(ed.outil==='pinceau')pinceau(c.x,c.y,ed.bloc);
+  else if(ed.outil==='gomme')pinceau(c.x,c.y,A.T.ROUGH);
 });
 window.addEventListener('mouseup',e=>{
   if(ed.pan){ed.pan=false;cv.style.cursor='crosshair';}
-  if(!ed.presse)return;
-  ed.presse=false;
+  if(ed.prise){ed.prise=null;majPanneau();return;}
+  if(!ed.appuie)return;
+  ed.appuie=false;
+  if(ed.outil==='select'){ed.selDeb=null;majOutils();finTrait();return;}
   if(ed.outil==='rect'&&ed.rect){const c=caseSous(e);rectangle(ed.rect[0],ed.rect[1],c.x,c.y,ed.bloc);ed.rect=null;}
   finTrait();
 });
@@ -384,6 +475,10 @@ window.addEventListener('keydown',e=>{
   if((e.metaKey||e.ctrlKey)&&k==='s'){e.preventDefault();enregistre();return;}
   if((e.metaKey||e.ctrlKey)&&(k==='+'||k==='='||e.code==='Equal')){e.preventDefault();zoome(1.3);return;}
   if((e.metaKey||e.ctrlKey)&&(k==='-'||e.code==='Minus')){e.preventDefault();zoome(1/1.3);return;}
+  if((e.metaKey||e.ctrlKey)&&k==='c'){e.preventDefault();copie(false);return;}
+  if((e.metaKey||e.ctrlKey)&&k==='x'){e.preventDefault();copie(true);return;}
+  if((e.metaKey||e.ctrlKey)&&k==='v'){e.preventDefault();
+    if(ed.presse&&ed.sx!=null)collePresse(ed.sx,ed.sy);return;}
   if(ed.ong!=='carte')return;
   const pas=e.shiftKey?10:3;
   if(k==='arrowleft'){ed.camx-=pas;borne();e.preventDefault();}
@@ -394,6 +489,11 @@ window.addEventListener('keydown',e=>{
   else if(k==='r'){ed.outil='rect';majOutils();}
   else if(k==='g'){ed.outil='remplir';majOutils();}
   else if(k==='i'){ed.outil='pipette';majOutils();}
+  else if(k==='s'){ed.outil='select';majOutils();}
+  else if(k==='e'){ed.outil='gomme';majOutils();}
+  else if(k==='t'){tournePresse();}
+  else if(k==='m'){miroirPresse();}
+  else if(k==='escape'){ed.presse=null;ed.motif=null;ed.selRect=null;majOutils();majPanneau();}
   else if(k==='['){ed.taille=Math.max(1,ed.taille-2);majOutils();}
   else if(k===']'){ed.taille=Math.min(9,ed.taille+2);majOutils();}
 });
@@ -403,7 +503,8 @@ function majOutils(){
   if(ed.ong==='textes'){outils.style.display='';outilsTextes();return;}
   if(ed.ong!=='carte'){outils.innerHTML='';outils.style.display='none';return;}
   outils.style.display='';
-  const O=[['pinceau','Pinceau','B'],['rect','Rectangle','R'],['remplir','Remplir','G'],['pipette','Pipette','I']];
+  const O=[['pinceau','Pinceau','B'],['rect','Rectangle','R'],['remplir','Remplir','G'],
+    ['pipette','Pipette','I'],['select','Découper','S'],['gomme','Effacer','E']];
   outils.innerHTML=`
     <h4>Carte</h4>
     <select id="selCarte">${CARTES.map(c=>`<option value="${c.id}"${c.id===ed.carte?' selected':''}>${c.n}</option>`).join('')}</select>
@@ -420,7 +521,18 @@ function majOutils(){
     <div class="o">
       <button id="tG" class="${ed.grille?'on':''}">Quadrillage</button>
       <button id="tS" class="${ed.solides?'on':''}">Obstacles</button>
+      <button id="tR" class="${ed.reperes?'on':''}">Départs, portes</button>
+      <button id="tC" ${ed.selRect?'':'disabled'}>Désélectionner</button>
     </div>
+    <h4>La tranche découpée</h4>
+    <div class="o">
+      <button id="bCopie" ${ed.selRect?'':'disabled'}>Copier</button>
+      <button id="bCoupe" ${ed.selRect?'':'disabled'}>Couper</button>
+      <button id="bTourne" ${ed.presse?'':'disabled'}>Tourner</button>
+      <button id="bMiroir" ${ed.presse?'':'disabled'}>Miroir</button>
+    </div>
+    ${ed.presse?'<div class="aide">Une tranche de '+ed.presse.w+'×'+ed.presse.h+
+      ' cases attend. Clique pour la poser.</div>':''}
     <h4>Historique</h4>
     <div class="o">
       <button id="bU" ${ed.hist.length?'':'disabled'}>Annuler</button>
@@ -433,6 +545,8 @@ function majOutils(){
       <b>Clic droit</b> déplace la carte.<br>
       <b>Deux doigts</b> déplacent la carte.<br>
       <kbd>⌘+</kbd> et <kbd>⌘-</kbd> zooment.<br>
+      <b>Découper</b> puis <kbd>⌘C</kbd> ou <kbd>⌘X</kbd>, <kbd>⌘V</kbd> pour coller.<br>
+      <kbd>T</kbd> tourne la tranche, <kbd>M</kbd> la retourne.<br>
       <kbd>⌘Z</kbd> annule, <kbd>⌘S</kbd> enregistre.
     </div>`;
   $('#selCarte').onchange=e=>{ed.carte=e.target.value;batPlanche();cadre();};
@@ -444,6 +558,12 @@ function majOutils(){
   $('#zTout').onclick=cadre;
   $('#tG').onclick=()=>{ed.grille=!ed.grille;majOutils();};
   $('#tS').onclick=()=>{ed.solides=!ed.solides;majOutils();};
+  $('#tR').onclick=()=>{ed.reperes=!ed.reperes;majOutils();};
+  $('#tC').onclick=()=>{ed.selRect=null;majOutils();};
+  $('#bCopie').onclick=()=>copie(false);
+  $('#bCoupe').onclick=()=>copie(true);
+  $('#bTourne').onclick=tournePresse;
+  $('#bMiroir').onclick=miroirPresse;
   $('#bU').onclick=annule; $('#bR').onclick=refais;
   $('#bReset').onclick=()=>{
     if(!confirm("Effacer toutes les retouches de la carte et revenir au dessin d'origine ?"))return;
@@ -463,35 +583,109 @@ function majPanneau(){
   else if(ed.ong==='textes')panneauTextes();
   else panneauTrame();
 }
+/* ---------- les reperes : ce qui est de la logique, pas de la peinture ---------- */
+function reperes(){
+  if(ed.carte!=='domaine')return [];
+  const l=[];
+  A.HOLES.forEach((h,i)=>{
+    l.push({t:'depart',n:'Départ du '+h.n,x:h.tx,y:h.ty,c:'#f4e2a8',
+      pose:(x,y)=>{h.tx=x;h.ty=y;h.len=Math.round(Math.hypot(h.gx-h.tx,h.gy-h.ty)*14);}});
+    l.push({t:'green',n:'Green du '+h.n,x:h.gx,y:h.gy,c:'#8de08d',
+      pose:(x,y)=>{h.gx=x;h.gy=y;h.len=Math.round(Math.hypot(h.gx-h.tx,h.gy-h.ty)*14);}});
+  });
+  A.DOORS.forEach((d,i)=>{
+    l.push({t:'porte',n:'Porte vers '+d.to,x:d.x,y:d.y,c:'#8fb0d8',d:d,
+      pose:(x,y)=>{d.x=x;d.y=y;}});
+  });
+  return l;
+}
+function repereSous(x,y){
+  return reperes().find(r=>r.x===x&&r.y===y)||null;
+}
+function dessineReperes(){
+  if(!ed.reperes||ed.carte!=='domaine')return;
+  const z=ed.z;
+  reperes().forEach(r=>{
+    const sx=Math.round((r.x-ed.camx)*z), sy=Math.round((r.y-ed.camy)*z);
+    if(sx<-40||sy<-40||sx>cv.width+40||sy>cv.height+40)return;
+    cx.fillStyle='rgba(12,14,18,.72)';
+    cx.fillRect(sx,sy,Math.max(6,z),Math.max(6,z));
+    cx.fillStyle=r.c;
+    cx.fillRect(sx+2,sy+2,Math.max(2,z-4),Math.max(2,z-4));
+    if(z>=10){
+      cx.font='9px -apple-system,sans-serif'; cx.textBaseline='bottom';
+      const w=cx.measureText(r.n).width;
+      cx.fillStyle='rgba(12,14,18,.8)'; cx.fillRect(sx,sy-12,w+6,12);
+      cx.fillStyle=r.c; cx.fillText(r.n,sx+3,sy-2);
+    }
+  });
+}
+
+/* ---------- la bibliotheque, rangee et filtrable ---------- */
+const FAMILLES=[['tout','Tout'],['terrain','Terrain'],['golf','Golf'],['eau','Eau'],
+  ['vegetation','Végétation'],['cloture','Clôtures'],['route','Route'],['vehicule','Véhicules'],
+  ['batiment','Bâtiments'],['toiture','Toitures'],['exterieur','Extérieur'],['interieur','Intérieur']];
+const PASSES=[['tout','Tous'],['libre','Franchissable'],['bloc','Non franchissable'],['saut','Sautable']];
+function passeDe(e){
+  const t=e.m?e.m[0]:e.t;
+  if(A.SAUT.has(t))return 'saut';
+  return A.SOLID.has(t)?'bloc':'libre';
+}
+function vignetteMotif(e){
+  const w=e.m?e.w:1, h=e.m?e.h:1;
+  const c=document.createElement('canvas'); c.width=w*TS; c.height=h*TS;
+  const g=c.getContext('2d'); g.imageSmoothingEnabled=false;
+  if(e.m){for(let j=0;j<h;j++)for(let i=0;i<w;i++)g.drawImage(A.tile(e.m[j*w+i],0,0),i*TS,j*TS);}
+  else g.drawImage(A.tile(e.t,0,0),0,0);
+  return c;
+}
 function panneauBlocs(){
   pan.style.display='';
-  const ids=Object.keys(NOMS_T).map(Number).sort((a,b)=>a-b);
-  pan.innerHTML=`<h4>Bibliothèque de blocs</h4>
-    <input type="text" id="q" placeholder="Chercher un bloc..." style="margin-bottom:7px">
-    <div class="blocs" id="lstBlocs"></div>
-    <div class="aide">Le bloc encadré est celui que le pinceau pose.
-    ${ed.ong==='blocs'?'<br>Clique un bloc pour le redessiner pixel par pixel.':''}</div>`;
+  pan.innerHTML='<h4>La bibliothèque</h4>'+
+    '<input type="text" id="q" placeholder="Chercher..." value="'+ed.cherche+'" style="margin-bottom:6px">'+
+    '<select id="fam" style="margin-bottom:4px">'+
+      FAMILLES.map(f=>'<option value="'+f[0]+'"'+(f[0]===ed.famille?' selected':'')+'>'+f[1]+'</option>').join('')+
+    '</select>'+
+    '<select id="pas" style="margin-bottom:7px">'+
+      PASSES.map(f=>'<option value="'+f[0]+'"'+(f[0]===ed.passe?' selected':'')+'>'+f[1]+'</option>').join('')+
+    '</select>'+
+    '<div class="blocs" id="lstBlocs"></div>'+
+    '<div class="aide">Le bloc encadré est celui que le pinceau pose. Un motif de plusieurs '+
+    'cases se pose d\'un seul clic.'+
+    (ed.ong==='blocs'?'<br>Ici, cliquer un bloc l\'ouvre pour le redessiner.':'')+'</div>';
   const lst=$('#lstBlocs');
-  function remplir(f){
+  function remplir(){
     lst.innerHTML='';
-    ids.forEach(t=>{
-      const nom=NOMS_T[t];
-      if(f&&nom.toLowerCase().indexOf(f)<0)return;
+    const f=ed.cherche.trim().toLowerCase();
+    let n=0;
+    A.BIBLI.forEach(e=>{
+      if(ed.famille!=='tout'&&e.cat!==ed.famille)return;
+      if(ed.passe!=='tout'&&passeDe(e)!==ed.passe)return;
+      if(f&&e.n.toLowerCase().indexOf(f)<0)return;
+      n++;
+      const t0=e.m?e.m[0]:e.t;
+      const choisi=e.m?(ed.motif&&ed.motif.n===e.n):(!ed.motif&&t0===ed.bloc);
       const d=document.createElement('div');
-      d.className='bloc'+(t===ed.bloc?' on':'')+(A.TUILE_OVR[t]?' retouche':'');
-      d.title=nom+' ('+t+')';
-      d.appendChild(vignette(t));
-      const i=document.createElement('i'); i.textContent=nom; d.appendChild(i);
+      d.className='bloc'+(choisi?' on':'')+(A.TUILE_OVR[t0]?' retouche':'');
+      d.title=e.n+(e.m?'  ('+e.w+'×'+e.h+' cases)':'')+'  ['+
+        ({libre:'on passe',bloc:'on ne passe pas',saut:'on saute par-dessus'})[passeDe(e)]+']';
+      if(e.m){d.style.gridColumn='span '+Math.min(4,e.w);}
+      d.appendChild(vignetteMotif(e));
+      const i=document.createElement('i'); i.textContent=e.n; d.appendChild(i);
       d.onclick=()=>{
-        ed.bloc=t;
-        if(ed.ong==='blocs'){ed.blocEdit=t;ouvreBloc(t);}
+        if(e.m){ed.motif=e;ed.bloc=e.m[0];}
+        else{ed.motif=null;ed.bloc=e.t;
+          if(ed.ong==='blocs'){ed.blocEdit=e.t;ouvreBloc(e.t);}}
         majPanneau();
       };
       lst.appendChild(d);
     });
+    if(!n)lst.innerHTML='<div class="aide">Rien avec ces filtres.</div>';
   }
-  remplir('');
-  $('#q').oninput=e=>remplir(e.target.value.trim().toLowerCase());
+  remplir();
+  $('#q').oninput=e=>{ed.cherche=e.target.value;remplir();};
+  $('#fam').onchange=e=>{ed.famille=e.target.value;remplir();};
+  $('#pas').onchange=e=>{ed.passe=e.target.value;remplir();};
 }
 
 /* ---------- redessiner un bloc, pixel par pixel ---------- */
@@ -1149,6 +1343,11 @@ function monde(){
   if(!mem(A.MISSIONS,A.MISSIONS_BASE))out.missions=A.MISSIONS;
   if(!mem(A.ACTES,A.ACTES_BASE))out.actes=A.ACTES;
   if(!mem(A.LOCKED,A.LOCKED_BASE))out.lieux=A.LOCKED;
+  const trous=A.HOLES.map(h=>({tx:h.tx,ty:h.ty,gx:h.gx,gy:h.gy}));
+  if(!mem(trous,A.HOLES_BASE))out.trous=trous;
+  const portes=A.DOORS.map(d=>({x:d.x,y:d.y,to:d.to,tl:d.tl,sx:d.sx,sy:d.sy}));
+  const portesBase=A.DOORS_BASE.map(d=>({x:d.x,y:d.y,to:d.to,tl:d.tl,sx:d.sx,sy:d.sy}));
+  if(!mem(portes,portesBase))out.portes=portes;
   return out;
 }
 async function enregistre(){
@@ -1168,6 +1367,8 @@ async function enregistre(){
     const no=Object.keys(m.objets||{}).length; if(no)bouts.push(no+' objet'+(no>1?'s':''));
     if(m.missions)bouts.push('la trame');
     if(m.lieux)bouts.push('les lieux');
+    if(m.trous)bouts.push('les départs');
+    if(m.portes)bouts.push('les portes');
     dit('Enregistré'+(bouts.length?' : '+bouts.join(', ')+'.':'.'),true);
   }catch(e){
     ed.sauve=true;

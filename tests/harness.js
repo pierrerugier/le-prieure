@@ -16,6 +16,7 @@ src = src.replace('chargeMonde().then(load).finally(loop);', `globalThis.__t={ga
   startHole,save,load,solidAt,placeGang,SPOTS,TRACKS,musWant,pente,CRIS,phaseOf,BALLS,updateCars,timeStep,breakWindow,velo,updateVelo,startPente,updatePente,leaves,inBrush,ballVisible,estVitre,estCassee,VILLAS,LISIERE,EVENOU,VOITURES,FICHES,fiche,skillDe,vitPuissance,vitPrecision,longueurDe,cours,startCours,INVITES,inviteRecue,FEU,
   pers,dogSpr,BODY_SIDE,DOG_SIDE,sfx,ambiances,piscineOuverte,baignade,entreDansLeau,proposePartie,updateAttente,departDu1,hNow,AU_FEU,FEU_RING,FEU_TALK,feuMenu,eteindreLeFeu,bikeSpr,BIKE_DOWN,BIKE_UP,BIKE_SIDE,MISSIONS,ACTES,mission,missionCourante,niveau,chaparde,voleVoiturette,updateVoiturette,BUTIN,
   BASE,appliqueMonde,carteDe,TUILE_OVR,CORPS,CORPS_BASE,FICHES_BASE,tile,cache,MW_:MW,
+  BIBLI,MIROIR,ROT,SAUT,MODELES,HOLES_BASE,DOORS_BASE,estDepart,VILLAS_:VILLAS,
   ITEMS_BASE,NPCS_BASE,MISSIONS_BASE,ACTES_BASE,LOCKED_BASE,EVENTS};`);
 
 /* ---------- faux canvas ---------- */
@@ -525,6 +526,40 @@ check('la trame revient a l origine', t.MISSIONS.length === t.MISSIONS_BASE.leng
 check('les lieux reviennent a l origine', t.LOCKED.length === t.LOCKED_BASE.length);
 check('les objets reviennent a l origine',
   t.ITEMS.find(o => o.id === 'putter').n === t.ITEMS_BASE.putter.n);
+clear();
+
+/* ---------- 4 ter. la bibliotheque et les reperes ---------- */
+check('la bibliotheque est rangee par familles', t.BIBLI.length > 140, t.BIBLI.length + ' entrees');
+check('chaque entree a une famille et un nom',
+  t.BIBLI.every(e => e.cat && e.n && (e.t !== undefined || (e.m && e.m.length === e.w * e.h))));
+check('les motifs de plusieurs cases existent',
+  t.BIBLI.filter(e => e.m).length >= 12, t.BIBLI.filter(e => e.m).length + ' motifs');
+check('les sept voitures de profil sont dessinees',
+  t.MODELES.length === 7 && t.BIBLI.filter(e => e.cat === 'vehicule').length === 7);
+check('toutes les cases de la bibliotheque se dessinent',
+  t.BIBLI.every(e => (e.m || [e.t]).every(id => !!t.tile(id, 0, 0))));
+check('la cloture blanche se saute', ['CLOH','CLOV','CLONO','CLOSE','CLOP'].every(k => t.SAUT.has(T[k])));
+check('la cloture blanche arrete quand on ne saute pas', t.SOLID.has(T.CLOH) && t.SOLID.has(T.CLOV));
+check('on passe sur le chemin de terre et le carrelage',
+  !t.SOLID.has(T.TERRE) && !t.SOLID.has(T.CARRP) && !t.SOLID.has(T.JONC));
+check('la mare arrete', t.SOLID.has(T.MARE));
+check('le miroir renvoie bien les paires', t.MIROIR[T.CLONO] === T.CLONE && t.MIROIR[T.CLONE] === T.CLONO);
+check('le quart de tour redresse la cloture', t.ROT[T.CLOH] === T.CLOV && t.ROT[T.CLOV] === T.CLOH);
+check('les neuf departs sont des reperes deplacables',
+  t.HOLES.length === 9 && t.HOLES_BASE.length === 9);
+check('les portes sont des reperes deplacables', t.DOORS.length >= 5 && t.DOORS_BASE.length === t.DOORS.length);
+/* deplacer un depart deplace la logique, pas l'herbe */
+const teeAvant = { tx: t.HOLES[0].tx, ty: t.HOLES[0].ty };
+t.appliqueMonde({ v: 1, carte: {}, tuiles: {}, persos: {}, trous: [{ tx: 40, ty: 40, gx: 50, gy: 76 }] });
+check('un depart deplace change ou commence le trou', t.HOLES[0].tx === 40 && t.HOLES[0].ty === 40);
+t.appliqueMonde({ v: 1, carte: {}, tuiles: {}, persos: {} });
+check('le depart revient a sa place', t.HOLES[0].tx === teeAvant.tx && t.HOLES[0].ty === teeAvant.ty);
+/* le vrai depart de quatre cases est bien pose et reconnu */
+check('le depart du 1 fait quatre cases',
+  [[0,0],[1,0],[0,1],[1,1]].every(d => t.estDepart(at(t.HOLES[0].tx - 1 + d[0], t.HOLES[0].ty - 1 + d[1]))),
+  'tuiles ' + [[0,0],[1,0],[0,1],[1,1]].map(d => at(t.HOLES[0].tx-1+d[0], t.HOLES[0].ty-1+d[1])).join(','));
+check('la maison des Molina existe hors du hameau', !!t.INT.molina);
+check('les Molina ne sont plus au hameau', !t.VILLAS.some(v => v.id === 'molina'));
 clear();
 
 /* ---------- 5. les voitures de la departementale ---------- */
