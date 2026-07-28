@@ -215,18 +215,32 @@ app.get('/api/monde', (req, res) => res.json(monde));
 app.post('/api/monde', (req, res) => {
   const m = req.body;
   if (!m || typeof m !== 'object' || !m.carte) { res.status(400).json({ ok: false }); return; }
+  /* Une version plus ancienne ne recouvre jamais une plus recente. C'est arrive
+     une fois : un navigateur reste ouvert sur une vieille carte, on enregistre,
+     et le travail de la journee disparait. Plus maintenant. */
+  const dnew = typeof m.t === 'number' ? m.t : 0;
+  const dold = typeof (monde && monde.t) === 'number' ? monde.t : 0;
+  if (dold && dnew && dnew < dold && !m.force) {
+    res.status(409).json({
+      ok: false, raison: 'plus ancienne',
+      serveur: dold, envoye: dnew
+    });
+    return;
+  }
   monde = {
     v: 1,
+    t: dnew || Date.now(),
     carte: m.carte || {},
     tuiles: m.tuiles || {},
     persos: m.persos || { fiches: {}, corps: {} },
     pnj: m.pnj || {},
     objets: m.objets || {}
   };
-  /* la trame, les actes et les lieux ne voyagent que s'ils ont bouge */
+  /* la trame, les actes, les lieux et la lettre ne voyagent que s'ils ont bouge */
   if (Array.isArray(m.missions)) monde.missions = m.missions;
   if (Array.isArray(m.actes)) monde.actes = m.actes;
   if (Array.isArray(m.lieux)) monde.lieux = m.lieux;
+  if (Array.isArray(m.lettre)) monde.lettre = m.lettre;
   if (Array.isArray(m.trous)) monde.trous = m.trous;
   if (Array.isArray(m.portes)) monde.portes = m.portes;
   if (Array.isArray(m.blocs)) monde.blocs = m.blocs;

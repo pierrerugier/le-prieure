@@ -13,7 +13,7 @@ if (src.indexOf('chargeMonde().then(load).finally(loop);') < 0) throw new Error(
 src = src.replace('chargeMonde().then(load).finally(loop);', `globalThis.__t={game,golf,net,update,render,map,MW,MH,T,at,put,NPCS,ITEMS,
   HOLES,PICKS,INT,DOORS,LOCKED,cars,shards,keys,press,release,consume,MAMOU,MAMOU_WIN,FEU,
   players,P_:()=>players,goInside,goOutside,zoneAt,menuList,buildMini,SOLID,getTile,S,ballSpots,updatePick,
-  startHole,save,load,solidAt,placeGang,bruitDuSol,SOL_BRUIT,bonPoste,SOL_DEBOUT,passageEtroit,dansLeHameau,caseDeboutPres,recalePersonnages,roam,MAMOU,SPOTS,TRACKS,musWant,AGENDA,RENTRENT,creneau,placeAgenda,PANNEAUX,porteeDe,hauteurObstacle,sanction,reculeSurLaLigne,autoClub,puissancePour,CLUBS,M,LIEF,PUTTER,caseDe,ROULE,EAUX,HORS,AVALE,pente,CRIS,phaseOf,BALLS,updateCars,timeStep,breakWindow,velo,updateVelo,startPente,updatePente,rendVoiturette,leaves,inBrush,ballVisible,estVitre,estCassee,VILLAS,LISIERE,EVENOU,VOITURES,FICHES,fiche,skillDe,vitPuissance,vitPrecision,longueurDe,cours,startCours,INVITES,inviteRecue,FEU,
+  startHole,save,load,solidAt,placeGang,bruitDuSol,SOL_BRUIT,bonPoste,SOL_DEBOUT,passageEtroit,dansLeHameau,caseDeboutPres,recalePersonnages,roam,MAMOU,LETTRE,LETTRE_BASE,NB_LETTRE,bouts,lettreComplete,poseLaLettre,coinsDuGolf,PENTE_CASES,PENTE_BORD,surLaPiste,trouveLaPiste,semeLesBalles,jourFlottant,repousseLesBalles,effaceLesTraces,traces,poseTrace,jardinPrive,CLUB_C,FOES,startFight,posePresDeLaPiste,pente,startPente,SPOTS,TRACKS,musWant,AGENDA,RENTRENT,creneau,placeAgenda,PANNEAUX,porteeDe,hauteurObstacle,sanction,reculeSurLaLigne,autoClub,puissancePour,CLUBS,M,LIEF,PUTTER,caseDe,ROULE,EAUX,HORS,AVALE,pente,CRIS,phaseOf,BALLS,updateCars,timeStep,breakWindow,velo,updateVelo,startPente,updatePente,rendVoiturette,leaves,inBrush,ballVisible,estVitre,estCassee,VILLAS,LISIERE,EVENOU,VOITURES,FICHES,fiche,skillDe,vitPuissance,vitPrecision,longueurDe,cours,startCours,INVITES,inviteRecue,FEU,
   pers,dogSpr,BODY_SIDE,DOG_SIDE,sfx,ambiances,piscineOuverte,baignade,entreDansLeau,proposePartie,updateAttente,departDu1,hNow,AU_FEU,placesDuFeu,placeAutourDuFeu,trouveLeFeu,FEU,FEU_TALK,feuMenu,eteindreLeFeu,bikeSpr,BIKE_DOWN,BIKE_UP,BIKE_SIDE,MISSIONS,ACTES,mission,missionCourante,niveau,chaparde,voleVoiturette,updateVoiturette,BUTIN,
   BASE,appliqueMonde,carteDe,TUILE_OVR,CORPS,CORPS_BASE,FICHES_BASE,tile,cache,MW_:MW,
   BIBLI,MIROIR,ROT,SAUT,MODELES,HOLES_BASE,DOORS_BASE,estDepart,VILLAS_:VILLAS,
@@ -1214,6 +1214,157 @@ check('dix secondes pour retrouver une balle perdue', (() => {
   const src = require('fs').readFileSync(__dirname + '/../public/index.html', 'utf8');
   return src.indexOf('golf.stime=600') > 0;
 })());
+
+/* ---------- 17. les betes, les balles, la piste et la lettre ---------- */
+check('la vipere, le ver et la limace existent',
+  !!t.FOES.VIPERE && !!t.FOES.VER && !!t.FOES.LIMACE);
+check('chacun a son dessin et ses trois phrases',
+  ['VIPERE','VER','LIMACE','SANGLIER'].every(k => {
+    const f = t.FOES[k];
+    return f.spr && f.spr.length === 16 && f.cry && f.win && f.lose;
+  }));
+check('le ver et la limace ne font pas mal',
+  t.FOES.VER.atk <= 4 && t.FOES.LIMACE.atk <= 4 && t.FOES.VIPERE.atk < t.FOES.SANGLIER.atk);
+check('les rencontres sont devenues rares', (() => {
+  const src = require('fs').readFileSync(__dirname + '/../public/index.html', 'utf8');
+  const m = src.match(/derniereBete\|\|-9999\)>(\d+)[\s\S]{0,80}?Math\.random\(\)<([\d.]+)/);
+  return m && +m[1] >= 600 && +m[2] <= 0.004;
+})());
+
+/* les balles perdues */
+check('une soixantaine de balles, pas cent', t.ballSpots.length >= 55 && t.ballSpots.length <= 80,
+  t.ballSpots.length + ' balles');
+check('elles sont dans les bois', (() => {
+  const bois = t.ballSpots.filter(b => at(b.x, b.y) === T.DENSE).length;
+  return bois >= t.ballSpots.length * 0.75;
+})(), t.ballSpots.filter(b => at(b.x, b.y) === T.DENSE).length + ' dans le sous-bois');
+check('aucune balle dans un jardin du hameau',
+  !t.ballSpots.some(b => t.jardinPrive(b.x, b.y)),
+  t.ballSpots.filter(b => t.jardinPrive(b.x, b.y)).map(b => b.x + ',' + b.y).join(' '));
+check('aucune balle sur une pelouse ni une terrasse',
+  !t.ballSpots.some(b => [T.LAWN, T.DECK, T.PDECK, T.GREEN].includes(at(b.x, b.y))));
+check('une dizaine autour du club, a la vue de tous', (() => {
+  const n = t.ballSpots.filter(b => Math.hypot(b.x - t.CLUB_C.x, b.y - t.CLUB_C.y) <= 16 &&
+    at(b.x, b.y) !== T.DENSE).length;
+  return n >= 6 && n <= 14;
+})(), t.ballSpots.filter(b => Math.hypot(b.x - t.CLUB_C.x, b.y - t.CLUB_C.y) <= 16 &&
+    at(b.x, b.y) !== T.DENSE).length + ' autour du club');
+/* deux jours, et elles reviennent */
+game.jour = 0; game.min = 12 * 60;
+const bTest = t.ballSpots[0]; bTest.taken = true; bTest.pris = t.jourFlottant();
+t.repousseLesBalles();
+check('une balle ramassee ne revient pas tout de suite', bTest.taken);
+game.jour = 2; game.min = 13 * 60;
+t.repousseLesBalles();
+check('au bout de deux jours elle est de nouveau la', !bTest.taken);
+/* les traces de voiturette aussi */
+game.jour = 0; game.min = 12 * 60;
+t.traces.length = 0;
+const solAvant = at(60, 45);
+t.poseTrace(60, 45);
+check('la trace de pneu se pose', t.baseT(at(60, 45)) === T.TRACE, 'case ' + at(60, 45));
+t.effaceLesTraces();
+check('elle tient plus d une journee', t.baseT(at(60, 45)) === T.TRACE);
+game.jour = 2; game.min = 13 * 60;
+t.effaceLesTraces();
+check('au bout de deux jours le gazon a repousse', at(60, 45) === solAvant,
+  'case ' + at(60, 45) + ' au lieu de ' + solAvant);
+
+/* la piste de grass board */
+check('la piste est un seul morceau de terre', t.PENTE_CASES.size >= 6 && t.PENTE_CASES.size <= 60,
+  t.PENTE_CASES.size + ' cases');
+check('elle est dans le bois du hameau', (() => {
+  const c = [...t.PENTE_CASES].map(k => k.split(',').map(Number));
+  return c.every(q => t.dansLeHameau(q[0], q[1]));
+})());
+check('elle est en terre et nulle part ailleurs', (() => {
+  const c = [...t.PENTE_CASES].map(k => k.split(',').map(Number));
+  return c.every(q => at(q[0], q[1]) === T.TERRE || at(q[0], q[1]) === T.DIRT);
+})());
+check('un chemin de terre ordinaire n est pas la piste',
+  !t.surLaPiste(52, 64) && !t.surLaPiste(39, 20));
+check('il y a de la place autour pour les copains', t.PENTE_BORD.length >= 3,
+  t.PENTE_BORD.length + ' places');
+/* on ne se fait proposer la planche qu une fois */
+clear(); game.state = t.S.WORLD; game.inside = null; game.penteVu = false;
+/* on marche dessus : c'est en arrivant sur la piste qu'on nous le propose */
+const cases = [...t.PENTE_CASES].map(k => k.split(',').map(Number));
+let entree = null;
+for (const [x, y] of cases) {
+  for (const [dx, dy] of [[0, -1], [0, 1], [-1, 0], [1, 0]]) {
+    const a2 = x - dx, b2 = y - dy;
+    if (t.PENTE_CASES.has(a2 + ',' + b2) || t.solidAt(a2, b2)) continue;
+    entree = { de: [a2, b2], vers: [x, y], d: (dy > 0 ? 0 : dy < 0 ? 1 : dx < 0 ? 2 : 3) };
+    break;
+  }
+  if (entree) break;
+}
+check('on peut entrer sur la piste a pied', !!entree,
+  cases.map(q => q.join(',')).join(' '));
+if (entree) {
+  tp(entree.de[0], entree.de[1]); game.penteVu = false;
+  hold(['down', 'up', 'left', 'right'][entree.d], 14);
+  check('on est bien monte sur la piste', t.surLaPiste(game.px, game.py),
+    game.px + ',' + game.py);
+  check('la planche se propose sur la piste', game.state === t.S.ASK, 'etat ' + game.state);
+  if (game.state === t.S.ASK) { tap('b', 2); clear(); }
+  /* on avance d une case sur la piste : on ne nous redemande plus */
+  const dir2 = cases.find(q => (Math.abs(q[0] - game.px) + Math.abs(q[1] - game.py)) === 1);
+  if (dir2) {
+    const k = (dir2[1] > game.py) ? 'down' : (dir2[1] < game.py) ? 'up' :
+              (dir2[0] < game.px) ? 'left' : 'right';
+    hold(k, 14);
+    check('et pas une deuxieme fois sans etre sorti', game.state !== t.S.ASK, 'etat ' + game.state);
+  }
+}
+clear(); game.penteVu = false;
+/* trois copains descendent avec toi */
+clear(); t.startPente(true); frames(2);
+check('trois copains prennent la pente avec toi', t.pente.copains.length === 3,
+  t.pente.copains.map(c => c.id).join(' '));
+check('ils sont tous differents',
+  new Set(t.pente.copains.map(c => c.id)).size === t.pente.copains.length);
+game.state = t.S.WORLD; tp(cases[0][0], cases[0][1]); t.posePresDeLaPiste();
+check('en ressortant ils sont autour de la piste', t.pente.copains.every(c => {
+  const n = t.NPCS.find(x => x.id === c.id);
+  return n && !n.gone && !n.inside &&
+    t.PENTE_BORD.some(q => q[0] === n.x && q[1] === n.y);
+}), t.pente.copains.map(c => {
+  const n = t.NPCS.find(x => x.id === c.id); return c.id + ':' + (n ? n.x + ',' + n.y : '?');
+}).join(' '));
+
+/* la lettre de Lise Lebel */
+check('dix morceaux de lettre', t.NB_LETTRE === 10 &&
+  t.ITEMS.filter(o => o.lettre).length === 10);
+check('ils sont eparpilles aux quatre coins du parcours', (() => {
+  const c = t.coinsDuGolf();
+  const f = t.ITEMS.filter(o => o.lettre);
+  return c.every(co => f.some(o => Math.hypot(o.x - co[0], o.y - co[1]) < 12));
+})(), t.ITEMS.filter(o => o.lettre).map(o => o.x + ',' + o.y).join(' '));
+check('aucun morceau dans un mur',
+  !t.ITEMS.filter(o => o.lettre).some(o => t.SOLID.has(at(o.x, o.y))));
+check('ils sont loin les uns des autres', (() => {
+  const f = t.ITEMS.filter(o => o.lettre);
+  for (let i = 0; i < f.length; i++) for (let j = i + 1; j < f.length; j++)
+    if (Math.hypot(f[i].x - f[j].x, f[i].y - f[j].y) < 2) return false;
+  return true;
+})());
+game.items = {};
+check('sans morceau, pas de lettre', !t.lettreComplete() && t.bouts() === 0);
+for (let i = 1; i <= 9; i++) game.items['lettre' + i] = true;
+check('neuf morceaux ne suffisent pas', !t.lettreComplete() && t.bouts() === 9);
+game.items['lettre10'] = true;
+check('avec les dix on peut la lire', t.lettreComplete());
+check('la lettre a un texte', t.LETTRE.length >= 6 && t.LETTRE.some(l => l.indexOf('Lise') >= 0));
+check('elle se reecrit depuis l atelier', (() => {
+  const av = t.LETTRE.slice();
+  t.appliqueMonde({ v: 1, lettre: ['Essai.', 'Deux lignes.'] });
+  const ok2 = t.LETTRE.length === 2 && t.LETTRE[0] === 'Essai.';
+  t.appliqueMonde(JSON.parse(require('fs').readFileSync(__dirname + '/../public/monde.json', 'utf8')));
+  return ok2;
+})());
+remetMonde();
+game.items = {};
 
 /* ---------- verdict ---------- */
 console.log('\n  ' + ok + ' verifications passees, ' + ko + ' echec(s).');

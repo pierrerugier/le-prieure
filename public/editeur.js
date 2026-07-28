@@ -1296,15 +1296,18 @@ function majLettres(){
 }
 
 /* ---------- les textes : dialogues, personnages, lieux, objets ---------- */
-const CATS=[{k:'pnj',n:'Personnages'},{k:'lieux',n:'Lieux'},{k:'objets',n:'Objets'}];
+const CATS=[{k:'pnj',n:'Personnages'},{k:'lieux',n:'Lieux'},{k:'objets',n:'Objets'},
+            {k:'lettre',n:'La lettre de Lise Lebel'}];
 function listeCat(){
   if(ed.cat==='pnj')return A.NPCS.map((n,i)=>({cle:n.id,n:n.name||n.id,o:n}));
   if(ed.cat==='objets')return A.ITEMS.map(o=>({cle:o.id,n:o.n,o:o}));
+  if(ed.cat==='lettre')return [{cle:'lettre',n:'Le texte de la lettre'}];
   return A.LOCKED.map((l,i)=>({cle:i,n:l.who+'  ('+l.x+', '+l.y+')',o:l}));
 }
 function entreeRetouchee(cle){
   if(ed.cat==='pnj')return !!(patchPnj[cle]&&Object.keys(patchPnj[cle]).length);
   if(ed.cat==='objets')return !!(patchObj[cle]&&Object.keys(patchObj[cle]).length);
+  if(ed.cat==='lettre')return A.LETTRE.join('\n')!==A.LETTRE_BASE.join('\n');
   const b=A.LOCKED_BASE[cle];
   return b&&JSON.stringify(A.LOCKED[cle])!==JSON.stringify(b);
 }
@@ -1392,6 +1395,27 @@ function vueTextes(){
   const f=document.createElement('div'); f.className='form';
   const titre=document.createElement('div');
   const bRaz=document.createElement('button'); bRaz.className='b'; bRaz.textContent="Texte d'origine";
+  if(ed.cat==='lettre'){
+    titre.innerHTML='<b style="color:#f4e2a8">La lettre de Lise Lebel</b>'+
+      '<div style="color:#79808f;margin-top:5px;font-size:12px">'+
+      'Dix morceaux, aux quatre coins du parcours. Quand on les a tous, on lit ça. '+
+      'Une ligne du texte par ligne ici. Une ligne vide fait un blanc.</div>';
+    f.appendChild(titre);
+    const t=document.createElement('textarea');
+    t.value=A.LETTRE.join('\n');
+    t.rows=Math.max(12,A.LETTRE.length+3);
+    t.style.width='100%'; t.style.minHeight='260px'; t.style.lineHeight='1.6';
+    t.oninput=()=>{
+      const l=t.value.split('\n');
+      A.LETTRE.length=0; l.forEach(x=>A.LETTRE.push(x));
+      sale();
+    };
+    f.appendChild(t);
+    bRaz.onclick=()=>{A.LETTRE.length=0;A.LETTRE_BASE.forEach(x=>A.LETTRE.push(x));sale();majVue();};
+    f.appendChild(bRaz);
+    w.appendChild(f);
+    return w;
+  }
   if(ed.cat==='pnj'){
     const n=A.NPCS.find(x=>x.id===ed.sel); if(!n)return w;
     titre.innerHTML='<b style="color:#f4e2a8">'+n.name+'</b> <span style="color:#79808f">'+n.id+'</span>';
@@ -1682,11 +1706,14 @@ function monde(){
   Object.keys(patchPnj).forEach(k=>{if(Object.keys(patchPnj[k]||{}).length)pnj[k]=patchPnj[k];});
   Object.keys(patchObj).forEach(k=>{if(Object.keys(patchObj[k]||{}).length)objets[k]=patchObj[k];});
   const mem=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
-  const out={v:1,carte:carte,tuiles:tuiles,persos:{fiches:fiches,corps:corps},
+  /* la date de l'enregistrement : c'est elle qui dira, au prochain chargement,
+     laquelle des deux copies est la plus recente */
+  const out={v:1,t:Date.now(),carte:carte,tuiles:tuiles,persos:{fiches:fiches,corps:corps},
     pnj:pnj,objets:objets};
   if(!mem(A.MISSIONS,A.MISSIONS_BASE))out.missions=A.MISSIONS;
   if(!mem(A.ACTES,A.ACTES_BASE))out.actes=A.ACTES;
   if(!mem(A.LOCKED,A.LOCKED_BASE))out.lieux=A.LOCKED;
+  if(!mem(A.LETTRE,A.LETTRE_BASE))out.lettre=A.LETTRE.slice();
   if((A.monde.blocs||[]).length)out.blocs=A.monde.blocs;
   const trous=A.HOLES.map(h=>({tx:h.tx,ty:h.ty,gx:h.gx,gy:h.gy}));
   if(!mem(trous,A.HOLES_BASE))out.trous=trous;
@@ -1702,7 +1729,21 @@ async function enregistre(){
   dit('Enregistrement...');
   try{
     const r=await fetch('/api/monde',{method:'POST',headers:{'Content-Type':'application/json'},body:txt});
-    if(!r.ok)throw new Error(r.status);
+    /* le serveur a refuse : il a une version plus recente que celle-ci */
+    if(r.status===409){
+      const d=await r.json().catch(()=>({}));
+      const quand=d.serveur?new Date(d.serveur).toLocaleString('fr-FR'):'plus tard';
+      if(!confirm('Le serveur a une carte plus récente ('+quand+') que celle ouverte ici.\n\n'+
+                  'Écraser quand même la version en ligne ?')){
+        dit('Rien envoyé. La version du serveur est plus récente.',true);
+        return;
+      }
+      m.force=1;
+      const r2=await fetch('/api/monde',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(m)});
+      if(!r2.ok)throw new Error(r2.status);
+    }
+    else if(!r.ok)throw new Error(r.status);
     ed.sauve=true;
     const n=Object.keys(m.carte).reduce((a,k)=>a+m.carte[k].length,0);
     const bouts=[];
@@ -1753,13 +1794,15 @@ if(A.secours){
   b.style.cssText='flex:0 0 auto;background:#5e3a1e;'+
     'border-bottom:1px solid #8a5a2a;color:#f4e2a8;padding:9px 14px;font-size:12px;'+
     'display:flex;align-items:center;gap:12px';
-  b.innerHTML='<span><b>Le serveur est reparti à vide.</b> Voici la version gardée sur cet '+
-    'appareil. Enregistre pour la remettre en ligne, et exporte-la pour la mettre à l\'abri.</span>';
+  b.innerHTML='<span><b>La version de cet appareil est plus récente que celle du serveur.</b> '+
+    'C\'est elle qui est ouverte. Exporte-la pour la mettre à l\'abri, puis remets-la en ligne.</span>';
+  const exp=document.createElement('button'); exp.className='b'; exp.textContent='Exporter d\'abord';
+  exp.onclick=()=>{$('#bExport').click();};
   const ok=document.createElement('button'); ok.className='b vert'; ok.textContent='Remettre en ligne';
   ok.onclick=()=>{enregistre();b.remove();};
   const x=document.createElement('button'); x.className='b'; x.textContent='Plus tard';
   x.onclick=()=>b.remove();
-  b.appendChild(ok); b.appendChild(x);
+  b.appendChild(exp); b.appendChild(ok); b.appendChild(x);
   const ed0=document.querySelector('#ed');
   ed0.insertBefore(b,ed0.querySelector('main'));
   dit('Version locale reprise. Pense à l\'enregistrer.');

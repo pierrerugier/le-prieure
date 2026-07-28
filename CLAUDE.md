@@ -113,6 +113,43 @@ Le feu de camp est **la ou il est peint sur la carte** (`trouveLeFeu`). Le cercl
 tout seul autour : les cases libres a deux pas, rangees par angle, une place laissee au sud
 pour le joueur.
 
+## Ne jamais perdre le domaine de Pierre
+
+Le disque de Render est **efface a chaque mise en ligne**. Les regles qui protegent
+son travail, dans cet ordre :
+
+1. L'atelier **date** chaque enregistrement (`t`). Une carte sans date vient d'avant.
+2. Au chargement, on garde **la plus recente** entre le serveur et la copie de
+   l'appareil. Si c'est celle de l'appareil, un bandeau le dit et propose de
+   l'exporter avant de la remettre en ligne.
+3. Le serveur **refuse** un enregistrement plus ancien que le sien (409). L'atelier
+   demande alors confirmation avant d'ecraser.
+4. `public/monde.json` reste le filet de secours, relu par le serveur et par le jeu.
+
+Avant de deployer quoi que ce soit, verifier que `public/monde.json` est bien la
+derniere version : `curl -s https://le-prieure.onrender.com/api/monde`.
+
+## Les betes, les balles et la lettre
+
+Les rencontres du sous-bois sont **rares** : deux chances sur mille par pas, et
+jamais deux fois dans la meme minute. Le sanglier, la vipere, la limace et le ver
+de terre. Les deux derniers ne font pas mal, ils degoutent, et c'est le but.
+
+Les balles perdues sont **dans les bois** : soixante dans le sous-bois, dix autour
+du club a la vue de tous, aucune dans un jardin. Une balle ramassee **revient au
+bout de deux jours**, et une trace de voiturette **s'efface au bout de deux jours**.
+
+La **lettre de Lise Lebel** : dix morceaux aux quatre coins du parcours, un objet
+chacun. Quand on les a tous, elle se lit dans le menu. Son texte s'ecrit dans
+l'atelier, onglet Textes, categorie « La lettre de Lise Lebel ».
+
+## La piste de grass board
+
+Elle est **le morceau de terre d'un seul tenant** autour de `PENTE_REF`, et nulle
+part ailleurs : les autres chemins de terre restent des chemins. On propose la
+planche **une seule fois par passage**, pas a chaque case. Trois copains descendent
+avec toi dans l'animation, et ils sont la, autour de la piste, quand tu remontes.
+
 ## Ou l'on se tient, et ce qu'on entend
 
 `bonPoste(x,y)` dit si un personnage a le droit de se tenir la : de l'herbe, une terrasse,

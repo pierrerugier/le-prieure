@@ -334,6 +334,21 @@ const BIKE_SIDE=["                ","     KKKKK      ","    KCCCCCK     ","   KC
 "    KWWWWWK     ","   KWWWWWWSK    ","    KWWWWWK     ","    KPPPPPK     ",
 "   KKPPPPPKK    "," KOOK KKKK KOOK ","KOOOOK    KOOOOK"," KOOK      KOOK "];
 function bikeSpr(dir){return dir===0?BIKE_DOWN:dir===1?BIKE_UP:BIKE_SIDE;}
+/* La vipere : elle est enroulee, elle ne bouge pas, et c'est bien le probleme. */
+const SPR_VIPERE=["                ","      KKKK      ","     KGGGGK     ","    KGKKKKGK    ",
+"   KGKHHHHKGK   ","   KGKHKKHKGK   ","  KGGKHHHHKGGK  ","  KGKKKGGKKKGK  ",
+"  KGK  KGK  KGK ","  KGKKKGGKKKGK  ","   KGGGGGGGGK   ","    KGGKKGGK    ",
+"     KKK KKK    ","      KCK       ","       K        ","                "];
+/* Le ver de terre. Il ne fait rien. Il est juste la, et c'est deja trop. */
+const SPR_VER=["                ","                ","                ","      KKKK      ",
+"     KRRRRK     ","    KRRRRRRK    ","   KRRKKKKRRK   ","   KRRK  KRRK   ",
+"   KRRK  KRRK   ","    KRRKKRRK    ","     KRRRRK     ","      KRRK      ",
+"      KRRK      ","       KK       ","                ","                "];
+/* La limace. Elle laisse une trace. C'est ca le pire. */
+const SPR_LIMACE=["                ","                ","    KK          ","   KNK          ",
+"   KNK   KKKK   ","   KNKKKNNNNK   ","  KNNNNNNNNNNK  "," KNNNNNNNNNNNNK ",
+" KNNKNNNNNNNNNK "," KNNNNNNNNNNNNK ","  KNNNNNNNNNNK  ","   KKKKKKKKKK   ",
+"    wwwwwwww    ","                ","                ","                "];
 const SPR_BOAR=["                ","                ","   KK      KK   ","  KHHK    KHHK  ",
 "  KHHHKKKKHHHK  "," KHHHHHHHHHHHHK "," KHEHHHHHHHHEHK ","KHHHHHHHHHHHHHHK",
 "KhHHHHHHHHHHHHhK","KKHHHHHHHHHHHHKK"," KHHHHHHHHHHHHK "," KHHKHHKKHHKHHK ",
@@ -2492,8 +2507,13 @@ function appliqueMonde(mo){
   remet(MISSIONS,(MONDE.missions&&MONDE.missions.length)?MONDE.missions:MISSIONS_BASE);
   remet(ACTES,(MONDE.actes&&MONDE.actes.length)?MONDE.actes:ACTES_BASE);
   remet(LOCKED,(MONDE.lieux&&MONDE.lieux.length)?MONDE.lieux:LOCKED_BASE);
+  remet(LETTRE,(MONDE.lettre&&MONDE.lettre.length)?MONDE.lettre:LETTRE_BASE);
   if(game.mission>MISSIONS.length)game.mission=MISSIONS.length;
   if(typeof placeGang==='function'){try{placeGang();}catch(e){}}
+  centreDuClub();
+  semeLesBalles();
+  trouveLaPiste();
+  poseLaLettre();
   recaleBalles();
   poseLesPanneaux();
   centrePiscine();
@@ -2598,8 +2618,11 @@ function mondeVide(m){
     &&!n((m.persos||{}).fiches)&&!n((m.persos||{}).corps);
 }
 let MONDE_SECOURS=false;
+/* Quand a-t-elle ete enregistree ? L'atelier date chaque version. Une carte sans
+   date vient d'avant, donc elle perd toujours contre une carte datee. */
+function dateDe(m){return (m&&typeof m.t==='number')?m.t:0;}
 async function chargeMonde(){
-  let srv=null, loc=null;
+  let srv=null, loc=null, fic=null;
   try{
     if(typeof fetch==='function'&&location.protocol!=='file:'){
       const r=await fetch('/api/monde',{cache:'no-store'});
@@ -2608,9 +2631,7 @@ async function chargeMonde(){
   }catch(e){}
   try{const raw=localStorage.getItem(MONDEKEY); if(raw)loc=JSON.parse(raw);}catch(e){}
   /* dernier recours : la copie du domaine commitee a cote du jeu. C'est elle qui
-     sauve la mise quand le disque du serveur a ete efface, et c'est elle qui fait
-     tourner la version hors ligne. */
-  let fic=null;
+     fait tourner la version hors ligne. */
   if(mondeVide(srv)&&mondeVide(loc)){
     try{
       if(typeof fetch==='function'&&location.protocol!=='file:'){
@@ -2619,8 +2640,11 @@ async function chargeMonde(){
       }
     }catch(e){}
   }
+  /* On garde la plus recente des deux. Le disque du serveur est efface a chaque
+     mise en ligne : ce jour-la, c'est la copie de cet appareil qui a raison, et
+     il ne faut surtout pas la recouvrir avec une vieille version. */
   let mo=srv;
-  if(mondeVide(srv)&&!mondeVide(loc)){mo=loc;MONDE_SECOURS=true;}
+  if(!mondeVide(loc)&&(mondeVide(srv)||dateDe(loc)>dateDe(srv))){mo=loc;MONDE_SECOURS=true;}
   else if(mondeVide(srv)&&mondeVide(loc)&&!mondeVide(fic))mo=fic;
   if(!mondeVide(mo))appliqueMonde(mo);
 }
@@ -2633,37 +2657,56 @@ const BALLS=[
  {n:'Spalding', v:0.5, w:22},
  {n:'Top-Flite usée', v:0, w:30}];
 const ballSpots=[];
-(function seedBalls(){
+/* Ou est le club house : on le lit sur la carte, a partir de ses portes. */
+let CLUB_C={x:63,y:52};
+function centreDuClub(){
+  const p=DOORS.filter(d=>d.to==='club');
+  if(!p.length)return;
+  CLUB_C={x:Math.round(p.reduce((a,d)=>a+d.x,0)/p.length),
+          y:Math.round(p.reduce((a,d)=>a+d.y,0)/p.length)+2};
+}
+/* ---------- les balles perdues ----------
+   Une balle perdue est dans les bois. Pas dans un jardin, pas au milieu d'un
+   fairway, pas sur une terrasse : dans le sous-bois, ou personne ne va chercher.
+   Une dizaine seulement trainent autour du club, en evidence, celles que tout le
+   monde voit et que personne ne ramasse. */
+function semeLesBalles(){
+  ballSpots.length=0;
   const pose=(x,y)=>{
     if(x<5||y<5||x>MW-6||y>MH-6) return false;
     if(ballSpots.some(b=>Math.abs(b.x-x)<2&&Math.abs(b.y-y)<2)) return false;
     let r=rnd()*84, k=0;
     for(let i=0;i<BALLS.length;i++){ r-=BALLS[i].w; if(r<=0){k=i;break;} }
-    ballSpots.push({x:x,y:y,k:k,taken:false});
+    ballSpots.push({x:x,y:y,k:k,taken:false,pris:0});
     return true;
   };
-  /* l'essentiel se perd dans le sous-bois, la ou personne ne va chercher */
   let tries=0;
-  while(ballSpots.length<70 && tries<40000){
+  while(ballSpots.length<60 && tries<40000){
     tries++;
     const x=(rnd()*MW)|0, y=(rnd()*MH)|0;
     if(at(x,y)!==T.DENSE) continue;
-    if(Math.hypot(x-63,y-45)<14) continue;
+    if(jardinPrive(x,y)) continue;
+    if(Math.hypot(x-CLUB_C.x,y-CLUB_C.y)<12) continue;
     pose(x,y);
   }
-  /* et quelques-unes dans le rough, au bord des trous, plus visibles */
+  /* et la dizaine du club, a la vue de tous */
+  const vue=new Set([T.ROUGH,T.FAIR,T.PATH,T.GRAVEL,T.ASPH]);
+  const nClub=ballSpots.length+10;
   tries=0;
-  while(ballSpots.length<96 && tries<12000){
+  while(ballSpots.length<nClub && tries<40000){
     tries++;
-    const h=HOLES[(rnd()*HOLES.length)|0];
-    const t0=rnd(), ax=h.tx+(h.gx-h.tx)*t0, ay=h.ty+(h.gy-h.ty)*t0;
-    const ang=rnd()*Math.PI*2, rr=6+rnd()*8;
-    const x=Math.round(ax+Math.cos(ang)*rr), y=Math.round(ay+Math.sin(ang)*rr);
-    if(at(x,y)!==T.ROUGH) continue;
-    if(Math.hypot(x-63,y-45)<16) continue;
+    const ang=rnd()*Math.PI*2, rr=4+rnd()*11;
+    const x=Math.round(CLUB_C.x+Math.cos(ang)*rr), y=Math.round(CLUB_C.y+Math.sin(ang)*rr);
+    if(!vue.has(at(x,y))) continue;
+    if(jardinPrive(x,y)) continue;
     pose(x,y);
   }
-})();
+}
+/* les jardins du hameau et des maisons de lisiere : chez les gens, pas de balles */
+function jardinPrive(x,y){
+  const z=zoneAt(x,y);
+  return z==='HAMEAU DU PRIEURÉ'||z==='MAISONS DE LISIÈRE';
+}
 const ITEMS=[
  {id:'putter',x:76,y:18,inside:null,n:'Putter Scotty Cameron',
   trouve:"J'ai trouvé un putter Scotty Cameron. Quelqu'un va très mal le vivre.",
@@ -3153,6 +3196,57 @@ const NPCS_BASE={}; NPCS.forEach(n=>{
   const p=POSTES[n.id];
   if(p&&!n.inside){n.x=p[0];n.y=p[1];}
   NPCS_BASE[n.id]={name:n.name,x:n.x,y:n.y,inside:n.inside||null,d:clone(n.d||[])};});
+/* ---------- la lettre de Lise Lebel ----------
+   Dix morceaux de papier, aux quatre coins du parcours. On les ramasse un par
+   un sans savoir, et quand on les a tous, on peut enfin la lire.
+   Le texte se change dans l'atelier, onglet Textes. */
+const LETTRE_BASE=[
+ "Montcient, le 14 août 1978.",
+ "Mon cher Henri,",
+ "Tu m'écris que le practice est refait et que les tapis sont neufs.",
+ "Tu ne me dis pas si tu y vas encore le matin, seul, avant les autres.",
+ "J'ai revu la maison depuis la route. Les volets sont ouverts.",
+ "Quelqu'un vit dedans et ce n'est pas nous, et c'est très bien ainsi.",
+ "Je ne reviendrai pas au Prieuré. Ce n'est pas une punition.",
+ "C'est seulement que je m'y souviens de tout, et que je préfère t'écrire.",
+ "Si tu passes derrière le 4, il y a un chêne avec deux initiales.",
+ "Elles y sont toujours. Moi aussi, à ma façon.",
+ "Lise."];
+const LETTRE=LETTRE_BASE.slice();
+const NB_LETTRE=10;
+function bouts(){let n=0;for(let i=1;i<=NB_LETTRE;i++)if(game.items['lettre'+i])n++;return n;}
+function lettreComplete(){return bouts()>=NB_LETTRE;}
+for(let i=1;i<=NB_LETTRE;i++)ITEMS.push({
+  id:'lettre'+i, x:60, y:60, inside:null, lettre:1,
+  n:'Morceau '+i+' de la lettre',
+  trouve:"J'ai trouvé un morceau de papier. Une écriture penchée, à l'encre bleue.",
+  txt:"Un bout de papier plié, coincé sous une pierre. L'encre a tenu."});
+/* les quatre coins du parcours, lus sur les trous eux-memes */
+function coinsDuGolf(){
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+  HOLES.forEach(h=>{
+    x0=Math.min(x0,h.tx,h.gx); y0=Math.min(y0,h.ty,h.gy);
+    x1=Math.max(x1,h.tx,h.gx); y1=Math.max(y1,h.ty,h.gy);
+  });
+  return [[x0,y0],[x1,y0],[x1,y1],[x0,y1]];
+}
+/* trois morceaux au premier coin, trois au deuxieme, deux et deux ensuite */
+const LETTRE_COIN=[0,0,0,1,1,1,2,2,3,3];
+const LETTRE_ECART=[[2,3],[5,1],[1,6],[-2,3],[-5,1],[-1,6],[-3,-2],[-1,-5],[3,-2],[1,-5]];
+function poseLaLettre(){
+  const c=coinsDuGolf();
+  const ovr=(typeof MONDE==='object'&&MONDE&&MONDE.objets)||{};
+  for(let i=0;i<NB_LETTRE;i++){
+    const id='lettre'+(i+1);
+    const it=ITEMS.find(o=>o.id===id); if(!it)continue;
+    /* si Pierre a deplace le morceau dans l'atelier, on n'y touche pas */
+    if(ovr[id]&&(ovr[id].x!=null||ovr[id].y!=null))continue;
+    const co=c[LETTRE_COIN[i]], e=LETTRE_ECART[i];
+    const q=caseLibrePres(co[0]+e[0],co[1]+e[1],0);
+    if(q){it.x=q[0];it.y=q[1];it.inside=null;
+      if(ITEMS_BASE[id]){ITEMS_BASE[id].x=q[0];ITEMS_BASE[id].y=q[1];}}
+  }
+}
 const ITEMS_BASE={}; ITEMS.forEach(o=>{ITEMS_BASE[o.id]={n:o.n,trouve:o.trouve,txt:o.txt,x:o.x,y:o.y,inside:o.inside||null};});
 const MISSIONS_BASE=clone(MISSIONS), ACTES_BASE=ACTES.slice(), LOCKED_BASE=clone(LOCKED);
 /* les reperes : ce qui est de la logique et pas de la peinture. Deplacer un depart
@@ -3327,8 +3421,9 @@ function drawScene(cx,cy){
     if(!ballVisible(b))continue;
     const sx=b.x*TS-cx+8,sy=b.y*TS-cy+9;
     if(sx<-8||sx>W+8||sy<-8||sy>H+8)continue;
-    ctx.fillStyle='#1b2030';ctx.fillRect(sx-2,sy-2,5,5);
-    ctx.fillStyle='#fdfdfd';ctx.fillRect(sx-1,sy-2,3,4);ctx.fillRect(sx-2,sy-1,5,2);
+    /* une balle de golf vue de haut, ca ne fait pas un oeuf : quatre pixels */
+    ctx.fillStyle='#1b2030';ctx.fillRect(sx-1,sy-1,4,4);
+    ctx.fillStyle='#fdfdfd';ctx.fillRect(sx,sy-1,2,4);ctx.fillRect(sx-1,sy,4,2);
   }
   for(const it of ITEMS){
     if(game.items[it.id]||it.inside!==game.inside)continue;
@@ -3433,6 +3528,13 @@ function drawObjet(id,x,y){
   const R=(c,a,b,w,h)=>{ctx.fillStyle=c;ctx.fillRect(x+a,y+b,w,h);};
   const luire=(game.tick>>4)%2;
   ctx.fillStyle='rgba(0,0,0,.18)';ctx.beginPath();ctx.ellipse(x+8,y+13,5,2,0,0,7);ctx.fill();
+  if(id.indexOf('lettre')===0){   /* un bout de papier plie, coin corne */
+    R('#e8e0c8',4,5,8,8); R('#f4efdc',4,5,8,2);
+    R('#c9bfa0',4,12,8,1); R('#c9bfa0',11,5,1,8);
+    R('#8a92a8',6,7,4,1); R('#8a92a8',6,9,5,1); R('#8a92a8',6,11,3,1);
+    if(luire){R('#fdfdfd',5,6,2,1);}
+    return;
+  }
   switch(id){
     case 'putter':        /* un putter pose de biais */
       R('#8a8f96',4,3,1,8); R('#c4c9d0',4,3,1,3);
@@ -3578,18 +3680,31 @@ function arrive(){
     if(b){b.taken=true;game.bag[b.k]++;
       mission('balle');
       sfx('ramasse');
+      b.pris=jourFlottant();
       const bb=BALLS[b.k];
       toast("J'ai trouvé une "+bb.n+(bb.v?' ('+String(bb.v).replace('.',',')+' €)':''));}
     for(const it of ITEMS) if(!game.items[it.id]&&!it.inside&&it.x===game.px&&it.y===game.py) takeItem(it);
-    /* la pente du grass board : derriere le hameau, en terre, qu'elle soit
-       battue ou abimee. Ailleurs un chemin de terre reste un chemin. */
-    if((t===T.DIRT||t===T.TERRE)&&game.px>=95&&game.py<=34){
-      askYN('On fait du grass board ? La planche est en haut.','CHARLES',()=>startPente(),
-        ()=>say(['Alors pousse-toi, moi je descends.'],null,'CHARLES'));
-      return;}
-    if((t===T.ROUGH||t===T.DENSE)&&Math.random()<0.012){
+    /* la piste de grass board, et elle seule. On te le propose une fois par
+       passage : tant que tu ne ressors pas de la piste, on ne te redemande plus. */
+    if(surLaPiste(game.px,game.py)){
+      if(!game.penteVu){
+        game.penteVu=true;
+        askYN('On fait du grass board ? La planche est en haut.','CHARLES',()=>startPente(),
+          ()=>say(['Alors pousse-toi, moi je descends.'],null,'CHARLES'));
+        return;
+      }
+    } else game.penteVu=false;
+    /* Le sous-bois n'est pas un zoo. Une rencontre reste une rencontre : c'est
+       rare, et il faut avoir marche un moment avant que ca reparte. */
+    if((t===T.ROUGH||t===T.DENSE)&&game.tick-(game.derniereBete||-9999)>1200
+       &&Math.random()<0.0022){
       let dense=0;for(const[dx,dy]of DV)if(getTile(game.px+dx,game.py+dy)===T.DENSE)dense++;
-      if(dense>=2){startFight('SANGLIER');return;}
+      if(dense>=2){
+        game.derniereBete=game.tick;
+        const r=Math.random();
+        startFight(r<0.16?'SANGLIER':r<0.42?'VIPERE':r<0.72?'LIMACE':'VER');
+        return;
+      }
     }
   }else{
     if(t===T.EXIT){goOutside();return;}
@@ -3615,6 +3730,19 @@ function takeItem(it){
   sfx('objet');
   game.items[it.id]=true;
   if(it.id==='rolex')game.rolex=true;
+  /* les morceaux de la lettre : le premier intrigue, le dixieme se lit */
+  if(it.lettre){
+    const n=bouts();
+    if(n>=NB_LETTRE){
+      say(["Dix morceaux. Étalés par terre, ils se recollent presque tout seuls.",
+        "L'écriture est penchée, à l'encre bleue. C'est signé Lise Lebel.",
+        "Tu peux la lire quand tu veux, elle est dans le menu."],null,'LA LETTRE');
+      return;
+    }
+    toast(n===1?"Un morceau de papier. Il doit y en avoir d'autres."
+                :('Morceau '+n+' sur '+NB_LETTRE+'.'));
+    return;
+  }
   /* on ne coupe pas la marche pour ca : une ligne en bas d'ecran, et on continue */
   toast(it.trouve||("J'ai trouvé "+it.n+"."));
 }
@@ -3872,7 +4000,7 @@ function updateVoiturette(){
   /* on laboure tout ce qui est tondu */
   const t=at(game.px,game.py);
   if(t===T.FAIR||t===T.GREEN||t===T.ROUGH||estDepart(t)){
-    put(game.px,game.py,T.TRACE);miniC=null;
+    poseTrace(game.px,game.py);miniC=null;
     game.traces=(game.traces||0)+1;
     if(game.traces===12)mission('traces');
   }
@@ -4150,7 +4278,11 @@ function beginHole(idx){
   turn();
 }
 function turn(){
-  let best=-1,bd=-1;const h=HOLES[golf.hole];
+  const h=HOLES[golf.hole];
+  /* le score maximum vaut aussi sur le green : au-dela de par plus six on
+     ramasse, meme si c'est un putt de trente centimetres. Regle 21.2. */
+  if(h)players.forEach(p=>{if(!p.done&&p.stroke>=h.par+6){p.stroke=h.par+6;ramasse(p);}});
+  let best=-1,bd=-1;
   players.forEach((p,i)=>{if(p.done)return;
     const d=Math.hypot(h.gx-p.bx,h.gy-p.by);if(d>bd){bd=d;best=i;}});
   /* l'honneur : tant que personne n'a joue, c'est le meilleur du trou precedent
@@ -5283,6 +5415,8 @@ function musTick(){
   }
 }
 centrePiscine();
+centreDuClub();
+semeLesBalles();
 setInterval(musTick,60);
 setInterval(ambiances,50);
 /* toute la banque de bruitages, au format GBA : court, sec, et jamais fort */
@@ -5560,6 +5694,33 @@ function drawMini(){
 }
 
 /* ---------- le temps qui passe ---------- */
+/* le temps du domaine, en jours flottants : c'est lui qui fait revenir les
+   balles et disparaitre les traces de pneu, au bout de deux jours. */
+function jourFlottant(){return (game.jour||0)+game.min/1440;}
+const DEUX_JOURS=2;
+function repousseLesBalles(){
+  const j=jourFlottant();
+  for(const b of ballSpots)
+    if(b.taken&&b.pris&&j-b.pris>=DEUX_JOURS){b.taken=false;b.pris=0;}
+}
+/* Les traces de voiturette : on garde ce qu'il y avait dessous, et on le remet. */
+const traces=[];
+function poseTrace(x,y){
+  if(traces.some(t=>t.x===x&&t.y===y))return;
+  traces.push({x:x,y:y,j:jourFlottant(),avant:map[y*MW+x]});
+  put(x,y,T.TRACE);
+}
+function effaceLesTraces(){
+  const j=jourFlottant();
+  for(let i=traces.length-1;i>=0;i--){
+    const t=traces[i];
+    if(j-t.j<DEUX_JOURS)continue;
+    if(x0Valide(t.x,t.y)&&baseT(map[t.y*MW+t.x])===T.TRACE)map[t.y*MW+t.x]=t.avant;
+    traces.splice(i,1);
+    miniC=null;
+  }
+}
+function x0Valide(x,y){return x>=0&&y>=0&&x<MW&&y<MH;}
 function hNow(){return game.min/60;}
 function hhmm(){const h=Math.floor(game.min/60),m=Math.floor(game.min%60);
   return (h<10?'0':'')+h+':'+(m<10?'0':'')+m;}
@@ -5569,6 +5730,7 @@ function timeStep(){
   const h=hNow(), nuit=(h>=20||h<7);
   game.min+=nuit?0.018:0.0075;
   if(game.min>=1440){game.min-=1440;game.jour=(game.jour||0)+1;}
+  if(game.tick%180===0){repousseLesBalles();effaceLesTraces();}
   const ph=phaseOf();
   if(ph!==game.phase){
     game.phase=ph;placeGang();
@@ -6161,7 +6323,77 @@ function veloEnd(){
    derriere le hameau. Personne n'a jamais releve. Pas d'obstacle a eviter : un
    slalom de portes a passer, et des ronces de chaque cote qui freinent sans tuer. */
 const pente={x:0,vx:0,d:0,v:0,long:600,portes:[],n:0,rate:0,fin:0,crash:0,
-             best:0,run:0,cri:'',criT:0,frotte:0,gerbes:[]};
+             best:0,run:0,cri:'',criT:0,frotte:0,gerbes:[],copains:[]};
+/* ---------- la piste de grass board ----------
+   Elle est la, et nulle part ailleurs : c'est le morceau de terre d'un seul
+   tenant qui part du haut du bois, derriere le hameau. On le trouve par
+   propagation, comme ca Pierre peut l'agrandir ou la deplacer dans l'atelier
+   sans que le jeu se mette a proposer la planche sur tous les chemins du domaine. */
+const PENTE_REF=[103,23];
+const PENTE_CASES=new Set(), PENTE_BORD=[];
+function estTerre(x,y){const v=getTile(x,y);return v===T.TERRE||v===T.DIRT;}
+function trouveLaPiste(){
+  PENTE_CASES.clear(); PENTE_BORD.length=0;
+  let dep=PENTE_REF;
+  if(!estTerre(dep[0],dep[1])){
+    /* le repere a bouge : on prend le morceau de terre le plus haut et le plus
+       etroit du bois, c'est la definition d'une pente */
+    let best=null,bs=-1e9,vus=new Set();
+    for(let y=2;y<MH-2;y++)for(let x=2;x<MW-2;x++){
+      if(vus.has(x+','+y)||!estTerre(x,y))continue;
+      const c=morceauDeTerre(x,y,vus);
+      if(c.length<4)continue;
+      const xs=c.map(q=>q[0]),ys=c.map(q=>q[1]);
+      const larg=Math.max(...xs)-Math.min(...xs)+1, haut=Math.max(...ys)-Math.min(...ys)+1;
+      const sc=haut*2-larg*3+(dansLeHameau(x,y)?6:0);
+      if(sc>bs){bs=sc;best=c;}
+    }
+    if(best)best.forEach(q=>PENTE_CASES.add(q[0]+','+q[1]));
+  } else {
+    morceauDeTerre(dep[0],dep[1],new Set()).forEach(q=>PENTE_CASES.add(q[0]+','+q[1]));
+  }
+  /* les places autour de la piste, pour que les copains y attendent */
+  PENTE_CASES.forEach(k=>{
+    const [x,y]=k.split(',').map(Number);
+    for(const [dx,dy] of [[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[1,-1],[-1,1],[1,1],
+                          [-2,0],[2,0],[0,-2],[0,2],[-2,-1],[2,-1],[-2,1],[2,1],[-3,0],[3,0]]){
+      const a=x+dx,b=y+dy;
+      if(PENTE_CASES.has(a+','+b))continue;
+      if(!bonPoste(a,b))continue;
+      if(PENTE_BORD.some(q=>q[0]===a&&q[1]===b))continue;
+      PENTE_BORD.push([a,b]);
+    }
+  });
+}
+function morceauDeTerre(x0,y0,vus){
+  const pile=[[x0,y0]], cases=[];
+  while(pile.length){
+    const [a,b]=pile.pop(), k=a+','+b;
+    if(vus.has(k)||a<1||b<1||a>=MW-1||b>=MH-1||!estTerre(a,b))continue;
+    vus.add(k); cases.push([a,b]);
+    pile.push([a+1,b],[a-1,b],[a,b+1],[a,b-1]);
+  }
+  return cases;
+}
+function surLaPiste(x,y){return PENTE_CASES.has(x+','+y);}
+/* Quand on remonte, les copains sont la, sur le bord, a regarder la pente. */
+function posePresDeLaPiste(){
+  if(!PENTE_BORD.length)return;
+  const pris=new Set([game.px+','+game.py]);
+  pente.copains.forEach((c,i)=>{
+    const n=NPCS.find(x=>x.id===c.id); if(!n)return;
+    for(let k=0;k<PENTE_BORD.length;k++){
+      const q=PENTE_BORD[(i*3+k)%PENTE_BORD.length];
+      const cle=q[0]+','+q[1];
+      if(pris.has(cle)||npcAt(q[0],q[1]))continue;
+      pris.add(cle);
+      n.gone=false;n.inside=null;n.x=q[0];n.y=q[1];
+      n.dir=(q[1]>game.py)?1:0;
+      n.hx=n.x;n.hy=n.y;
+      break;
+    }
+  });
+}
 const CRIS=['GRASS BOARD','GRASS BOOOARD','VAS-Y','TOUT DROIT','GRASS BOARD !','LÂCHE RIEN'];
 const HZP=38, YP=116;
 function penteY(dz){return HZP+(YP-HZP)/(1+Math.max(0,dz)*0.055);}
@@ -6170,6 +6402,14 @@ function startPente(invite){
   pente.x=0;pente.vx=0;pente.d=0;pente.v=0.6;pente.n=0;pente.rate=0;pente.fin=0;
   pente.crash=0;pente.cri='';pente.criT=0;pente.frotte=0;pente.gerbes=[];
   pente.portes=[];
+  /* on ne descend jamais seul : trois copains prennent leur planche avec toi */
+  const dispo=NPCS.filter(n=>n.gang&&!n.gone&&!n.dog&&n.id!==game.heroId);
+  pente.copains=[];
+  for(let i=0;i<3&&i<dispo.length;i++){
+    const n=dispo[(i*3+pente.run)%dispo.length];
+    if(pente.copains.some(c=>c.id===n.id)){i--;dispo.splice(dispo.indexOf(n),1);continue;}
+    pente.copains.push({id:n.id,pal:n.pal,dz:6+i*7,x:(i-1)*11,ph:i*2.1,v:0.94+i*0.05});
+  }
   for(let i=0;i<10;i++)
     pente.portes.push({d:55+i*52, x:Math.sin(i*1.7)*16, w:30, passe:0});
   if(!invite)netSend({t:'invite',kind:'pente',from:game.hero.name});
@@ -6182,6 +6422,8 @@ function updatePente(){
       pente.run++;mission('pente');
       if(pente.n>pente.best)pente.best=pente.n;
       game.state=S.WORLD;
+      /* on ressort, et ils sont la, autour de la piste, la planche sous le bras */
+      posePresDeLaPiste();
       const l=[pente.n+' portes sur 10.'];
       if(pente.n===10)l.push("Sans en rater une. Personne ne l'avait jamais fait.");
       else if(pente.n>=7)l.push('Charles remonte la planche en courant. Il veut essayer de faire mieux.');
@@ -6195,6 +6437,12 @@ function updatePente(){
   }
   if(pente.criT>0)pente.criT--;
   else if(Math.random()<0.014){pente.cri=CRIS[(Math.random()*CRIS.length)|0];pente.criT=54;}
+  /* les copains descendent devant, ils louvoient et se font rattraper */
+  for(const c of pente.copains){
+    c.dz+=(pente.v*c.v-pente.v);
+    if(c.dz<-8)c.dz=-8; if(c.dz>26)c.dz=26;
+    c.x=Math.sin(pente.d*0.045+c.ph)*15;
+  }
   if(keys.left)pente.vx-=0.32; if(keys.right)pente.vx+=0.32;
   pente.vx*=0.90; pente.x+=pente.vx;
   pente.v=Math.min(1.5,0.6+pente.d*0.0014);
@@ -6355,6 +6603,20 @@ function drawPente(){
     ctx.fillRect(Math.round(W/2+gg.x*sc*1.9),Math.round(sy),2,2);
   }
   ctx.globalAlpha=1;
+  /* les copains, devant. Du plus loin au plus pres, sinon ils se chevauchent mal */
+  pente.copains.slice().sort((a,b)=>b.dz-a.dz).forEach(c=>{
+    if(c.dz<=0.4||c.dz>60)return;
+    const sy=penteY(c.dz), sc=penteS(sy);
+    if(sc<0.10)return;
+    const cx=W/2+c.x*sc*1.9, ech=Math.max(1,Math.round(sc*1.6));
+    ctx.fillStyle='rgba(30,24,14,.28)';
+    ctx.beginPath();ctx.ellipse(cx,sy+8*sc,10*sc,2.6*sc,0,0,7);ctx.fill();
+    ctx.fillStyle='#8a6238';
+    ctx.fillRect(Math.round(cx-11*sc),Math.round(sy+4*sc),Math.max(2,Math.round(22*sc)),Math.max(1,Math.round(4*sc)));
+    ctx.fillStyle='#a8804f';
+    ctx.fillRect(Math.round(cx-11*sc),Math.round(sy+4*sc),Math.max(2,Math.round(22*sc)),1);
+    drawPerso(c.id,0,1+((game.tick>>3)&1),Math.round(cx-8*ech),Math.round(sy-10*ech),ech,false);
+  });
   /* la planche et celui qui est dessus */
   const px=W/2+pente.x*1.9, incl=Math.max(-3,Math.min(3,Math.round(pente.vx*1.5)));
   ctx.fillStyle='rgba(30,24,14,.3)';ctx.beginPath();ctx.ellipse(px,YP+16,12,3,0,0,7);ctx.fill();
@@ -6402,7 +6664,24 @@ const FOES={
   pal:pal('#2b2b33','#3a3a42','#2b2b33','#33200f'),
   cry:"Arnaud Blanchard fait craquer sa nuque. Ça commence toujours comme ça.",
   win:"Arnaud ramasse sa casquette et s'en va. Il reviendra.",
-  lose:"Tu rentres au club house avec un short vert et une leçon."}};
+  lose:"Tu rentres au club house avec un short vert et une leçon."},
+ /* Les betes du sous-bois. La vipere pique un peu. Les deux autres ne font
+    rien du tout, et c'est bien pour ca qu'on s'en souvient. */
+ VIPERE:{n:'VIPÈRE',lv:8,hp:18,atk:11,spr:SPR_VIPERE,
+  pal:Object.assign({},PAL,{G:'#8a9a4e',H:'#e8e0c8',C:'#d8402f'}),
+  cry:"Une vipère. Enroulée sur la pierre chaude, exactement là où tu allais poser le pied.",
+  win:"Elle file sous les fougères. Tu regardes où tu marches, maintenant.",
+  lose:"Tu recules jusqu'au chemin. Le mollet te démange pendant deux jours."},
+ VER:{n:'VER DE TERRE',lv:2,hp:6,atk:2,spr:SPR_VER,
+  pal:Object.assign({},PAL,{R:'#c98a9a'}),
+  cry:"Un ver de terre. Énorme. Rose. Il fait des choses avec son corps.",
+  win:"Tu le remets dans l'herbe avec une brindille. Tu ne l'as pas touché.",
+  lose:"Tu pars. Tu ne cours pas, mais tu pars."},
+ LIMACE:{n:'LIMACE',lv:3,hp:9,atk:3,spr:SPR_LIMACE,
+  pal:Object.assign({},PAL,{N:'#8a7a4e',w:'#c9c4bb'}),
+  cry:"Une limace grosse comme un pouce. Elle est sur ta chaussure. Elle y est déjà depuis un moment.",
+  win:"Tu la décolles avec une feuille de chêne. La feuille reste collée à la limace.",
+  lose:"Tu enlèves la chaussure. Tu rentres en chaussette. C'est comme ça."}};
 const MOVES=[{n:'COUP DE SAC',pw:13,acc:82},{n:'VANNE',pw:9,acc:97},
   {n:'CAILLOU',pw:11,acc:88},{n:'CROC-EN-JAMBE',pw:16,acc:65}];
 const bat={foe:null,hp:0,hpMax:0,idx:0,midx:0,phase:'',msg:[],ml:0,mc:0,after:null,shake:0,fe:0,fp:0};
@@ -6523,6 +6802,7 @@ function updateFight(){
 /* ---------- menus ---------- */
 function menuList(){
   const m=['CARNET','CARTE','SAC','FICHE'];
+  if(bouts()>0)m.splice(3,0,'LETTRE');
   if(game.items.clopes)m.push('CLOPE');
   m.push(game.mute?'MUSIQUE : OFF':'MUSIQUE : ON');
   m.push('SAUVEGARDER','RETOUR');
@@ -6583,6 +6863,31 @@ function drawPage(){
     }
     ctx.fillStyle='#c8d0e0';ctx.fillRect(16,134,208,1);
     text('Fait : '+game.mission+' sur '+MISSIONS.length,16,139,'#8a92a8',9);
+  } else if(game.page==='LETTRE'){
+    text('LA LETTRE DE LISE LEBEL',16,12,'#38405a',11);
+    ctx.fillStyle='#c8d0e0';ctx.fillRect(16,26,208,1);
+    if(!lettreComplete()){
+      text(bouts()+' morceaux sur '+NB_LETTRE+'.',20,34,'#38405a',10);
+      const ls=wrap("Des bouts de papier ramassés aux quatre coins du parcours. "+
+        "Il en manque encore. Tant qu'ils n'y sont pas tous, on ne comprend rien.",196);
+      for(let i=0;i<ls.length&&i<3;i++)text(ls[i],20,52+i*13,'#8a92a8',9);
+      /* les morceaux deja trouves, en petit */
+      for(let i=0;i<NB_LETTRE;i++){
+        const x=20+(i%5)*40, y=104+((i/5)|0)*20;
+        ctx.fillStyle=game.items['lettre'+(i+1)]?'#e8e0c8':'#d4d8e2';
+        ctx.fillRect(x,y,26,15);
+        ctx.fillStyle=game.items['lettre'+(i+1)]?'#8a92a8':'#c0c6d4';
+        ctx.fillRect(x+4,y+4,18,1);ctx.fillRect(x+4,y+7,14,1);ctx.fillRect(x+4,y+10,20,1);
+      }
+    } else {
+      let y=32;
+      for(const l of LETTRE){
+        if(y>142)break;
+        const it=(l==='Lise.'||l.indexOf('Montcient')===0);
+        text(l,20,y,it?'#5a627a':'#38405a',9);
+        y+=(l==='')?6:11;
+      }
+    }
   } else if(game.page==='SAC'){
     text('SAC',16,12,'#38405a',11);
     ctx.fillStyle='#c8d0e0';ctx.fillRect(16,26,208,1);
@@ -7017,6 +7322,8 @@ NPCS.forEach(n=>{
 NPCS.forEach(n=>{n.gx0=n.x;n.gy0=n.y;});
 placeAccueil();
 placeAgenda();
+trouveLaPiste();
+poseLaLettre();
 
 /* ---------- boucle ---------- */
 function update(){
@@ -7222,6 +7529,7 @@ if(MODE_EDIT){
     COMPO:COMPO,compose:compose,fondDe:fondDe,motifDe:motifDe,TRANSP:TRANSP,
     HOLES:HOLES,DOORS:DOORS,HOLES_BASE:HOLES_BASE,DOORS_BASE:DOORS_BASE,estDepart:estDepart,
     MONDEKEY:MONDEKEY,get monde(){return MONDE;},appliqueMonde:appliqueMonde,
+    LETTRE:LETTRE,LETTRE_BASE:LETTRE_BASE,NB_LETTRE:NB_LETTRE,
     get secours(){return MONDE_SECOURS;}
   };
   chargeMonde().finally(function(){
