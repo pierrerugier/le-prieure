@@ -176,6 +176,23 @@ posé sur du fairway garde le fairway dessous.
 ⚠️ Un terrain, un mur, un toit, un sol d'intérieur **ne sont pas** dans `TRANSP` : ils sont ce
 sur quoi on pose. Un bloc fabriqué dans l'atelier peut l'être, il le dit lui-même (`transp`).
 
+### Les voitures
+
+Sept modèles, de profil, sur quatre cases. Chacun a sa **ligne de toit**, donnée par quelques
+points de contrôle qu'on relie (`PROFILS`) : c'est ça qui fait qu'une 911 n'est pas une berline
+et qu'un 4x4 n'est pas une Polo. La caisse se peint colonne par colonne entre cette ligne et le
+seuil, cernée en haut et en bas, avec un filet de lumière sur le pli.
+
+Deux pièges déjà tombés dedans :
+
+- **Les passages de roue se découpent, ils ne se peignent pas en noir.** Peints, la voiture se
+  retrouve avec une grosse jupe noire. On efface (`clearRect`) une demi-lune au-dessus de
+  chaque roue, on pose la roue, puis on repasse un cerne pour la rattacher à la caisse.
+- **L'ombre est une tache sous chaque roue, jamais une bande d'un bout à l'autre.** La bande se
+  lisait comme un trait sous la voiture, et c'est justement ce qu'on ne veut pas.
+
+Le pavillon garde deux pixels de tôle avant le verre, sinon c'est une tente et pas une voiture.
+
 ### La gamme d'arbres
 
 Dessinés sur du vide, avec de vraies silhouettes rondes : `boule()` trace un disque en pixels,
