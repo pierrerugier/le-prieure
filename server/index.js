@@ -102,7 +102,7 @@ function seededRandom() {
 const DATA = path.join(__dirname, '..', 'data');
 const FMONDE = path.join(DATA, 'monde.json');
 const FSECOURS = path.join(PUBLIC, 'monde.json');
-const MONDE_VIDE = { v: 1, carte: {}, tuiles: {}, persos: { fiches: {}, corps: {} } };
+const MONDE_VIDE = { v: 1, carte: {}, tuiles: {}, persos: { fiches: {}, corps: {} }, pnj: {}, objets: {} };
 function lireMonde() {
   for (const f of [FMONDE, FSECOURS]) {
     try { if (fs.existsSync(f)) return JSON.parse(fs.readFileSync(f, 'utf8')); } catch (e) { /* tant pis */ }
@@ -118,9 +118,99 @@ function ecrisMonde(m) {
   } catch (e) { return false; }
 }
 
+/* ---------- Claude ecrit le maillage d'une mission ----------
+   L'atelier envoie une phrase en francais, le serveur la donne a Claude avec
+   tout le contexte du jeu, et recupere une mission deja cablee. La cle vit
+   dans l'environnement, jamais dans la page. */
+const MODELE = process.env.CLAUDE_MODELE || 'claude-opus-5';
+const CONSIGNE = [
+  "Tu ecris des missions pour Le Prieure, un jeu d'aventure et de golf en pixel art",
+  "calque sur les Pokemon Game Boy Advance. On est au Golf du Prieure, a Sailly dans le",
+  "Vexin, ete 2005, et on a treize ans. La bande passe ses week-ends sur le domaine.",
+  '',
+  'LE TON, non negociable :',
+  "- drole, sec, jamais nostalgique a voix haute. Le sentiment passe par le detail concret.",
+  '- une idee par phrase. Des phrases courtes.',
+  "- JAMAIS de tiret cadratin. JAMAIS l'antithese binaire du genre \"X, pas Y\".",
+  "- on ecrit comme des gamins de treize ans qui se croient grands, pas comme un narrateur.",
+  '',
+  'UNE MISSION est un objet JSON :',
+  '  a  : le numero de l acte (1 a 6)',
+  '  t  : le titre, court, a l infinitif ou nominal. Pas de point final.',
+  '  d  : ce que le joueur doit faire, une phrase, a la deuxieme personne.',
+  '  ev : le nom de l evenement que le jeu declenche quand c est fait',
+  '  qui: seulement si ev vaut "parle", l identifiant du personnage a qui parler',
+  '  n  : seulement si il faut le faire plusieurs fois (un nombre)',
+  '  f  : le texte qui tombe quand la mission est finie. Une ou deux phrases.',
+  '',
+  'REGLES DURES :',
+  "- ev doit etre pris DANS LA LISTE fournie, jamais invente : le jeu ne saurait pas le",
+  '  declencher. Si rien ne colle, prends le plus proche et dis-le dans "note".',
+  '- qui doit etre un identifiant de la liste des personnages.',
+  '- si la mission demandee tient en plusieurs etapes, renvoie plusieurs missions a la suite.',
+  '',
+  'Tu peux aussi ajouter des repliques a un personnage : "dialogues" associe un identifiant',
+  'a une liste de repliques, chaque replique etant une liste de phrases (une par boite de',
+  'dialogue). Elles s ajoutent a ce qu il dit deja.',
+  '',
+  'Tu reponds UNIQUEMENT avec un objet JSON, sans texte autour, sans balises :',
+  '{"missions":[...], "dialogues":{}, "note":"une phrase sur ce que tu as choisi"}'
+].join('\n');
+
+async function demandeClaude(corps) {
+  const cle = process.env.ANTHROPIC_API_KEY;
+  if (!cle) return { ok: false, raison: 'sans_cle' };
+  const ctx = corps.contexte || {};
+  const invite = [
+    'LES ACTES : ' + JSON.stringify(ctx.actes || []),
+    'LES EVENEMENTS DISPONIBLES : ' + JSON.stringify(ctx.evenements || []),
+    'LES PERSONNAGES : ' + JSON.stringify(ctx.pnj || []),
+    '',
+    'LES MISSIONS QUI EXISTENT DEJA, dans l ordre (pour le ton et pour ne pas repeter) :',
+    JSON.stringify(ctx.missions || [], null, 1),
+    '',
+    'La nouvelle mission s inserera apres la mission numero ' + (corps.apres == null ? 'la derniere' : corps.apres) + '.',
+    '',
+    'CE QUE PIERRE DEMANDE :',
+    String(corps.desc || '').slice(0, 4000)
+  ].join('\n');
+  let r;
+  try {
+    r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': cle,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: MODELE, max_tokens: 4000, system: CONSIGNE,
+        messages: [{ role: 'user', content: invite }]
+      })
+    });
+  } catch (e) { return { ok: false, raison: 'reseau', detail: String(e && e.message) }; }
+  if (!r.ok) {
+    let d = '';
+    try { d = (await r.text()).slice(0, 400); } catch (e) { /* tant pis */ }
+    return { ok: false, raison: 'api', code: r.status, detail: d };
+  }
+  const rep = await r.json();
+  const txt = (rep.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+  const a = txt.indexOf('{'), b = txt.lastIndexOf('}');
+  if (a < 0 || b < a) return { ok: false, raison: 'illisible', detail: txt.slice(0, 400) };
+  let out;
+  try { out = JSON.parse(txt.slice(a, b + 1)); }
+  catch (e) { return { ok: false, raison: 'illisible', detail: txt.slice(0, 400) }; }
+  return { ok: true, missions: out.missions || [], dialogues: out.dialogues || {}, note: out.note || '' };
+}
+
 /* ---------- express + websocket ---------- */
 const app = express();
 app.use(express.json({ limit: '6mb' }));
+app.post('/api/claude', async (req, res) => {
+  try { res.json(await demandeClaude(req.body || {})); }
+  catch (e) { res.status(500).json({ ok: false, raison: 'serveur', detail: String(e && e.message) }); }
+});
 app.get('/api/monde', (req, res) => res.json(monde));
 app.post('/api/monde', (req, res) => {
   const m = req.body;
@@ -129,8 +219,14 @@ app.post('/api/monde', (req, res) => {
     v: 1,
     carte: m.carte || {},
     tuiles: m.tuiles || {},
-    persos: m.persos || { fiches: {}, corps: {} }
+    persos: m.persos || { fiches: {}, corps: {} },
+    pnj: m.pnj || {},
+    objets: m.objets || {}
   };
+  /* la trame, les actes et les lieux ne voyagent que s'ils ont bouge */
+  if (Array.isArray(m.missions)) monde.missions = m.missions;
+  if (Array.isArray(m.actes)) monde.actes = m.actes;
+  if (Array.isArray(m.lieux)) monde.lieux = m.lieux;
   const surDisque = ecrisMonde(monde);
   diffuse({ t: 'monde', monde: monde });
   res.json({ ok: true, disque: surDisque });

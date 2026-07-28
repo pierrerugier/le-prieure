@@ -91,6 +91,41 @@ kbd{background:#252a35;border:1px solid #3a4152;border-radius:3px;padding:0 4px;
 .pers:hover{background:#2d323e}
 .pers.on{background:#3d5a8a;border-color:#5679b5;color:#fff}
 .pers canvas{image-rendering:pixelated}
+.form{width:min(760px,100%);display:flex;flex-direction:column;gap:9px}
+textarea{width:100%;background:#252a35;border:1px solid #333a49;color:#e6e8ef;
+  border-radius:5px;padding:8px;font:inherit;line-height:1.5;resize:vertical;display:block}
+textarea::placeholder{color:#6b7385}
+.champ{display:flex;flex-direction:column;gap:3px}
+.champ>span{font-size:10px;letter-spacing:.13em;color:#7f8798;text-transform:uppercase}
+.rangee{display:flex;gap:8px}
+.rangee>*{flex:1}
+.replique{background:#1b1e26;border:1px solid #2b2f3a;border-radius:6px;padding:8px}
+.replique .haut{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.replique .haut span{font-size:10px;letter-spacing:.13em;color:#7f8798;text-transform:uppercase;flex:1}
+.entree{display:block;width:100%;background:#22262f;border:1px solid #2b2f3a;border-radius:5px;
+  padding:6px 9px;margin-bottom:3px;cursor:pointer;color:#c6ccda;font:inherit;text-align:left;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.entree:hover{background:#2d323e}
+.entree.on{background:#3d5a8a;border-color:#5679b5;color:#fff}
+.entree.retouche{border-left:3px solid #f4e2a8}
+.mis{background:#1b1e26;border:1px solid #2b2f3a;border-radius:6px;margin-bottom:5px;overflow:hidden}
+.mis .tete{display:flex;align-items:center;gap:8px;padding:7px 10px;cursor:pointer}
+.mis .tete:hover{background:#22262f}
+.mis.on .tete{background:#2b3242}
+.mis .num{font-size:10px;color:#7f8798;width:22px;font-variant-numeric:tabular-nums}
+.mis .tit{flex:1;font-weight:600}
+.mis .ev{font-size:10px;color:#8fb0d8;background:#232a38;border-radius:3px;padding:2px 6px}
+.mis .corps{padding:0 10px 10px;display:flex;flex-direction:column;gap:8px}
+.mis .fleches button{background:none;border:0;color:#7f8798;cursor:pointer;font-size:13px;padding:2px 4px}
+.mis .fleches button:hover{color:#e6e8ef}
+.acte{font-size:10px;letter-spacing:.15em;color:#f4e2a8;text-transform:uppercase;margin:14px 0 5px}
+.prog{width:min(760px,100%);background:#1b2432;border:1px solid #2f4159;border-radius:8px;padding:12px}
+.prog h3{margin:0 0 8px;font-size:11px;letter-spacing:.13em;color:#8fb0d8;text-transform:uppercase}
+.prog textarea{min-height:74px}
+.apercu{background:#16241b;border:1px solid #2c5e3a;border-radius:6px;padding:10px;margin-top:9px}
+.apercu .m{border-bottom:1px solid #234;padding:5px 0}
+.apercu .m:last-child{border:0}
+.mot{color:#8de08d}
 `;
 const st=document.createElement('style'); st.textContent=CSS; document.head.appendChild(st);
 document.body.innerHTML=`
@@ -101,6 +136,8 @@ document.body.innerHTML=`
       <button data-ong="carte" class="on">Carte</button>
       <button data-ong="blocs">Blocs</button>
       <button data-ong="persos">Personnages</button>
+      <button data-ong="textes">Textes</button>
+      <button data-ong="trame">Trame</button>
     </nav>
     <div class="droite">
       <span id="etat"></span>
@@ -130,9 +167,17 @@ const ed={
   z:6, camx:0, camy:0, grille:false, solides:false,
   presse:false, pan:false, panx:0, pany:0, sauve:true,
   hist:[], futur:[], trait:null,
-  couleur:'#7cb85c', lettre:'K', blocEdit:-1, perso:'moi', partie:'BODY_DOWN'
+  couleur:'#7cb85c', lettre:'K', blocEdit:-1, perso:'moi', partie:'BODY_DOWN',
+  cat:'pnj', sel:null, misOuv:-1, prog:'', progRep:null, progEnCours:false, apres:-1
 };
 
+/* Les personnages se deplacent tout seuls quand le jeu tourne. On ne peut donc pas
+   deviner une retouche en comparant les positions : on note ce qui est modifie ici,
+   en partant de ce qui etait deja enregistre. */
+const clonage=o=>JSON.parse(JSON.stringify(o||{}));
+const patchPnj=clonage((A.monde||{}).pnj), patchObj=clonage((A.monde||{}).objets);
+function notePnj(id,champ,val){if(!patchPnj[id])patchPnj[id]={};patchPnj[id][champ]=val;}
+function noteObj(id,champ,val){if(!patchObj[id])patchObj[id]={};patchObj[id][champ]=val;}
 function dit(m,ok){etat.textContent=m;etat.style.color=ok?'#8de08d':'#7f8798';}
 function sale(){ed.sauve=false;dit('Modifié, pas encore enregistré.');}
 
@@ -309,15 +354,22 @@ window.addEventListener('mouseup',e=>{
   if(ed.outil==='rect'&&ed.rect){const c=caseSous(e);rectangle(ed.rect[0],ed.rect[1],c.x,c.y,ed.bloc);ed.rect=null;}
   finTrait();
 });
+/* deux doigts sur le trackpad, ca deplace. Le zoom c'est CMD + et CMD -,
+   ou le pincement, que le navigateur envoie avec ctrl enfonce. */
+function zoomeVers(px,py,fac){
+  const r=cv.getBoundingClientRect();
+  const mx=(px-r.left)/ed.z+ed.camx, my=(py-r.top)/ed.z+ed.camy;
+  ed.z=Math.max(1,Math.min(48,ed.z*fac));
+  ed.camx=mx-(px-r.left)/ed.z; ed.camy=my-(py-r.top)/ed.z;
+  borne();
+}
+function zoome(fac){zoomeVers(cv.getBoundingClientRect().left+cv.width/2,
+                              cv.getBoundingClientRect().top+cv.height/2,fac);}
 vue.addEventListener('wheel',e=>{
   if(ed.ong!=='carte')return;
   e.preventDefault();
-  const r=cv.getBoundingClientRect();
-  const mx=(e.clientX-r.left)/ed.z+ed.camx, my=(e.clientY-r.top)/ed.z+ed.camy;
-  const av=ed.z;
-  ed.z=Math.max(1,Math.min(48,ed.z*(e.deltaY<0?1.18:0.85)));
-  ed.camx=mx-(e.clientX-r.left)/ed.z; ed.camy=my-(e.clientY-r.top)/ed.z;
-  if(Math.abs(av-ed.z)>0.001)borne();
+  if(e.ctrlKey||e.metaKey){zoomeVers(e.clientX,e.clientY,e.deltaY<0?1.12:0.89);return;}
+  ed.camx+=e.deltaX/ed.z; ed.camy+=e.deltaY/ed.z; borne();
 },{passive:false});
 function borne(){
   const d=dims(ed.carte), vw=cv.width/ed.z, vh=cv.height/ed.z;
@@ -330,6 +382,8 @@ window.addEventListener('keydown',e=>{
   if((e.metaKey||e.ctrlKey)&&k==='z'){e.preventDefault();e.shiftKey?refais():annule();return;}
   if((e.metaKey||e.ctrlKey)&&k==='y'){e.preventDefault();refais();return;}
   if((e.metaKey||e.ctrlKey)&&k==='s'){e.preventDefault();enregistre();return;}
+  if((e.metaKey||e.ctrlKey)&&(k==='+'||k==='='||e.code==='Equal')){e.preventDefault();zoome(1.3);return;}
+  if((e.metaKey||e.ctrlKey)&&(k==='-'||e.code==='Minus')){e.preventDefault();zoome(1/1.3);return;}
   if(ed.ong!=='carte')return;
   const pas=e.shiftKey?10:3;
   if(k==='arrowleft'){ed.camx-=pas;borne();e.preventDefault();}
@@ -342,12 +396,11 @@ window.addEventListener('keydown',e=>{
   else if(k==='i'){ed.outil='pipette';majOutils();}
   else if(k==='['){ed.taille=Math.max(1,ed.taille-2);majOutils();}
   else if(k===']'){ed.taille=Math.min(9,ed.taille+2);majOutils();}
-  else if(k==='+'||k==='='){ed.z=Math.min(48,ed.z*1.25);borne();}
-  else if(k==='-'){ed.z=Math.max(1,ed.z/1.25);borne();}
 });
 
 /* ---------- le panneau de gauche ---------- */
 function majOutils(){
+  if(ed.ong==='textes'){outils.style.display='';outilsTextes();return;}
   if(ed.ong!=='carte'){outils.innerHTML='';outils.style.display='none';return;}
   outils.style.display='';
   const O=[['pinceau','Pinceau','B'],['rect','Rectangle','R'],['remplir','Remplir','G'],['pipette','Pipette','I']];
@@ -378,14 +431,15 @@ function majOutils(){
       <b>Clic</b> pose le bloc choisi.<br>
       <b>Alt + clic</b> reprend le bloc qui est déjà là.<br>
       <b>Clic droit</b> déplace la carte.<br>
-      <b>Molette</b> zoome sur le curseur.<br>
+      <b>Deux doigts</b> déplacent la carte.<br>
+      <kbd>⌘+</kbd> et <kbd>⌘-</kbd> zooment.<br>
       <kbd>⌘Z</kbd> annule, <kbd>⌘S</kbd> enregistre.
     </div>`;
   $('#selCarte').onchange=e=>{ed.carte=e.target.value;batPlanche();cadre();};
   outils.querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{ed.outil=b.dataset.o;majOutils();});
   $('#rTaille').oninput=e=>{ed.taille=+e.target.value;majOutils();};
-  $('#zM').onclick=()=>{ed.z=Math.max(1,ed.z/1.4);borne();};
-  $('#zP').onclick=()=>{ed.z=Math.min(48,ed.z*1.4);borne();};
+  $('#zM').onclick=()=>zoome(1/1.4);
+  $('#zP').onclick=()=>zoome(1.4);
   $('#z1').onclick=()=>{ed.z=16;borne();};
   $('#zTout').onclick=cadre;
   $('#tG').onclick=()=>{ed.grille=!ed.grille;majOutils();};
@@ -405,7 +459,9 @@ function vignette(t){
 }
 function majPanneau(){
   if(ed.ong==='carte'||ed.ong==='blocs')panneauBlocs();
-  else panneauPersos();
+  else if(ed.ong==='persos')panneauPersos();
+  else if(ed.ong==='textes')panneauTextes();
+  else panneauTrame();
 }
 function panneauBlocs(){
   pan.style.display='';
@@ -701,6 +757,348 @@ function majLettres(){
   n.appendChild(g);
 }
 
+/* ---------- les textes : dialogues, personnages, lieux, objets ---------- */
+const CATS=[{k:'pnj',n:'Personnages'},{k:'lieux',n:'Lieux'},{k:'objets',n:'Objets'}];
+function listeCat(){
+  if(ed.cat==='pnj')return A.NPCS.map((n,i)=>({cle:n.id,n:n.name||n.id,o:n}));
+  if(ed.cat==='objets')return A.ITEMS.map(o=>({cle:o.id,n:o.n,o:o}));
+  return A.LOCKED.map((l,i)=>({cle:i,n:l.who+'  ('+l.x+', '+l.y+')',o:l}));
+}
+function entreeRetouchee(cle){
+  if(ed.cat==='pnj')return !!(patchPnj[cle]&&Object.keys(patchPnj[cle]).length);
+  if(ed.cat==='objets')return !!(patchObj[cle]&&Object.keys(patchObj[cle]).length);
+  const b=A.LOCKED_BASE[cle];
+  return b&&JSON.stringify(A.LOCKED[cle])!==JSON.stringify(b);
+}
+function outilsTextes(){
+  outils.innerHTML='<h4>Ce qu\'on écrit</h4><div class="grille" id="cats"></div>'+
+    '<div class="aide">Tout ce qui se lit dans le jeu passe par là. '+
+    'Les positions sont en cases de la carte.</div>';
+  const g=$('#cats');
+  CATS.forEach(c=>{
+    const b=document.createElement('button');
+    b.className='b'; b.style.width='100%'; b.style.textAlign='left';
+    if(c.k===ed.cat){b.style.background='#3d5a8a';b.style.borderColor='#5679b5';b.style.color='#fff';}
+    b.textContent=c.n;
+    b.onclick=()=>{ed.cat=c.k;ed.sel=null;majOutils();majPanneau();majVue();};
+    g.appendChild(b);
+  });
+}
+function panneauTextes(){
+  pan.style.display='';
+  pan.innerHTML='<h4>'+(CATS.find(c=>c.k===ed.cat)||{}).n+'</h4>'+
+    '<input type="text" id="q" placeholder="Chercher..." style="margin-bottom:7px">'+
+    '<div id="lst"></div>';
+  const lst=$('#lst'), tout=listeCat();
+  function remplir(f){
+    lst.innerHTML='';
+    tout.forEach(e=>{
+      if(f&&String(e.n).toLowerCase().indexOf(f)<0)return;
+      const b=document.createElement('button');
+      b.className='entree'+(String(e.cle)===String(ed.sel)?' on':'')+(entreeRetouchee(e.cle)?' retouche':'');
+      b.textContent=e.n;
+      b.onclick=()=>{ed.sel=e.cle;majPanneau();majVue();};
+      lst.appendChild(b);
+    });
+  }
+  remplir('');
+  $('#q').oninput=e=>remplir(e.target.value.trim().toLowerCase());
+}
+function champ(nom,val,multi,oninput){
+  const d=document.createElement('div'); d.className='champ';
+  const s=document.createElement('span'); s.textContent=nom; d.appendChild(s);
+  const i=document.createElement(multi?'textarea':'input');
+  if(!multi)i.type='text';
+  i.value=val==null?'':val;
+  if(multi)i.rows=Math.max(2,String(val||'').split('\n').length+1);
+  i.oninput=()=>{oninput(i.value);sale();};
+  d.appendChild(i);
+  return d;
+}
+function champNum(nom,val,oninput){
+  const d=document.createElement('div'); d.className='champ';
+  const s=document.createElement('span'); s.textContent=nom; d.appendChild(s);
+  const i=document.createElement('input'); i.type='number'; i.value=(val==null?'':val);
+  i.oninput=()=>{oninput(i.value===''?null:+i.value);sale();};
+  d.appendChild(i); return d;
+}
+function blocRepliques(obj,titre,note){
+  const w=document.createElement('div');
+  const h=document.createElement('div'); h.className='champ';
+  h.innerHTML='<span>'+titre+'</span>';
+  w.appendChild(h);
+  (obj.d||[]).forEach((rep,i)=>{
+    const r=document.createElement('div'); r.className='replique';
+    const haut=document.createElement('div'); haut.className='haut';
+    haut.innerHTML='<span>Réplique '+(i+1)+' — une phrase par ligne, une boîte par phrase</span>';
+    const sup=document.createElement('button'); sup.className='b'; sup.textContent='Retirer';
+    sup.onclick=()=>{obj.d.splice(i,1);if(note)note();sale();majVue();};
+    haut.appendChild(sup); r.appendChild(haut);
+    const t=document.createElement('textarea');
+    t.value=rep.join('\n'); t.rows=Math.max(2,rep.length+1);
+    t.oninput=()=>{obj.d[i]=t.value.split('\n').filter(x=>x.trim()!=='');if(note)note();sale();};
+    r.appendChild(t); w.appendChild(r);
+  });
+  const add=document.createElement('button'); add.className='b'; add.textContent='Ajouter une réplique';
+  add.onclick=()=>{if(!obj.d)obj.d=[];obj.d.push(['']);if(note)note();sale();majVue();};
+  w.appendChild(add);
+  return w;
+}
+function vueTextes(){
+  const w=document.createElement('div'); w.className='centre';
+  if(ed.sel==null){
+    w.innerHTML='<div style="color:#79808f;max-width:360px;text-align:center">'+
+      'Choisis quelque chose dans la liste, à droite.</div>';
+    return w;
+  }
+  const f=document.createElement('div'); f.className='form';
+  const titre=document.createElement('div');
+  const bRaz=document.createElement('button'); bRaz.className='b'; bRaz.textContent="Texte d'origine";
+  if(ed.cat==='pnj'){
+    const n=A.NPCS.find(x=>x.id===ed.sel); if(!n)return w;
+    titre.innerHTML='<b style="color:#f4e2a8">'+n.name+'</b> <span style="color:#79808f">'+n.id+'</span>';
+    f.appendChild(titre);
+    f.appendChild(champ('Nom affiché',n.name,false,v=>{n.name=v;notePnj(n.id,'name',v);}));
+    const r=document.createElement('div'); r.className='rangee';
+    r.appendChild(champNum('Case X',n.x,v=>{n.x=v;notePnj(n.id,'x',v);}));
+    r.appendChild(champNum('Case Y',n.y,v=>{n.y=v;notePnj(n.id,'y',v);}));
+    r.appendChild(champ('Intérieur (vide = dehors)',n.inside||'',false,
+      v=>{n.inside=v||null;notePnj(n.id,'inside',n.inside);}));
+    f.appendChild(r);
+    f.appendChild(blocRepliques(n,'Ce qu\'il dit, une réplique tirée au hasard à chaque fois',
+      ()=>notePnj(n.id,'d',n.d)));
+    bRaz.onclick=()=>{const b=A.NPCS_BASE[n.id];n.name=b.name;n.x=b.x;n.y=b.y;n.inside=b.inside;
+      n.d=JSON.parse(JSON.stringify(b.d));delete patchPnj[n.id];sale();majVue();majPanneau();};
+  } else if(ed.cat==='objets'){
+    const o=A.ITEMS.find(x=>x.id===ed.sel); if(!o)return w;
+    titre.innerHTML='<b style="color:#f4e2a8">'+o.n+'</b> <span style="color:#79808f">'+o.id+'</span>';
+    f.appendChild(titre);
+    f.appendChild(champ('Nom dans le sac',o.n,false,v=>{o.n=v;noteObj(o.id,'n',v);}));
+    f.appendChild(champ('Quand on le ramasse',o.trouve,true,v=>{o.trouve=v;noteObj(o.id,'trouve',v);}));
+    f.appendChild(champ('Quand on le regarde',o.txt,true,v=>{o.txt=v;noteObj(o.id,'txt',v);}));
+    const r=document.createElement('div'); r.className='rangee';
+    r.appendChild(champNum('Case X',o.x,v=>{o.x=v;noteObj(o.id,'x',v);}));
+    r.appendChild(champNum('Case Y',o.y,v=>{o.y=v;noteObj(o.id,'y',v);}));
+    r.appendChild(champ('Intérieur',o.inside||'',false,v=>{o.inside=v||null;noteObj(o.id,'inside',o.inside);}));
+    f.appendChild(r);
+    bRaz.onclick=()=>{const b=A.ITEMS_BASE[o.id];Object.assign(o,b);delete patchObj[o.id];
+      sale();majVue();majPanneau();};
+  } else {
+    const l=A.LOCKED[ed.sel]; if(!l)return w;
+    titre.innerHTML='<b style="color:#f4e2a8">'+l.who+'</b>';
+    f.appendChild(titre);
+    f.appendChild(champ('Le cadre du haut',l.who,false,v=>{l.who=v;majPanneau();}));
+    const r=document.createElement('div'); r.className='rangee';
+    r.appendChild(champNum('Case X',l.x,v=>{l.x=v;}));
+    r.appendChild(champNum('Case Y',l.y,v=>{l.y=v;}));
+    f.appendChild(r);
+    const t=document.createElement('div'); t.className='champ';
+    t.innerHTML='<span>Ce qu\'on lit — une phrase par ligne, une boîte par phrase</span>';
+    const ta=document.createElement('textarea');
+    ta.value=(l.d||[]).join('\n'); ta.rows=Math.max(3,(l.d||[]).length+1);
+    ta.oninput=()=>{l.d=ta.value.split('\n').filter(x=>x.trim()!=='');sale();};
+    t.appendChild(ta); f.appendChild(t);
+    const i=ed.sel;
+    bRaz.onclick=()=>{A.LOCKED[i]=JSON.parse(JSON.stringify(A.LOCKED_BASE[i]));sale();majVue();majPanneau();};
+  }
+  f.appendChild(bRaz);
+  w.appendChild(f);
+  return w;
+}
+
+/* ---------- la trame et les missions ---------- */
+function panneauTrame(){
+  pan.style.display='';
+  pan.innerHTML='<h4>Les actes</h4><div id="actes"></div>'+
+    '<h4>Les évènements que le jeu sait déclencher</h4><div id="evs" class="aide"></div>';
+  const g=$('#actes');
+  A.ACTES.forEach((n,i)=>{
+    if(i===0)return;
+    const d=document.createElement('div'); d.className='champ'; d.style.marginBottom='5px';
+    d.innerHTML='<span>Acte '+i+'</span>';
+    const inp=document.createElement('input'); inp.type='text'; inp.value=n;
+    inp.oninput=()=>{A.ACTES[i]=inp.value;sale();majVue();};
+    d.appendChild(inp); g.appendChild(d);
+  });
+  $('#evs').innerHTML=A.EVENTS.map(e=>'<b>'+e.ev+'</b> — '+e.q).join('<br>');
+}
+function formMission(m,i){
+  const f=document.createElement('div'); f.className='corps';
+  const r1=document.createElement('div'); r1.className='rangee';
+  const dA=document.createElement('div'); dA.className='champ';
+  dA.innerHTML='<span>Acte</span>';
+  const sA=document.createElement('select');
+  A.ACTES.forEach((n,k)=>{if(k===0)return;
+    const o=document.createElement('option');o.value=k;o.textContent=k+'. '+n;
+    if(k===m.a)o.selected=true;sA.appendChild(o);});
+  sA.onchange=()=>{m.a=+sA.value;sale();majVue();};
+  dA.appendChild(sA); r1.appendChild(dA);
+  const dE=document.createElement('div'); dE.className='champ';
+  dE.innerHTML='<span>Évènement</span>';
+  const sE=document.createElement('select');
+  A.EVENTS.forEach(e=>{const o=document.createElement('option');o.value=e.ev;
+    o.textContent=e.ev+' — '+e.q; if(e.ev===m.ev)o.selected=true;sE.appendChild(o);});
+  sE.onchange=()=>{m.ev=sE.value;sale();majVue();};
+  dE.appendChild(sE); r1.appendChild(dE);
+  f.appendChild(r1);
+  f.appendChild(champ('Titre',m.t,false,v=>{m.t=v;}));
+  f.appendChild(champ('Ce que le joueur doit faire',m.d,true,v=>{m.d=v;}));
+  const r2=document.createElement('div'); r2.className='rangee';
+  const dQ=document.createElement('div'); dQ.className='champ';
+  dQ.innerHTML='<span>À qui (pour « parle »)</span>';
+  const sQ=document.createElement('select');
+  const o0=document.createElement('option'); o0.value=''; o0.textContent='— personne en particulier —';
+  sQ.appendChild(o0);
+  A.NPCS.forEach(n=>{const o=document.createElement('option');o.value=n.id;
+    o.textContent=n.name+' ('+n.id+')'; if(n.id===m.qui)o.selected=true;sQ.appendChild(o);});
+  sQ.onchange=()=>{if(sQ.value)m.qui=sQ.value;else delete m.qui;sale();};
+  dQ.appendChild(sQ); r2.appendChild(dQ);
+  r2.appendChild(champNum('Combien de fois',m.n,v=>{if(v)m.n=v;else delete m.n;}));
+  f.appendChild(r2);
+  f.appendChild(champ('Le texte qui tombe quand c\'est fini',m.f,true,v=>{m.f=v;}));
+  const bar=document.createElement('div'); bar.style.cssText='display:flex;gap:6px';
+  const dup=document.createElement('button'); dup.className='b'; dup.textContent='Dupliquer';
+  dup.onclick=()=>{A.MISSIONS.splice(i+1,0,JSON.parse(JSON.stringify(m)));sale();majVue();};
+  const sup=document.createElement('button'); sup.className='b rouge'; sup.textContent='Supprimer';
+  sup.onclick=()=>{if(confirm('Supprimer « '+m.t+' » ?')){A.MISSIONS.splice(i,1);ed.misOuv=-1;sale();majVue();}};
+  bar.appendChild(dup); bar.appendChild(sup);
+  f.appendChild(bar);
+  return f;
+}
+async function programme(){
+  if(!ed.prog.trim()){dit('Écris d\'abord ce que tu veux.');return;}
+  ed.progEnCours=true; ed.progRep=null; majVue();
+  dit('Claude écrit la mission...');
+  let r;
+  try{
+    const rep=await fetch('/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({desc:ed.prog, apres:ed.apres,
+        contexte:{actes:A.ACTES, evenements:A.EVENTS,
+          pnj:A.NPCS.map(n=>({id:n.id,nom:n.name})),
+          missions:A.MISSIONS}})});
+    r=await rep.json();
+  }catch(e){ r={ok:false,raison:'reseau'}; }
+  ed.progEnCours=false;
+  if(!r||!r.ok){
+    const m={sans_cle:"Le serveur n'a pas de clé Claude. Ajoute ANTHROPIC_API_KEY dans Render, onglet Environment, puis redémarre le service.",
+      reseau:"Pas de réponse du serveur.",api:"Claude a refusé : "+(r&&r.code)+' '+(r&&r.detail||''),
+      illisible:"Claude a répondu à côté. Reformule.",serveur:"Le serveur a calé."};
+    ed.progRep={erreur:(m[r&&r.raison]||'Ça n\'a pas marché.')};
+  } else ed.progRep=r;
+  dit(ed.progRep.erreur?ed.progRep.erreur:'Claude a répondu.',!ed.progRep.erreur);
+  majVue();
+}
+function insereProg(){
+  const r=ed.progRep; if(!r||!r.missions)return;
+  const pos=(ed.apres<0)?A.MISSIONS.length:ed.apres+1;
+  A.MISSIONS.splice(pos,0,...JSON.parse(JSON.stringify(r.missions)));
+  Object.keys(r.dialogues||{}).forEach(id=>{
+    const n=A.NPCS.find(x=>x.id===id); if(!n)return;
+    if(!n.d)n.d=[];
+    (r.dialogues[id]||[]).forEach(rep=>n.d.push(Array.isArray(rep)?rep:[String(rep)]));
+    notePnj(id,'d',n.d);
+  });
+  ed.progRep=null; ed.prog=''; sale();
+  dit(r.missions.length+' mission'+(r.missions.length>1?'s':'')+' insérée'+(r.missions.length>1?'s':'')+'.',true);
+  majVue();
+}
+function vueTrame(){
+  const w=document.createElement('div'); w.className='centre';
+  /* la boite qui demande a Claude */
+  const p=document.createElement('div'); p.className='prog';
+  p.innerHTML='<h3>Programmer une mission</h3>';
+  const ta=document.createElement('textarea');
+  ta.placeholder="Décris la mission comme tu la raconterais. Par exemple : Charles parie qu'il "+
+    "met une balle sur le toit du club house, il faut aller la rechercher avant Alain.";
+  ta.value=ed.prog;
+  ta.oninput=()=>{ed.prog=ta.value;};
+  p.appendChild(ta);
+  const bar=document.createElement('div');
+  bar.style.cssText='display:flex;gap:8px;align-items:flex-end;margin-top:8px';
+  const dP=document.createElement('div'); dP.className='champ'; dP.style.flex='1';
+  dP.innerHTML='<span>L\'insérer après</span>';
+  const sP=document.createElement('select');
+  const oF=document.createElement('option'); oF.value='-1'; oF.textContent='— à la toute fin —';
+  sP.appendChild(oF);
+  A.MISSIONS.forEach((m,i)=>{const o=document.createElement('option');o.value=i;
+    o.textContent=(i+1)+'. '+m.t; if(i===ed.apres)o.selected=true;sP.appendChild(o);});
+  sP.value=String(ed.apres);
+  sP.onchange=()=>{ed.apres=+sP.value;};
+  dP.appendChild(sP); bar.appendChild(dP);
+  const bP=document.createElement('button'); bP.className='b vert';
+  bP.textContent=ed.progEnCours?'Claude écrit...':'Programmer';
+  bP.disabled=ed.progEnCours; bP.onclick=programme;
+  bar.appendChild(bP);
+  p.appendChild(bar);
+  if(ed.progRep){
+    const a=document.createElement('div'); a.className='apercu';
+    if(ed.progRep.erreur){
+      a.style.background='#2a1a1a'; a.style.borderColor='#6b3232';
+      a.textContent=ed.progRep.erreur;
+    } else {
+      if(ed.progRep.note)a.innerHTML='<div class="mot" style="margin-bottom:6px">'+ed.progRep.note+'</div>';
+      (ed.progRep.missions||[]).forEach(m=>{
+        const d=document.createElement('div'); d.className='m';
+        d.innerHTML='<b>'+(m.t||'')+'</b> <span style="color:#8fb0d8">'+(m.ev||'')+
+          (m.qui?' → '+m.qui:'')+(m.n?' ×'+m.n:'')+'</span><br>'+
+          '<span style="color:#aeb6c6">'+(m.d||'')+'</span><br>'+
+          '<span style="color:#79808f">'+(m.f||'')+'</span>';
+        a.appendChild(d);
+      });
+      const nd=Object.keys(ed.progRep.dialogues||{});
+      if(nd.length){const d=document.createElement('div');d.className='m';
+        d.innerHTML='<span class="mot">Nouvelles répliques pour : '+nd.join(', ')+'</span>';a.appendChild(d);}
+      const b2=document.createElement('div'); b2.style.cssText='display:flex;gap:8px;margin-top:9px';
+      const ins=document.createElement('button'); ins.className='b vert'; ins.textContent='Insérer dans la trame';
+      ins.onclick=insereProg;
+      const ann=document.createElement('button'); ann.className='b'; ann.textContent='Jeter';
+      ann.onclick=()=>{ed.progRep=null;majVue();};
+      b2.appendChild(ins); b2.appendChild(ann); a.appendChild(b2);
+    }
+    p.appendChild(a);
+  }
+  w.appendChild(p);
+  /* la trame */
+  const l=document.createElement('div'); l.className='form';
+  let acte=-1;
+  A.MISSIONS.forEach((m,i)=>{
+    if(m.a!==acte){acte=m.a;
+      const h=document.createElement('div'); h.className='acte';
+      h.textContent='Acte '+acte+' — '+(A.ACTES[acte]||''); l.appendChild(h);}
+    const d=document.createElement('div'); d.className='mis'+(ed.misOuv===i?' on':'');
+    const t=document.createElement('div'); t.className='tete';
+    t.innerHTML='<span class="num">'+(i+1)+'</span><span class="tit">'+(m.t||'(sans titre)')+
+      '</span><span class="ev">'+(m.ev||'?')+(m.qui?' → '+m.qui:'')+(m.n?' ×'+m.n:'')+'</span>';
+    const fl=document.createElement('span'); fl.className='fleches';
+    const up=document.createElement('button'); up.textContent='▲';
+    up.onclick=e=>{e.stopPropagation();if(i>0){const x=A.MISSIONS.splice(i,1)[0];A.MISSIONS.splice(i-1,0,x);
+      if(ed.misOuv===i)ed.misOuv=i-1;sale();majVue();}};
+    const dn=document.createElement('button'); dn.textContent='▼';
+    dn.onclick=e=>{e.stopPropagation();if(i<A.MISSIONS.length-1){const x=A.MISSIONS.splice(i,1)[0];
+      A.MISSIONS.splice(i+1,0,x); if(ed.misOuv===i)ed.misOuv=i+1;sale();majVue();}};
+    fl.appendChild(up); fl.appendChild(dn); t.appendChild(fl);
+    t.onclick=()=>{ed.misOuv=(ed.misOuv===i)?-1:i;majVue();};
+    d.appendChild(t);
+    if(ed.misOuv===i)d.appendChild(formMission(m,i));
+    l.appendChild(d);
+  });
+  const add=document.createElement('button'); add.className='b'; add.style.marginTop='8px';
+  add.textContent='Ajouter une mission à la main';
+  add.onclick=()=>{A.MISSIONS.push({a:A.MISSIONS.length?A.MISSIONS[A.MISSIONS.length-1].a:1,
+    t:'Nouvelle mission',d:'',ev:'parle',qui:'charles',f:''});
+    ed.misOuv=A.MISSIONS.length-1;sale();majVue();};
+  l.appendChild(add);
+  const raz=document.createElement('button'); raz.className='b rouge'; raz.style.marginTop='8px';
+  raz.textContent="Remettre toute la trame d'origine";
+  raz.onclick=()=>{if(!confirm('Effacer toutes les retouches de la trame ?'))return;
+    A.MISSIONS.length=0;JSON.parse(JSON.stringify(A.MISSIONS_BASE)).forEach(m=>A.MISSIONS.push(m));
+    A.ACTES.length=0;A.ACTES_BASE.forEach(a2=>A.ACTES.push(a2));
+    ed.misOuv=-1;sale();majVue();majPanneau();};
+  l.appendChild(raz);
+  w.appendChild(l);
+  return w;
+}
+
 /* ---------- la vue centrale ---------- */
 function majVue(){
   const vieux=vue.querySelector('.centre'); if(vieux)vieux.remove();
@@ -708,6 +1106,8 @@ function majVue(){
   infos.style.display=(ed.ong==='carte')?'':'none';
   if(ed.ong==='blocs')vue.appendChild(vueBloc());
   else if(ed.ong==='persos')vue.appendChild(vuePersos());
+  else if(ed.ong==='textes')vue.appendChild(vueTextes());
+  else if(ed.ong==='trame')vue.appendChild(vueTrame());
 }
 document.querySelectorAll('nav button').forEach(b=>{
   b.onclick=()=>{
@@ -739,7 +1139,17 @@ function monde(){
     const a=A.CORPS[k].join('|'), b=A.CORPS_BASE[k].join('|');
     if(a!==b)corps[k]=A.CORPS[k].slice();
   });
-  return {v:1,carte:carte,tuiles:tuiles,persos:{fiches:fiches,corps:corps}};
+  /* les textes : ce qu'on a modifie ici, pas ce que le jeu a deplace tout seul */
+  const pnj={}, objets={};
+  Object.keys(patchPnj).forEach(k=>{if(Object.keys(patchPnj[k]||{}).length)pnj[k]=patchPnj[k];});
+  Object.keys(patchObj).forEach(k=>{if(Object.keys(patchObj[k]||{}).length)objets[k]=patchObj[k];});
+  const mem=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+  const out={v:1,carte:carte,tuiles:tuiles,persos:{fiches:fiches,corps:corps},
+    pnj:pnj,objets:objets};
+  if(!mem(A.MISSIONS,A.MISSIONS_BASE))out.missions=A.MISSIONS;
+  if(!mem(A.ACTES,A.ACTES_BASE))out.actes=A.ACTES;
+  if(!mem(A.LOCKED,A.LOCKED_BASE))out.lieux=A.LOCKED;
+  return out;
 }
 async function enregistre(){
   const m=monde();
@@ -751,7 +1161,14 @@ async function enregistre(){
     if(!r.ok)throw new Error(r.status);
     ed.sauve=true;
     const n=Object.keys(m.carte).reduce((a,k)=>a+m.carte[k].length,0);
-    dit('Enregistré. '+n+' case'+(n>1?'s':'')+' retouchée'+(n>1?'s':'')+'.',true);
+    const bouts=[];
+    if(n)bouts.push(n+' case'+(n>1?'s':''));
+    const nb=Object.keys(m.tuiles||{}).length; if(nb)bouts.push(nb+' bloc'+(nb>1?'s':''));
+    const np=Object.keys(m.pnj||{}).length; if(np)bouts.push(np+' personnage'+(np>1?'s':''));
+    const no=Object.keys(m.objets||{}).length; if(no)bouts.push(no+' objet'+(no>1?'s':''));
+    if(m.missions)bouts.push('la trame');
+    if(m.lieux)bouts.push('les lieux');
+    dit('Enregistré'+(bouts.length?' : '+bouts.join(', ')+'.':'.'),true);
   }catch(e){
     ed.sauve=true;
     dit('Gardé sur cet appareil (pas de serveur).',true);

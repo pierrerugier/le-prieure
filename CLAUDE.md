@@ -59,9 +59,32 @@ Trois onglets :
   une **lettre de palette**, pas une couleur : les poses sont communes à toute la bande, les
   couleurs viennent de la fiche.
 
+- **Textes.** Tout ce qui se lit dans le jeu : les répliques de chaque personnage (une par
+  ligne, une boîte de dialogue par ligne), les textes de lieu qui se lancent tout seuls, et
+  les objets à ramasser avec leur phrase de ramassage. Positions comprises.
+- **Trame.** Les six actes et les missions dans l'ordre, groupées par acte, chacune dépliable :
+  acte, titre, consigne, évènement, à qui, combien de fois, texte de fin. On monte, on descend,
+  on duplique, on supprime. En haut, un champ pour **décrire une mission en français** et un
+  bouton **Programmer** : le serveur passe la demande à Claude avec les évènements disponibles,
+  les personnages et la trame existante, et Claude renvoie la mission déjà câblée, avec
+  éventuellement des répliques à ajouter. On voit ce qu'il propose avant d'insérer.
+
+Une mission ne peut se déclencher que sur un **évènement que le jeu sait émettre** : la liste
+vit dans `EVENTS` (`index.html`) et doit rester en phase avec les appels `mission('...')`.
+Ajouter un évènement, c'est ajouter l'appel dans le code ET la ligne dans `EVENTS`.
+
+Le bouton Programmer a besoin de `ANTHROPIC_API_KEY` dans l'environnement du serveur
+(Render → Environment). Sans clé, l'atelier le dit et le reste continue de marcher.
+`CLAUDE_MODELE` permet de changer de modèle, `claude-opus-5` par défaut.
+
 **Ce qu'on enregistre n'est jamais le monde entier, seulement l'écart** avec ce que le code
-fabrique : une liste de cases, les blocs redessinés, les fiches et poses modifiées. Vider le
-fichier remet tout d'aplomb, et `Tout remettre d'origine` le fait depuis l'atelier.
+fabrique : une liste de cases, les blocs redessinés, les fiches et poses modifiées, les textes
+retouchés, la trame si elle a bougé. Vider le fichier remet tout d'aplomb, et
+`Tout remettre d'origine` le fait depuis l'atelier.
+
+⚠️ Les personnages **se déplacent tout seuls** quand le jeu tourne : on ne peut pas deviner une
+retouche en comparant les positions. L'atelier note ce qu'on modifie à la main, il ne compare
+pas.
 
 Le serveur garde ça dans `data/monde.json` (`GET`/`POST /api/monde`) et prévient les joueurs
 connectés, qui appliquent la retouche sans recharger. **Sur Render le disque est effacé à

@@ -15,7 +15,8 @@ src = src.replace('chargeMonde().then(load).finally(loop);', `globalThis.__t={ga
   players,P_:()=>players,goInside,goOutside,zoneAt,menuList,buildMini,SOLID,getTile,S,ballSpots,updatePick,
   startHole,save,load,solidAt,placeGang,SPOTS,TRACKS,musWant,pente,CRIS,phaseOf,BALLS,updateCars,timeStep,breakWindow,velo,updateVelo,startPente,updatePente,leaves,inBrush,ballVisible,estVitre,estCassee,VILLAS,LISIERE,EVENOU,VOITURES,FICHES,fiche,skillDe,vitPuissance,vitPrecision,longueurDe,cours,startCours,INVITES,inviteRecue,FEU,
   pers,dogSpr,BODY_SIDE,DOG_SIDE,sfx,ambiances,piscineOuverte,baignade,entreDansLeau,proposePartie,updateAttente,departDu1,hNow,AU_FEU,FEU_RING,FEU_TALK,feuMenu,eteindreLeFeu,bikeSpr,BIKE_DOWN,BIKE_UP,BIKE_SIDE,MISSIONS,ACTES,mission,missionCourante,niveau,chaparde,voleVoiturette,updateVoiturette,BUTIN,
-  BASE,appliqueMonde,carteDe,TUILE_OVR,CORPS,CORPS_BASE,FICHES_BASE,tile,cache,MW_:MW};`);
+  BASE,appliqueMonde,carteDe,TUILE_OVR,CORPS,CORPS_BASE,FICHES_BASE,tile,cache,MW_:MW,
+  ITEMS_BASE,NPCS_BASE,MISSIONS_BASE,ACTES_BASE,LOCKED_BASE,EVENTS};`);
 
 /* ---------- faux canvas ---------- */
 function fakeCtx() {
@@ -499,6 +500,31 @@ check('un bloc redessine est pris en compte', !!t.TUILE_OVR[T.ROUGH]);
 check('le cache de tuiles a ete vide', Object.keys(t.cache).length === 0 || !!t.tile(T.ROUGH, 0, 0));
 t.appliqueMonde({ v: 1, carte: {}, tuiles: {}, persos: {} });
 check('le bloc revient au dessin du code', !t.TUILE_OVR[T.ROUGH]);
+/* les textes : repliques, objets, lieux, trame */
+const victor = t.NPCS.find(n => n.id === 'victor');
+const ditAvant = JSON.stringify(victor.d);
+t.appliqueMonde({ v: 1, carte: {}, tuiles: {}, persos: {},
+  pnj: { victor: { name: 'LE CHEF', d: [['On passe par les bois.']] } },
+  objets: { putter: { n: 'Un putter tordu' } },
+  lieux: [{ x: 12, y: 14, who: 'LE 712', d: ['Fermé.'] }],
+  missions: [{ a: 1, t: 'Une seule mission', d: 'Parle a Charles.', ev: 'parle', qui: 'charles', f: 'Voila.' }],
+  actes: ['', 'UN SEUL ACTE'] });
+check('une replique retouchee arrive dans le jeu',
+  t.NPCS.find(n => n.id === 'victor').d[0][0] === 'On passe par les bois.');
+check('un nom de personnage retouche arrive dans le jeu',
+  t.NPCS.find(n => n.id === 'victor').name === 'LE CHEF');
+check('un objet retouche arrive dans le jeu',
+  t.ITEMS.find(o => o.id === 'putter').n === 'Un putter tordu');
+check('un lieu retouche arrive dans le jeu', t.LOCKED.length === 1 && t.LOCKED[0].d[0] === 'Fermé.');
+check('la trame retouchee arrive dans le jeu',
+  t.MISSIONS.length === 1 && t.MISSIONS[0].t === 'Une seule mission');
+check('les actes retouches arrivent dans le jeu', t.ACTES[1] === 'UN SEUL ACTE');
+t.appliqueMonde({ v: 1, carte: {}, tuiles: {}, persos: {} });
+check('les textes reviennent a l origine', JSON.stringify(t.NPCS.find(n => n.id === 'victor').d) === ditAvant);
+check('la trame revient a l origine', t.MISSIONS.length === t.MISSIONS_BASE.length);
+check('les lieux reviennent a l origine', t.LOCKED.length === t.LOCKED_BASE.length);
+check('les objets reviennent a l origine',
+  t.ITEMS.find(o => o.id === 'putter').n === t.ITEMS_BASE.putter.n);
 clear();
 
 /* ---------- 5. les voitures de la departementale ---------- */

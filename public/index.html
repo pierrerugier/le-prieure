@@ -1306,6 +1306,7 @@ Object.keys(INT).forEach(k=>{BASE[k]=INT[k].map.slice();});
    personnages retouches. Tout est un ecart par rapport a ce que le code fabrique,
    donc on peut toujours revenir en arriere en vidant le fichier. */
 let MONDE={v:1,carte:{},tuiles:{},persos:{}};
+const clone=o=>JSON.parse(JSON.stringify(o));
 const CORPS={BODY_DOWN:BODY_DOWN,BODY_UP:BODY_UP,BODY_SIDE:BODY_SIDE,
   CHEV_MI_DOWN:CHEV_MI_DOWN,CHEV_LONG_DOWN:CHEV_LONG_DOWN,CHEV_BOUCLE_DOWN:CHEV_BOUCLE_DOWN,
   CHEV_MI_SIDE:CHEV_MI_SIDE,LUNETTES_DOWN:LUNETTES_DOWN,LUNETTES_SIDE:LUNETTES_SIDE,
@@ -1343,6 +1344,26 @@ function appliqueMonde(mo){
     const src=(P.corps&&P.corps[k])||CORPS_BASE[k];
     const dst=CORPS[k]; dst.length=0; src.forEach(r=>dst.push(r));
   });
+  /* les textes : on repart de ce que le code ecrit, puis on repose les retouches */
+  NPCS.forEach(n=>{
+    const b=NPCS_BASE[n.id]; if(!b)return;
+    n.name=b.name;n.x=b.x;n.y=b.y;n.inside=b.inside;n.d=clone(b.d);
+    const r=(MONDE.pnj||{})[n.id];
+    if(r){if(r.name!=null)n.name=r.name;if(r.x!=null)n.x=r.x;if(r.y!=null)n.y=r.y;
+      if(r.inside!==undefined)n.inside=r.inside||null;if(r.d)n.d=clone(r.d);}
+  });
+  ITEMS.forEach(o=>{
+    const b=ITEMS_BASE[o.id]; if(!b)return;
+    o.n=b.n;o.trouve=b.trouve;o.txt=b.txt;o.x=b.x;o.y=b.y;o.inside=b.inside;
+    const r=(MONDE.objets||{})[o.id];
+    if(r)['n','trouve','txt','x','y','inside'].forEach(k=>{if(r[k]!==undefined)o[k]=r[k];});
+  });
+  const remet=(dst,src)=>{dst.length=0;clone(src).forEach(v=>dst.push(v));};
+  remet(MISSIONS,(MONDE.missions&&MONDE.missions.length)?MONDE.missions:MISSIONS_BASE);
+  remet(ACTES,(MONDE.actes&&MONDE.actes.length)?MONDE.actes:ACTES_BASE);
+  remet(LOCKED,(MONDE.lieux&&MONDE.lieux.length)?MONDE.lieux:LOCKED_BASE);
+  if(game.mission>MISSIONS.length)game.mission=MISSIONS.length;
+  if(typeof placeGang==='function'){try{placeGang();}catch(e){}}
   if(typeof buildMini==='function'){try{buildMini();}catch(e){}}
 }
 const MONDEKEY='prieure3monde';
@@ -1833,6 +1854,28 @@ const MISSIONS=[
   f:"On a treize ans. L'été prochain sera différent, et on le sait déjà."}];
 const ACTES=['','ON N\'A PLUS L\'ÂGE','LE KING AND JACK','LE GOLF POUR DE VRAI',
   'L\'ÉMANCIPATION','LES CONNERIES','LA FIN DE L\'ENFANCE'];
+/* les textes tels que le code les ecrit : on n'en garde que ce qui s'edite,
+   pas les positions que les personnages bougent tout seuls en jouant */
+const NPCS_BASE={}; NPCS.forEach(n=>{NPCS_BASE[n.id]={name:n.name,x:n.x,y:n.y,inside:n.inside||null,d:clone(n.d||[])};});
+const ITEMS_BASE={}; ITEMS.forEach(o=>{ITEMS_BASE[o.id]={n:o.n,trouve:o.trouve,txt:o.txt,x:o.x,y:o.y,inside:o.inside||null};});
+const MISSIONS_BASE=clone(MISSIONS), ACTES_BASE=ACTES.slice(), LOCKED_BASE=clone(LOCKED);
+/* tout ce qu'une mission peut attendre du joueur */
+const EVENTS=[
+ {ev:'bande',q:"parler a quelqu'un de la bande"},{ev:'parle',q:'parler a un personnage precis',qui:1},
+ {ev:'zone712',q:'arriver devant le 712'},{ev:'minig',q:'regarder le mini-golf'},
+ {ev:'velo',q:'monter sur le velo'},{ev:'vitrine',q:'regarder une vitrine du couloir',n:1},
+ {ev:'kingjack',q:'trouver la photo du King and Jack'},{ev:'pro',q:'prendre une lecon avec un pro'},
+ {ev:'seau',q:'acheter un seau de balles'},{ev:'practice',q:'taper au practice',n:1},
+ {ev:'trou',q:'finir un trou',n:1},{ev:'partie9',q:'finir une partie de neuf trous'},
+ {ev:'balle',q:'ramasser une balle dans les bois',n:1},{ev:'vend',q:'revendre des balles'},
+ {ev:'piscine',q:'se baigner'},{ev:'pente',q:'descendre en grass board'},
+ {ev:'feu',q:'rejoindre le feu de camp'},{ev:'clope',q:'fumer une cigarette'},
+ {ev:'clopes',q:"recuperer le paquet d'Arthur"},{ev:'vitre',q:'casser une vitre chez les Mamoumani',n:1},
+ {ev:'arbre',q:"mettre le feu a l'arbre avec Arthur"},{ev:'bunker',q:'faire une connerie dans le bunker'},
+ {ev:'toit',q:'monter sur le toit du practice'},{ev:'cabane',q:'trouver la cabane du bois'},
+ {ev:'vol',q:'voler quelque chose chez le caddie master',n:1},{ev:'voiturette',q:'voler la voiturette'},
+ {ev:'traces',q:'laisser des traces sur les fairways',n:1},{ev:'course',q:'faire la course a velo'},
+ {ev:'fenetre',q:'regarder par une fenetre'},{ev:'nom',q:'donner un nom au groupe'}];
 function missionCourante(){return MISSIONS[game.mission]||null;}
 function mission(ev,qui){
   const m=missionCourante(); if(!m)return;
@@ -5099,6 +5142,9 @@ if(MODE_EDIT){
     PAL:PAL,FICHES:FICHES,palFiche:palFiche,pers:pers,fiche:fiche,
     CORPS:CORPS,CORPS_BASE:CORPS_BASE,FICHES_BASE:FICHES_BASE,BASE:BASE,
     TUILE_OVR:TUILE_OVR,videCacheTuiles:videCacheTuiles,carteDe:carteDe,tv:tv,
+    NPCS:NPCS,ITEMS:ITEMS,LOCKED:LOCKED,MISSIONS:MISSIONS,ACTES:ACTES,EVENTS:EVENTS,
+    NPCS_BASE:NPCS_BASE,ITEMS_BASE:ITEMS_BASE,MISSIONS_BASE:MISSIONS_BASE,
+    ACTES_BASE:ACTES_BASE,LOCKED_BASE:LOCKED_BASE,
     MONDEKEY:MONDEKEY,get monde(){return MONDE;},appliqueMonde:appliqueMonde
   };
   chargeMonde().finally(function(){
