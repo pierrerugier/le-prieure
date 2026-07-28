@@ -116,14 +116,31 @@ ctx.imageSmoothingEnabled=false;
 const W=240,H=160,TS=16;
 
 /* ---------- entrées ---------- */
+/* /editeur ouvre l'atelier au lieu du jeu. On le sait des maintenant, parce que
+   le jeu prend le clavier a son compte et qu'un atelier, ca s'ecrit dedans. */
+const MODE_EDIT=(function(){
+  try{
+    if(/\/editeur\/?$/.test(location.pathname))return true;
+    return new URLSearchParams(location.search).has('editeur');
+  }catch(e){return false;}
+})();
 const keys={up:0,down:0,left:0,right:0,a:0,b:0,start:0,select:0}, pressed={};
 function press(k){ if(!keys[k]) pressed[k]=1; keys[k]=1; wakeAudio(); }
 function wakeAudio(){ audioInit(); if(AC&&AC.state==='suspended')AC.resume(); }
 function release(k){ keys[k]=0; }
 const KMAP={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',
   w:'up',s:'down',a:'left',d:'right',z:'a',' ':'a',k:'a',x:'b',l:'b',Enter:'start',Escape:'select'};
-addEventListener('keydown',e=>{const k=KMAP[e.key]||KMAP[e.key.toLowerCase()];if(k){e.preventDefault();press(k);}});
-addEventListener('keyup',e=>{const k=KMAP[e.key]||KMAP[e.key.toLowerCase()];if(k){e.preventDefault();release(k);}});
+/* a, s, d, w, z, x servent de manette. Dans l'atelier ce sont des lettres qu'on
+   tape, alors le jeu ne touche pas au clavier. */
+const clavierPris=()=>{
+  if(MODE_EDIT)return true;
+  const el=document.activeElement;
+  return !!el&&(el.tagName==='INPUT'||el.tagName==='TEXTAREA'||el.isContentEditable);
+};
+addEventListener('keydown',e=>{if(clavierPris())return;
+  const k=KMAP[e.key]||KMAP[e.key.toLowerCase()];if(k){e.preventDefault();press(k);}});
+addEventListener('keyup',e=>{if(clavierPris())return;
+  const k=KMAP[e.key]||KMAP[e.key.toLowerCase()];if(k){e.preventDefault();release(k);}});
 document.querySelectorAll('[data-k]').forEach(el=>{
   const k=el.dataset.k, on=e=>{e.preventDefault();e.stopPropagation();press(k);},
         off=e=>{e.preventDefault();release(k);};
@@ -1661,7 +1678,11 @@ function rect(x,y,w,h,t){for(let j=0;j<h;j++)for(let i=0;i<w;i++)put(x+i,y+j,t);
 function ell(cx,cy,rx,ry,t){for(let y=Math.round(cy-ry);y<=cy+ry;y++)for(let x=Math.round(cx-rx);x<=cx+rx;x++){
   const dx=(x-cx)/rx,dy=(y-cy)/ry; if(dx*dx+dy*dy<=1)put(x,y,t);}}
 
-const HOLES=[
+/* Le trace d'origine, celui qui a creuse le terrain au tout debut. Pierre a
+   redessine le domaine a la main dans l'atelier, et ses retouches sont notees
+   comme un ecart avec ce terrain-la : on n'y touche plus jamais, sinon tout se
+   decale d'un coup. Il ne sert qu'a buildWorld. */
+const TRACE=[
  {n:1,tx:52,ty:54,gx:50,gy:76,par:4},
  {n:2,tx:48,ty:80,gx:66,gy:88,par:4},
  {n:3,tx:70,ty:86,gx:90,gy:82,par:4},
@@ -1671,6 +1692,17 @@ const HOLES=[
  {n:7,tx:80,ty:28,gx:62,gy:20,par:4},
  {n:8,tx:58,ty:16,gx:44,gy:22,par:4},
  {n:9,tx:44,ty:26,gx:56,gy:30,par:3}];
+/* Le parcours qu'on joue : sept trous, releves sur la carte de Pierre. Depart au
+   sud du putting green, on descend, on part vers l'est, on remonte le long des
+   maisons, et on revient par le nord. */
+const HOLES=[
+ {n:1,tx:50,ty:65,gx:56,gy:86,par:4},
+ {n:2,tx:64,ty:87,gx:90,gy:82,par:4},
+ {n:3,tx:100,ty:88,gx:99,gy:71,par:4},
+ {n:4,tx:100,ty:66,gx:112,gy:53,par:4},
+ {n:5,tx:114,ty:46,gx:79,gy:41,par:5},
+ {n:6,tx:74,ty:31,gx:53,gy:18,par:4},
+ {n:7,tx:42,ty:18,gx:47,gy:31,par:3}];
 HOLES.forEach(h=>{h.len=Math.round(Math.hypot(h.gx-h.tx,h.gy-h.ty)*14);});
 
 function carve(h){
@@ -1806,9 +1838,9 @@ function buildWorld(){
   /* le bois qui remplit l est de la carte */
   for(let i=0;i<70;i++){const cx=96+((rnd()*22)|0), cy=32+((rnd()*46)|0);
     ell(cx,cy,1+((rnd()*2)|0),1+((rnd()*2)|0),T.DENSE);}
-  HOLES.forEach(carve);
+  TRACE.forEach(carve);
   /* un trou trace peut raboter le green du precedent : on repose les drapeaux a la fin */
-  HOLES.forEach(h=>{ell(h.gx,h.gy,3.4,3,T.GREEN);put(h.gx,h.gy,T.FLAG);});
+  TRACE.forEach(h=>{ell(h.gx,h.gy,3.4,3,T.GREEN);put(h.gx,h.gy,T.FLAG);});
 
   /* ---------- la departementale ---------- */
   for(let y=0;y<MH;y++){ put(30,y,T.ROAD);put(31,y,T.LINE);put(32,y,T.ROAD);put(33,y,T.ROAD); }
@@ -2340,7 +2372,30 @@ function appliqueMonde(mo){
   remet(LOCKED,(MONDE.lieux&&MONDE.lieux.length)?MONDE.lieux:LOCKED_BASE);
   if(game.mission>MISSIONS.length)game.mission=MISSIONS.length;
   if(typeof placeGang==='function'){try{placeGang();}catch(e){}}
+  recaleBalles();
   if(typeof buildMini==='function'){try{buildMini();}catch(e){}}
+}
+/* Une balle semee par le code peut se retrouver dans un arbre que Pierre a
+   plante depuis. On la deplace sur la case libre la plus proche, et si le coin
+   est entierement bouche, on la retire : une balle dans un tronc, ca n'existe pas. */
+function recaleBalles(){
+  for(let i=ballSpots.length-1;i>=0;i--){
+    const b=ballSpots[i];
+    if(!SOLID.has(at(b.x,b.y)))continue;
+    let pose=null;
+    for(let r=1;r<=4&&!pose;r++)
+      for(let dy=-r;dy<=r&&!pose;dy++)
+        for(let dx=-r;dx<=r&&!pose;dx++){
+          if(Math.max(Math.abs(dx),Math.abs(dy))!==r)continue;
+          const x=b.x+dx, y=b.y+dy;
+          if(x<5||y<5||x>MW-6||y>MH-6)continue;
+          if(SOLID.has(at(x,y)))continue;
+          if(ballSpots.some((o,j)=>j!==i&&o.x===x&&o.y===y))continue;
+          pose=[x,y];
+        }
+    if(pose){b.x=pose[0];b.y=pose[1];}
+    else ballSpots.splice(i,1);
+  }
 }
 const MONDEKEY='prieure3monde';
 /* Un monde sans rien dedans, ce n'est pas un monde : c'est un serveur qui a perdu
@@ -2897,7 +2952,7 @@ const game={state:S.TITLE,tick:0,inside:null,mute:false,clopes:0,shake:0,hop:nul
   dlg:[],dl:0,dc:0,dcb:null,ret:S.WORLD,
   menuIdx:0,page:'',shopIdx:0,shopWho:null,
   money:2,bag:[0,0,0,0,0],seau:12,min:13*60+30,phase:'g',party:[],bike:false,who:null,vitres:0,ask:null,items:{},rolex:false,
-  card:new Array(9).fill(0),curHole:-1,
+  card:new Array(HOLES.length).fill(0),curHole:-1,
   hero:{name:'PIERRE',lv:5,hp:34,hpMax:34,atk:16}};
 const golf={on:false,hole:-1,stroke:0,phase:'',club:0,aim:0,power:0,acc:0,gT:0,dirg:1,
   bx:0,by:0,sx:0,sy:0,ex:0,ey:0,lx:0,ly:0,t:0,dur:1,hgt:0,apex:0,curve:0,
@@ -3670,7 +3725,7 @@ function lieAt(x,y){
 const LIEF={tee:1,fairway:1,green:1,rough:0.76,bunker:0.6,bois:0.45,eau:0.5};
 let players=[];
 function mkP(id,name,pal,human,skill,fid){return{id,name,pal,human,skill,fid:fid||id,bx:0,by:0,px:0,py:0,
-  stroke:0,done:false,card:new Array(9).fill(0),lie:'tee',dir:0,fr:0,wt:0,wd:0,wx:0,wy:0,say:''};}
+  stroke:0,done:false,card:new Array(HOLES.length).fill(0),lie:'tee',dir:0,fr:0,wt:0,wd:0,wx:0,wy:0,say:''};}
 function slopeOf(h){return{a:(h*2.3+0.6)%(Math.PI*2),s:0.6+((h*5)%4)*0.22};}
 function distM(p){const h=HOLES[golf.hole];return Math.round(Math.hypot(h.gx+0.5-p.bx,h.gy+0.5-p.by)*M);}
 
@@ -3799,7 +3854,7 @@ function land(){
   if(t===T.WATER||t===T.POOL)sfx('plouf');
   else if(SOLID.has(t))sfx('mur');
   else sfx('atterri');
-  if(t===T.WATER){p.stroke++;msg="Dans l'eau. Un coup de pénalité.";p.bx=golf.lx;p.by=golf.ly;}
+  if(t===T.WATER||t===T.MARE){p.stroke++;msg="Dans l'eau. Un coup de pénalité.";p.bx=golf.lx;p.by=golf.ly;}
   else if(t===T.ROAD||t===T.LINE){p.stroke++;msg='Sur la départementale. Hors limites.';p.bx=golf.lx;p.by=golf.ly;}
   else if(t===T.ASPH||t===T.CAR){
     p.bx=golf.lx;p.by=golf.ly;p.stroke++;
@@ -3854,7 +3909,7 @@ function nextHole(){
   if(nx>=HOLES.length){
     const tot=players[0].card.reduce((a,b)=>a+b,0),par=HOLES.reduce((a,h)=>a+h.par,0);
     game.party=[];placeGang();mission('partie9');
-    quitGolf('');say(['Neuf trous. '+tot+' coups pour un par '+par+'.',
+    quitGolf('');say([HOLES.length+' trous. '+tot+' coups pour un par '+par+'.',
       players.length>1?'Charles dira qu\'il a fait mieux. Charles n\'a pas rendu sa carte.':'Il commence à faire frais.']);
     return;
   }
@@ -4220,6 +4275,9 @@ function drawGreenZoom(cx,cy){
   ctx.restore();
 }
 function drawGolf(){
+  /* rien a dessiner si aucun trou n'est en cours : mieux vaut un ecran vide
+     qu'un plantage */
+  if(!HOLES[golf.hole]&&!golf.practice&&!cours.on)return;
   const P=players[golf.cur];
   const zoom=(!golf.practice&&(P.lie==='green'||golf.phase==='roll'||golf.phase==='drop')&&golf.phase!=='card'&&golf.phase!=='search');
   if(zoom){
@@ -5541,7 +5599,7 @@ function drawPage(){
     text('TROU',18,30,'#8a92a8',8);text('PAR',56,30,'#8a92a8',8);
     text('COUPS',92,30,'#8a92a8',8);text('DIFF',140,30,'#8a92a8',8);
     let tot=0,par=0;
-    for(let i=0;i<9;i++){
+    for(let i=0;i<HOLES.length;i++){
       const y=42+i*10,h=HOLES[i],s=game.card[i];
       text(String(h.n),22,y,'#38405a',9);text(String(h.par),60,y,'#38405a',9);
       text(s?String(s):'-',100,y,s?'#38405a':'#a8b0c4',9);
@@ -6192,7 +6250,7 @@ async function load(){
     const d=JSON.parse(raw);
     game.px=d.px;game.py=d.py;game.inside=d.inside||null;game.money=d.money||0;
     game.bag=d.bag||[0,0,0,0,0];game.seau=d.seau||0;game.items=d.items||{};
-    game.rolex=!!d.rolex;game.card=d.card||new Array(9).fill(0);
+    game.rolex=!!d.rolex;game.card=(d.card&&d.card.length===HOLES.length)?d.card:new Array(HOLES.length).fill(0);
     game.clopes=d.clopes||0;game.mute=!!d.mute;game.vitres=d.vitres||0;
     game.mission=d.mission||0;game.missionN=d.missionN||0;game.vols=d.vols||0;game.traces=d.traces||0;
     if(d.heroId){const k=PICKS.findIndex(p=>p.id===d.heroId);if(k>=0)game.pick=k;}
@@ -6203,13 +6261,6 @@ async function load(){
     if(d.balls)d.balls.forEach((v,i)=>{if(ballSpots[i])ballSpots[i].taken=!!v;});
   }catch(e){}
 }
-/* /editeur ouvre l'atelier au lieu du jeu */
-const MODE_EDIT=(function(){
-  try{
-    if(/\/editeur\/?$/.test(location.pathname))return true;
-    return new URLSearchParams(location.search).has('editeur');
-  }catch(e){return false;}
-})();
 if(MODE_EDIT){
   window.__PRIEURE__={
     TS:TS,MW:MW,MH:MH,map:map,INT:INT,T:T,SOLID:SOLID,tile:tile,cache:cache,

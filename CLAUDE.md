@@ -37,6 +37,32 @@ node tests/harness.js
 Deux raccourcis d'URL pour regarder une zone sans y marcher : `?go=x,y[,interieur]` place le
 personnage au démarrage, `?demo=pente` ouvre directement le grass board.
 
+## Le parcours
+
+**Sept trous**, relevés sur le domaine que Pierre a redessiné dans l'atelier. Départ au sud du
+putting green, on descend, on part vers l'est, on remonte le long des maisons de lisière, et on
+revient par le nord. Par 28.
+
+⚠️ `TRACE` et `HOLES` sont **deux choses différentes**, et c'est volontaire :
+
+- `TRACE` est le tracé d'origine, celui qui a creusé le terrain au tout début. Les retouches de
+  Pierre sont enregistrées comme un **écart** avec ce terrain-là. **On n'y touche jamais**,
+  sinon les 7565 cases de son domaine se décalent toutes d'un coup. Il ne sert qu'à `buildWorld`.
+- `HOLES` est le parcours qu'on joue. Il peut changer librement.
+
+Les obstacles d'eau sont peints en **mare** (`T.MARE`), pas en eau vive : à droite du 1, en
+bordure de green du 2, à droite du 7. `lieAt` et `land()` traitent les deux pareil, un coup de
+pénalité et on rejoue d'où l'on venait.
+
+`public/monde.json` **est le domaine**, committé dans le dépôt. Le serveur le relit quand
+`data/` est vide, et le harnais de test le pose avant de jouer le parcours. Les sections 1 à 3
+du harnais vérifient ce que le **code** fabrique et tournent donc sur le terrain d'origine ;
+tout ce qui touche au golf tourne sur le domaine de Pierre.
+
+Les balles à trouver sont semées par le code sur le terrain d'origine. Une d'elles peut se
+retrouver dans un arbre planté depuis : `recaleBalles()` la déplace sur la case libre la plus
+proche, ou la retire si le coin est bouché.
+
 ## L'atelier
 
 `/editeur` ouvre un éditeur dans la même page que le jeu, avec les mêmes objets en mémoire :

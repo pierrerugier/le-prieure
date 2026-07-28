@@ -72,6 +72,16 @@ vm.createContext(sandbox);
 vm.runInContext(src, sandbox, { filename: 'prieure.js' });
 const t = sandbox.__t;
 if (!t) throw new Error('export du harnais absent');
+/* Le domaine tel que Pierre l'a redessine dans l'atelier : c'est lui, la vraie
+   carte. On le pose avant tout, sinon on teste un terrain que plus personne ne
+   joue. */
+const fMonde = path.join(root, 'monde.json');
+const mondeDePierre = fs.existsSync(fMonde) ? JSON.parse(fs.readFileSync(fMonde, 'utf8')) : null;
+/* a rappeler apres chaque essai qui remet le monde a plat */
+function remetMonde() { if (mondeDePierre) t.appliqueMonde(mondeDePierre); }
+/* Les sections 1 a 3 verifient ce que le CODE fabrique : on les joue sur le
+   terrain d'origine. Le monde de Pierre arrive juste avant le golf, parce que le
+   parcours, lui, c'est le sien. */
 
 /* ---------- petit cadre de test ---------- */
 let ok = 0, ko = 0;
@@ -344,7 +354,12 @@ if (objetTest) {
   t.release('down'); frames(2);
 }
 /* pareil pour une balle */
-const balleTest = t.ballSpots.find(b => !b.taken);
+/* une balle tranquille : pas collee a une porte ni au bord d'une zone, sinon
+   c'est la transition qu'on teste et pas le ramassage */
+const balleTest = t.ballSpots.find(b => !b.taken &&
+  !t.solidAt(b.x, b.y - 1) && !t.solidAt(b.x, b.y) &&
+  !t.DOORS.some(d => Math.abs(d.x - b.x) < 3 && Math.abs(d.y - b.y) < 3) &&
+  t.at(b.x, b.y - 1) === t.at(b.x, b.y));
 if (balleTest) {
   clear(); tp(balleTest.x, balleTest.y - 1); game.dir = 0;
   t.press('down');
@@ -436,8 +451,31 @@ if (terre) {
   clear();
 }
 
-/* ---------- 4. une partie de golf complete ---------- */
-clear(); tp(52, 54); game.state = t.S.WORLD; game.party = [];
+/* ---------- 4. une partie de golf complete, sur le domaine de Pierre ---------- */
+remetMonde();
+check('le domaine redessine est bien charge', !mondeDePierre || t.HOLES.length === 7);
+/* le parcours de Pierre : sept trous, chacun avec son depart et son drapeau en place */
+check('sept trous', t.HOLES.length === 7, t.HOLES.length + '');
+t.HOLES.forEach(h => {
+  check('le depart du ' + h.n + ' est bien un depart',
+    [[0,0],[1,0],[0,1],[1,1]].some(d => t.estDepart(at(h.tx - 1 + d[0], h.ty - 1 + d[1]))),
+    'en ' + h.tx + ',' + h.ty + ' : ' + at(h.tx, h.ty));
+  check('le drapeau du ' + h.n + ' est sur un green',
+    at(h.gx, h.gy) === T.FLAG || at(h.gx, h.gy) === T.GREEN,
+    'en ' + h.gx + ',' + h.gy + ' : ' + at(h.gx, h.gy));
+  check('le ' + h.n + ' fait une longueur jouable', h.len > 120 && h.len < 700, h.len + ' m');
+});
+/* les obstacles d'eau penalisent, qu'ils soient en mare ou en eau vive */
+check('la mare compte comme de l eau pour la balle', t.lieAt(39, 42) === 'eau', t.lieAt(39, 42));
+check('la mare a droite du 7 est bien la', at(39, 42) === T.MARE, '' + at(39, 42));
+check('l eau au bord du green du 2 est bien la', at(85, 83) === T.MARE, '' + at(85, 83));
+check('l eau du 1 est bien la', at(51, 92) === T.MARE, '' + at(51, 92));
+/* et aucune balle a trouver ne se retrouve dans un tronc */
+const dansUnMur = t.ballSpots.filter(b => t.SOLID.has(at(b.x, b.y)));
+check('aucune balle a ramasser n est dans un arbre', dansUnMur.length === 0,
+  dansUnMur.length + ' balle(s) : ' + dansUnMur.slice(0,4).map(b => b.x+','+b.y).join(' '));
+check('il reste des balles a trouver', t.ballSpots.length > 60, t.ballSpots.length + '');
+clear(); tp(t.HOLES[0].tx, t.HOLES[0].ty); game.state = t.S.WORLD; game.party = [];
 tap('a', 3);
 check('depart du 1', t.golf.on, 'phase ' + t.golf.phase);
 let garde = 0;
@@ -468,7 +506,7 @@ function golfBot() {
 while (t.golf.on && garde++ < 200000) golfBot();
 check('le feu de camp n a pas interrompu la partie', game.state !== t.S.ASK,
   'etat ' + game.state);
-check('les neuf trous sont joues', !t.golf.on, 'reste phase ' + t.golf.phase + ' apres ' + garde);
+check('les sept trous sont joues', !t.golf.on, 'reste phase ' + t.golf.phase + ' apres ' + garde);
 const players = t.P_();
 const totalCarte = game.card.reduce((a, b) => a + b, 0);
 check('carte de score remplie', game.card.every(v => v > 0), JSON.stringify(game.card));
@@ -486,6 +524,7 @@ check('une retouche de carte s applique', at(60, 20) === T.SAND, 'tuile ' + at(6
 /* une fiche retouchee, puis remise d aplomb */
 t.appliqueMonde({ v: 1, carte: {}, tuiles: {}, persos: { fiches: { moi: { puis: 5 } }, corps: {} } });
 check('une fiche retouchee s applique', t.FICHES.moi.puis === 5, 'puis ' + t.FICHES.moi.puis);
+remetMonde();
 check('la retouche de carte a bien ete retiree', at(60, 20) === tuileAvant, 'tuile ' + at(60, 20));
 /* une pose retouchee change ce que le jeu dessine */
 const poseDeBase = t.CORPS.BODY_DOWN.join('|');
@@ -500,7 +539,7 @@ t.appliqueMonde({ v: 1, carte: {},
   tuiles: { [T.ROUGH]: { pal: ['#ff0000'], px: new Array(256).fill(0) } }, persos: {} });
 check('un bloc redessine est pris en compte', !!t.TUILE_OVR[T.ROUGH]);
 check('le cache de tuiles a ete vide', Object.keys(t.cache).length === 0 || !!t.tile(T.ROUGH, 0, 0));
-t.appliqueMonde({ v: 1, carte: {}, tuiles: {}, persos: {} });
+t.appliqueMonde({ v: 1, carte: {}, tuiles: {}, persos: {} }); remetMonde();
 check('le bloc revient au dessin du code', !t.TUILE_OVR[T.ROUGH]);
 /* les textes : repliques, objets, lieux, trame */
 const victor = t.NPCS.find(n => n.id === 'victor');
@@ -584,14 +623,14 @@ clear(); tp(60, 30); t.put(61, 30, q1);
 check('on ne traverse pas une case tournee', t.solidAt(61, 30));
 t.put(61, 30, T.ROUGH); clear();
 check('le quart de tour redresse la cloture', t.ROT[T.CLOH] === T.CLOV && t.ROT[T.CLOV] === T.CLOH);
-check('les neuf departs sont des reperes deplacables',
-  t.HOLES.length === 9 && t.HOLES_BASE.length === 9);
+check('les sept trous sont des reperes deplacables',
+  t.HOLES.length === 7 && t.HOLES_BASE.length === 7, t.HOLES.length + ' trous');
 check('les portes sont des reperes deplacables', t.DOORS.length >= 5 && t.DOORS_BASE.length === t.DOORS.length);
 /* deplacer un depart deplace la logique, pas l'herbe */
 const teeAvant = { tx: t.HOLES[0].tx, ty: t.HOLES[0].ty };
 t.appliqueMonde({ v: 1, carte: {}, tuiles: {}, persos: {}, trous: [{ tx: 40, ty: 40, gx: 50, gy: 76 }] });
 check('un depart deplace change ou commence le trou', t.HOLES[0].tx === 40 && t.HOLES[0].ty === 40);
-t.appliqueMonde({ v: 1, carte: {}, tuiles: {}, persos: {} });
+t.appliqueMonde({ v: 1, carte: {}, tuiles: {}, persos: {} }); remetMonde();
 check('le depart revient a sa place', t.HOLES[0].tx === teeAvant.tx && t.HOLES[0].ty === teeAvant.ty);
 /* le vrai depart de quatre cases est bien pose et reconnu */
 check('le depart du 1 fait quatre cases',
@@ -622,6 +661,7 @@ clear();
 t.appliqueMonde({ v: 1, carte: {}, tuiles: {}, persos: {} });
 check('retirer le bloc le sort de la bibliotheque', !t.BIBLI.some(e => e.perso));
 check('et rend le passage', !t.SOLID.has(t.PERSO0) && !t.TIRADES[t.PERSO0]);
+remetMonde();
 check('un monde sans rien dedans est reconnu comme vide',
   t.mondeVide({v:1,carte:{},tuiles:{},persos:{fiches:{},corps:{}},pnj:{},objets:{}}));
 check('un monde avec une seule case retouchee n est pas vide',
@@ -860,7 +900,7 @@ if (bord) {
 check('la piscine invite les autres', !!t.INVITES.piscine);
 check('le depart du 1 invite les autres', !!t.INVITES.partie);
 /* la proposition de partie part et se resout toute seule au bout de cinq secondes */
-clear(); tp(52, 55); game.party = [];
+clear(); tp(t.HOLES[0].tx, t.HOLES[0].ty + 1); game.party = [];
 t.proposePartie();
 check('une partie est proposee', !!game.attente);
 let att = 0;

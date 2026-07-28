@@ -512,7 +512,9 @@ function borne(){
   ed.camy=Math.max(-vh*0.3,Math.min(d.h-vh*0.7,ed.camy));
 }
 window.addEventListener('keydown',e=>{
-  if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT')return;
+  /* on ecrit dans l'atelier : tant qu'on est dans un champ, les raccourcis se taisent */
+  const el=e.target;
+  if(el&&(el.tagName==='INPUT'||el.tagName==='SELECT'||el.tagName==='TEXTAREA'||el.isContentEditable))return;
   const k=e.key.toLowerCase();
   if((e.metaKey||e.ctrlKey)&&k==='z'){e.preventDefault();e.shiftKey?refais():annule();return;}
   if((e.metaKey||e.ctrlKey)&&k==='y'){e.preventDefault();refais();return;}
