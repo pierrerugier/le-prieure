@@ -7682,6 +7682,13 @@ function netConnect(){
   net.ws.onerror=()=>{ if(net.ws)net.ws.close(); };
   net.ws.onmessage=e=>{
     let m; try{ m=JSON.parse(e.data); }catch(err){ return; }
+    netRecu(m);
+  };
+}
+/* Tout ce qui arrive du serveur passe par la. C'est une fonction a part pour
+   qu'on puisse la nourrir a la main dans les tests, sans ouvrir de socket. */
+function netRecu(m){
+  {
     if(m.t==='welcome'){
       net.id=m.id;
       if(m.roster)net.roster=m.roster;
@@ -7742,7 +7749,7 @@ function netConnect(){
         toast((m.pk||'Quelqu\'un')+' rejoint la partie.');
       }
     }
-  };
+  }
 }
 function netSend(o){
   if(net.ws&&net.ws.readyState===1){try{net.ws.send(JSON.stringify(o));}catch(e){}}

@@ -13,7 +13,7 @@ if (src.indexOf('chargeMonde().then(load).finally(loop);') < 0) throw new Error(
 src = src.replace('chargeMonde().then(load).finally(loop);', `globalThis.__t={game,golf,net,update,render,map,MW,MH,T,at,put,NPCS,ITEMS,
   HOLES,PICKS,INT,DOORS,LOCKED,cars,shards,keys,press,release,consume,MAMOU,MAMOU_WIN,FEU,
   players,P_:()=>players,goInside,goOutside,zoneAt,menuList,buildMini,SOLID,getTile,S,ballSpots,updatePick,
-  startHole,save,load,solidAt,placeGang,bruitDuSol,SOL_BRUIT,bonPoste,SOL_DEBOUT,passageEtroit,dansLeHameau,caseDeboutPres,recalePersonnages,roam,MAMOU,LETTRE,LETTRE_BASE,NB_LETTRE,bouts,lettreComplete,poseLaLettre,coinsDuGolf,PENTE_CASES,PENTE_BORD,PRACTICE,trouveLePractice,caleLePractice,tapisPres,cibleDuCours,tapisDuCours,TAPIS,POSTES,POSTES_PRACTICE,POSTES_DEDANS,startPractice,startCours,caseLibreDans,quitGolf,modeleDe,VOITURE_MOD,VOIT_NB,compteLesVoitures,parleDeLaVoiture,MODELES,VOITURES,voitureA,peuplier,ARBRES,TRANSP,BIBLI,PERSO0,put,tile,BINOMES,cleBinome,repliquesPour,copainPres,ditAuCopain,entendCopain,PICKS,net,surLaPiste,trouveLaPiste,semeLesBalles,jourFlottant,repousseLesBalles,effaceLesTraces,traces,poseTrace,jardinPrive,CLUB_C,FOES,startFight,posePresDeLaPiste,pente,startPente,SPOTS,TRACKS,musWant,AGENDA,RENTRENT,creneau,placeAgenda,PANNEAUX,porteeDe,hauteurObstacle,sanction,reculeSurLaLigne,autoClub,puissancePour,CLUBS,M,LIEF,PUTTER,caseDe,ROULE,EAUX,HORS,AVALE,pente,CRIS,phaseOf,BALLS,updateCars,timeStep,breakWindow,velo,updateVelo,startPente,updatePente,rendVoiturette,leaves,inBrush,ballVisible,estVitre,estCassee,VILLAS,LISIERE,EVENOU,VOITURES,FICHES,fiche,skillDe,vitPuissance,vitPrecision,longueurDe,cours,startCours,INVITES,inviteRecue,FEU,
+  startHole,save,load,solidAt,placeGang,bruitDuSol,SOL_BRUIT,bonPoste,SOL_DEBOUT,passageEtroit,dansLeHameau,caseDeboutPres,recalePersonnages,roam,MAMOU,LETTRE,LETTRE_BASE,NB_LETTRE,bouts,lettreComplete,poseLaLettre,coinsDuGolf,PENTE_CASES,PENTE_BORD,PRACTICE,trouveLePractice,caleLePractice,tapisPres,cibleDuCours,tapisDuCours,TAPIS,POSTES,POSTES_PRACTICE,POSTES_DEDANS,startPractice,startCours,caseLibreDans,quitGolf,modeleDe,VOITURE_MOD,VOIT_NB,compteLesVoitures,parleDeLaVoiture,MODELES,VOITURES,voitureA,peuplier,ARBRES,TRANSP,BIBLI,PERSO0,put,tile,BINOMES,cleBinome,repliquesPour,copainPres,ditAuCopain,entendCopain,PICKS,net,netRecu,proposePartie,updateAttente,departDu1,TEE1,surLaPiste,trouveLaPiste,semeLesBalles,jourFlottant,repousseLesBalles,effaceLesTraces,traces,poseTrace,jardinPrive,CLUB_C,FOES,startFight,posePresDeLaPiste,pente,startPente,SPOTS,TRACKS,musWant,AGENDA,RENTRENT,creneau,placeAgenda,PANNEAUX,porteeDe,hauteurObstacle,sanction,reculeSurLaLigne,autoClub,puissancePour,CLUBS,M,LIEF,PUTTER,caseDe,ROULE,EAUX,HORS,AVALE,pente,CRIS,phaseOf,BALLS,updateCars,timeStep,breakWindow,velo,updateVelo,startPente,updatePente,rendVoiturette,leaves,inBrush,ballVisible,estVitre,estCassee,VILLAS,LISIERE,EVENOU,VOITURES,FICHES,fiche,skillDe,vitPuissance,vitPrecision,longueurDe,cours,startCours,INVITES,inviteRecue,FEU,
   pers,dogSpr,BODY_SIDE,DOG_SIDE,sfx,ambiances,piscineOuverte,baignade,entreDansLeau,proposePartie,updateAttente,departDu1,hNow,AU_FEU,placesDuFeu,placeAutourDuFeu,trouveLeFeu,FEU,FEU_TALK,feuMenu,eteindreLeFeu,bikeSpr,BIKE_DOWN,BIKE_UP,BIKE_SIDE,MISSIONS,ACTES,mission,missionCourante,niveau,chaparde,voleVoiturette,updateVoiturette,BUTIN,
   BASE,appliqueMonde,carteDe,TUILE_OVR,CORPS,CORPS_BASE,FICHES_BASE,tile,cache,MW_:MW,
   BIBLI,MIROIR,ROT,SAUT,MODELES,HOLES_BASE,DOORS_BASE,estDepart,VILLAS_:VILLAS,
@@ -1637,6 +1637,42 @@ if (cop) {
   }
 }
 clear();
+
+/* ---------- 23. la partie en reseau ---------- */
+check('le serveur relaie l invitation a une partie', (() => {
+  const src = require('fs').readFileSync(__dirname + '/../server/index.js', 'utf8');
+  const m = src.match(/\['cours'[^\]]*\]/);
+  return m && m[0].indexOf("'partie'") >= 0;
+})());
+check('le serveur relaie ceux qui rejoignent', (() => {
+  const src = require('fs').readFileSync(__dirname + '/../server/index.js', 'utf8');
+  return /m\.t === 'rejoint'/.test(src);
+})());
+check('on peut nourrir le reseau a la main', typeof t.netRecu === 'function');
+/* on simule : on propose une partie, deux copains rejoignent */
+clear(); game.state = t.S.WORLD; game.inside = null; game.party = [];
+t.net.on = true; t.net.count = 3;
+tp(t.HOLES[0].tx, t.HOLES[0].ty);
+t.proposePartie();
+check('la partie attend les reponses', !!game.attente && game.attente.pk.length === 0);
+t.netRecu({ t: 'rejoint', pk: 'charles' });
+t.netRecu({ t: 'rejoint', pk: 'victor' });
+check('deux copains ont rejoint', game.attente.pk.length === 2,
+  JSON.stringify(game.attente && game.attente.pk));
+t.netRecu({ t: 'rejoint', pk: 'charles' });
+check('on ne compte pas deux fois le meme', game.attente.pk.length === 2);
+t.netRecu({ t: 'rejoint', pk: 'oscar' });
+t.netRecu({ t: 'rejoint', pk: 'louis' });
+check('jamais plus de trois invites', game.attente.pk.length === 3,
+  JSON.stringify(game.attente && game.attente.pk));
+for (let i = 0; i < 400 && game.attente; i++) t.updateAttente();
+check('la partie demarre toute seule', !game.attente && t.golf.on, 'golf.on=' + t.golf.on);
+check('on est quatre sur le depart', t.P_().length === 4, t.P_().length + ' joueurs');
+check('chacun a son nom et sa palette',
+  t.P_().every(p => p.name && p.pal) && new Set(t.P_().map(p => p.fid || p.id)).size === 4,
+  t.P_().map(p => p.name).join(' '));
+check('un seul est le joueur local', t.P_().filter(p => p.human).length === 1);
+t.quitGolf(''); t.net.on = false; t.net.count = 0; game.party = []; clear();
 
 /* ---------- verdict ---------- */
 console.log('\n  ' + ok + ' verifications passees, ' + ko + ' echec(s).');

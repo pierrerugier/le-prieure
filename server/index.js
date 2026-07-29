@@ -322,8 +322,13 @@ wss.on('connection', (ws) => {
     }
     if (m.t === 'invite') {
       const kind = texte(m.kind, 12);
-      if (['cours', 'pente', 'mamou'].indexOf(kind) < 0) return;
+      if (['cours', 'pente', 'mamou', 'piscine', 'partie'].indexOf(kind) < 0) return;
       diffuse({ t: 'invite', kind: kind, from: texte(m.from, 12) || 'Quelqu\'un' }, ws);
+      return;
+    }
+    /* quelqu'un accepte la partie : on previent celui qui l'a proposee */
+    if (m.t === 'rejoint') {
+      diffuse({ t: 'rejoint', pk: texte(m.pk, 16) }, ws);
       return;
     }
     /* ce qu'un joueur lance a un autre en le croisant : on relaie, c'est tout */
