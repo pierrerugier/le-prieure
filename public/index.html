@@ -431,7 +431,11 @@ const T={FAIR:0,ROUGH:1,GREEN:2,SAND:3,WATER:4,PATH:5,TREE:6,DENSE:7,TEE:8,FLAG:
      numeros se suivent dans l'ordre de lecture, la rangee du filet est la 4e. */
   TENQ:340,TENT:364,
   /* les panneaux de distance du practice, poses sur le fairway sans sol a eux */
-  PAN50:388,PAN100:389,PAN150:390,PAN200:391};
+  PAN50:388,PAN100:389,PAN150:390,PAN200:391,
+  /* deux peupliers, une case de large sur quatre de haut, du haut vers le bas.
+     Au-dessus de 400 commencent les blocs dessines dans l'atelier : on s'arrete la. */
+  PEUP1A:392,PEUP1B:393,PEUP1C:394,PEUP1D:395,
+  PEUP2A:396,PEUP2B:397,PEUP2C:398,PEUP2D:399};
 /* Sept voitures de profil, quatre cases chacune, a partir de VOIT0 :
    quatre identifiants d'affilee par modele, dans l'ordre haut-gauche, haut-droit,
    bas-gauche, bas-droit. */
@@ -512,6 +516,8 @@ bib('golf',[[T.FLAG,'Drapeau'],[T.MAT,'Tapis de practice'],[T.STALL,'Séparation
  [T.CART,'Voiturette'],[T.CHARIOT,'Chariot'],[T.PICKUP,'Pick-up'],
  [T.PAN50,'Panneau 50 mètres'],[T.PAN100,'Panneau 100 mètres'],
  [T.PAN150,'Panneau 150 mètres'],[T.PAN200,'Panneau 200 mètres']]);
+motif('vegetation','Peuplier, 4 cases',1,4,[T.PEUP1A,T.PEUP1B,T.PEUP1C,T.PEUP1D]);
+motif('vegetation','Peuplier clair, 4 cases',1,4,[T.PEUP2A,T.PEUP2B,T.PEUP2C,T.PEUP2D]);
 motif('golf','Départ, trou vers le bas',2,2,[T.DEPTL,T.DEPTR,T.DEPBL,T.DEPBR]);
 motif('golf','Départ, trou sur le côté',2,2,[T.DEPVTL,T.DEPVTR,T.DEPVBL,T.DEPVBR]);
 motif('golf','Voiturette de golf',2,2,[T.GOLFTL,T.GOLFTR,T.GOLFBL,T.GOLFBR]);
@@ -659,7 +665,8 @@ const ARBRES=new Set([T.ARB1,T.ARB2,T.ARB3,T.ARBH1,T.ARBH2,T.ARBH3,T.ARBB1,T.ARB
   T.PET1,T.PET2,T.PET3,T.ARBT1,T.ARBT2,T.ARBT3,T.ARBT4,T.ARBT5,T.ARBT6,T.BOUL1,T.BOUL2,
   T.CHN1,T.CHN2,T.CHN3,T.CHN4,T.HET1,T.HET2,T.HET3,T.HET4,T.SAU1,T.SAU2,T.SAU3,T.SAU4,
   T.MAJ1,T.MAJ2,T.MAJ3,T.MAJ4,T.MAJ5,T.MAJ6,T.PINT1,T.PINT2,T.PINT3,T.PINT4,T.PINT5,T.PINT6,
-  T.BUIT1,T.BUIT2,T.BUIT3,T.MASS1,T.MASS2]);
+  T.BUIT1,T.BUIT2,T.BUIT3,T.MASS1,T.MASS2,
+  T.PEUP1A,T.PEUP1B,T.PEUP1C,T.PEUP1D,T.PEUP2A,T.PEUP2B,T.PEUP2C,T.PEUP2D]);
 
 /* toutes les cases qui font un depart de trou : l'ancien tapis et les quatre
    cases du vrai depart, dans les deux orientations */
@@ -856,6 +863,53 @@ function feuillu(g,W,H,p,tr,trc,trcl){
     [cx+rx*0.44,cy+ry*0.14,rx*0.56,ry*0.68],
     [cx+rx*0.06,cy-ry*0.30,rx*0.62,ry*0.66]
   ],p,W*31+H*17+p[0].charCodeAt(3));
+}
+/* ---------- le peuplier ----------
+   Un fuseau, pas une boule : le peuplier d'Italie monte droit et se ferme en
+   pointe. On empile des ellipses de plus en plus larges puis de plus en plus
+   etroites, on cerne, on eclaire a gauche, et le vent penche le tout d'un cheveu. */
+function peuplier(g,W,H,p,penche,graine){
+  const cx=W/2;
+  let sd=graine||11;
+  const nr=()=>{sd=(sd*1103515245+12345)&0x7fffffff;return (sd>>9)/4194304%1;};
+  ombre(g,cx,H-2,W*0.22,Math.max(1.5,H*0.022));
+  /* le tronc monte jusqu'au tiers du feuillage, droit et fin */
+  const th=Math.round(H*0.22);
+  tronc(g,cx-2,H-th,4,th-1,'#4a3a24','#6b5433');
+  /* le fuseau : large aux deux tiers, pointu en haut, referme en bas */
+  const hf=H*0.94, y0=1;
+  const larg=(t)=>{                       /* t va de 0 en haut a 1 en bas */
+    const f=Math.sin(Math.pow(t,0.55)*Math.PI*0.95);
+    return W*0.56*f;
+  };
+  const dev=(t)=>penche*W*0.16*Math.pow(1-t,1.6);
+  /* la masse sombre, puis la masse claire decalee, puis les eclats */
+  const passes=[[p[0],0,0],[p[1],-0.9,0.9],[p[2],-2.1,1.8]];
+  passes.forEach(([col,dx,dy],pi)=>{
+    g.fillStyle=col;
+    for(let y=0;y<hf;y++){
+      const t=y/hf, w=larg(t)+dx;
+      if(w<0.6)continue;
+      const x=cx+dev(t)+dx*0.35;
+      /* le bord n'est jamais lisse : une dent de feuillage tous les trois pixels */
+      const d=(pi===0)?0:((nr()<0.30)?1:0);
+      g.fillRect(Math.round(x-w+d),Math.round(y0+y+dy),Math.max(1,Math.round(w*2-d*2)),1);
+    }
+  });
+  /* la lumiere du matin, en haut a gauche */
+  g.fillStyle=p[3];
+  for(let y=Math.round(hf*0.12);y<hf*0.62;y+=2){
+    const t=y/hf, w=larg(t);
+    if(w<2)continue;
+    g.fillRect(Math.round(cx+dev(t)-w*0.72),Math.round(y0+y),Math.max(1,Math.round(w*0.34)),1);
+  }
+  /* quelques trouees de ciel dans la masse, sinon ca fait un ballon */
+  g.fillStyle=p[0];
+  for(let i=0;i<7;i++){
+    const t=0.24+nr()*0.62, w=larg(t);
+    if(w<2.5)continue;
+    g.fillRect(Math.round(cx+dev(t)+w*(0.10+nr()*0.45)),Math.round(y0+t*hf),1,1+((nr()*2)|0));
+  }
 }
 function conifere(g,W,H,p){
   const cx=W/2;
@@ -1098,7 +1152,8 @@ const TRANSP=new Set([
   T.PINT1,T.PINT2,T.PINT3,T.PINT4,T.PINT5,T.PINT6,
   T.BUIT1,T.BUIT2,T.BUIT3,T.MASS1,T.MASS2,
   T.GOLFTL,T.GOLFTR,T.GOLFBL,T.GOLFBR,T.PICKTL,T.PICKTR,T.PICKBL,T.PICKBR,
-  T.PAN50,T.PAN100,T.PAN150,T.PAN200]);
+  T.PAN50,T.PAN100,T.PAN150,T.PAN200,
+  T.PEUP1A,T.PEUP1B,T.PEUP1C,T.PEUP1D,T.PEUP2A,T.PEUP2B,T.PEUP2C,T.PEUP2D]);
 for(let i=0;i<MODELES.length*4;i++)TRANSP.add(T.VOIT0+i);
 for(let i=0;i<9*4;i++)TRANSP.add(T.MIR0+i);
 /* les blocs fabriques dans l'atelier peuvent l'etre aussi, ils le disent eux-memes */
@@ -1571,6 +1626,13 @@ function tile(id,v,f){
     case T.BUIT3: buisson(g,16,16,OLIVE); break;
     case T.MASS1: grand(g,0,2,gg=>buisson(gg,32,16,SAULE)); break;
     case T.MASS2: grand(g,1,2,gg=>buisson(gg,32,16,SAULE)); break;
+    /* ---------- les deux peupliers, quatre cases chacun ---------- */
+    case T.PEUP1A: case T.PEUP1B: case T.PEUP1C: case T.PEUP1D:
+      grand(g,id-T.PEUP1A,1,gg=>peuplier(gg,16,64,
+        ['#2a4d24','#3d6b30','#548a3f','#7fae5c'],(v%3)-1,17+v*13)); break;
+    case T.PEUP2A: case T.PEUP2B: case T.PEUP2C: case T.PEUP2D:
+      grand(g,id-T.PEUP2A,1,gg=>peuplier(gg,16,64,
+        ['#2f4a2a','#456b38','#5f8a4a','#8fb469'],1-(v%3),29+v*11)); break;
     /* ---------- les panneaux de distance du practice ---------- */
     case T.PAN50: panneau(g,50); break;
     case T.PAN100: panneau(g,100); break;
@@ -1858,6 +1920,53 @@ const VOITURES=[
   d:["La Suzuki Ignis de Delphine Jungers. On l'appelle la Jungers mobile.",
      "Elle a fait le trajet mille fois et elle le refera mille fois."]}];
 function voitureA(x,y){return VOITURES.find(v=>v.x===x&&v.y===y);}
+/* ---------- les voitures du parking, celles en quatre cases ----------
+   Chaque modele a son proprietaire, et son proprietaire a son histoire. On les
+   reconnait a leur dessin, ou qu'elles soient garees : c'est le modele qui parle,
+   pas la case. */
+const VOITURE_MOD=[
+ {n:'LA BM',        d:["La BM d'Olivier Jungers. Intérieur cuir rouge, jantes chromées.",
+                       "Un peu kéké, disent les autres pères. Ils la regardent quand même."]},
+ {n:'LA FERRARI',   d:["La Ferrari de Vincent Lutreau. Garée en travers, sur deux places.",
+                       "Charles dit qu'il a le droit de la conduire. Charles dit beaucoup de choses."]},
+ {n:'LA PORSCHE',   d:["La Porsche de Pierre Lebel. Un papier est glissé sous l'essuie-glace.",
+                       "« RENDS L'ARGENT AUX FOYERS SURENDETTÉS »",
+                       "L'écriture ressemble beaucoup à celle de Margaux."]},
+ {n:'LA VIEILLE PORSCHE',d:["La vieille Porsche d'Éric Gandibleu. Peinture terne, pot qui gronde.",
+                       "C'est celle-là que tu veux. Pas l'autre. Celle-là."]},
+ {n:'LE 4X4',       d:["Le Mercedes de monsieur Molina, le directeur. Vitres teintées à fond.",
+                       "On ne voit rien à l'intérieur. C'est peut-être le but."]},
+ {n:'LE 4X4 DES WEBB',d:["Le 4x4 des Webb. Trois sacs de golf, deux serviettes mouillées et un sandwich.",
+                       "Duke a dû dormir sur la banquette. Duke dort partout."]},
+ {n:'LA POLO',      d:["La Polo de Sophie Godot. Rincée, un enjoliveur en moins, pleine de balles de practice."]}];
+/* combien d'exemplaires de chaque modele sont gares sur le domaine */
+const VOIT_NB=new Array(16).fill(0);
+function modeleDe(t){
+  const b=baseT(t);
+  if(b>=T.VOIT0&&b<T.VOIT0+MODELES.length*4)return ((b-T.VOIT0)/4)|0;
+  const o=MIR_ART[b];
+  if(o!==undefined&&o>=T.VOIT0&&o<T.VOIT0+MODELES.length*4)return ((o-T.VOIT0)/4)|0;
+  return -1;
+}
+function compteLesVoitures(){
+  VOIT_NB.fill(0);
+  const vus={};
+  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){
+    const m=modeleDe(at(x,y));
+    if(m<0)continue;
+    /* quatre cases par voiture : on ne compte que le coin haut-gauche */
+    if(modeleDe(at(x-1,y))===m||modeleDe(at(x,y-1))===m)continue;
+    VOIT_NB[m]++;
+  }
+}
+function parleDeLaVoiture(m){
+  const v=VOITURE_MOD[m]; if(!v)return false;
+  const l=v.d.slice();
+  if(VOIT_NB[m]>1)l.push('Il y en a '+(VOIT_NB[m]===2?'deux':VOIT_NB[m])+
+    " comme elle sur le parking. Personne ne sait laquelle est à qui.");
+  say(l,null,v.n);
+  return true;
+}
 
 const FEU={x:109,y:36}, MAMOU={x:22,y:11};
 /* les huit villas forestieres du hameau, eparpillees */
@@ -2521,6 +2630,7 @@ function appliqueMonde(mo){
   if(game.mission>MISSIONS.length)game.mission=MISSIONS.length;
   if(typeof placeGang==='function'){try{placeGang();}catch(e){}}
   centreDuClub();
+  compteLesVoitures();
   semeLesBalles();
   trouveLaPiste();
   poseLaLettre();
@@ -3930,6 +4040,13 @@ function interact(){
   if(t===T.TRACE){say(["Des traces de roues dans le gazon. Deux belles rayures brunes.",
     "Le jardinier va les voir. Le jardinier voit tout."]);return;}
   if(t===T.PICKUP){say(["Le pickup des jardiniers. Un râteau qui dépasse, deux bidons, une radio qui grésille."]);return;}
+  /* les voitures du parking : chacune a son proprietaire et son histoire */
+  {const m=modeleDe(t); if(m>=0&&parleDeLaVoiture(m))return;}
+  if(t===T.CAR){
+    const v=voitureA(tx,ty);
+    if(v){say(v.d,null,v.n);return;}
+    say(["Une voiture garée. Poussiéreuse, un autocollant du club sur la lunette arrière."]);return;
+  }
   if(t===T.TENN||t===T.TNET){say(["Les courts en terre battue. Il faut réserver. Personne ne réserve jamais."]);return;}
   if(t===T.BAIE){say(["Une baie vitrée du sol au plafond. Dedans, le jardin. Dehors, le parcours."]);return;}
   if(t===T.BED){say(["Un lit fait au carré. Ce n'est pas toi qui l'as fait."]);return;}
@@ -4605,22 +4722,31 @@ function trouveLePractice(){
   const x0=Math.min(...xs), x1=Math.max(...xs), y0=Math.min(...ys), y1=Math.max(...ys);
   PRACTICE.cx=Math.round((x0+x1)/2); PRACTICE.cy=Math.round((y0+y1)/2);
   PRACTICE.ligne=(x1-x0)>=(y1-y0);
-  /* quatre sens possibles, on garde celui qui a le plus d'herbe devant lui */
+  /* Deux sens possibles, on garde celui qui a le plus d'herbe devant lui. On
+     compte sur un couloir large de cinq cases, et un drapeau de cible ou un
+     panneau de distance plante au milieu n'arrete pas le comptage. */
   const sens=PRACTICE.ligne?[[0,-1],[0,1]]:[[-1,0],[1,0]];
-  const HERBE=new Set([T.FAIR,T.ROUGH,T.GREEN,T.SAND,T.MAT,T.TEE]);
-  let best=null,bs=-1;
+  const HERBE=new Set([T.FAIR,T.ROUGH,T.GREEN,T.SAND,T.MAT,T.TEE,T.FLAG,T.DIRT,T.TERRE,
+    T.PAN50,T.PAN100,T.PAN150,T.PAN200]);
+  const px=-1, py=1; /* la perpendiculaire se deduit du sens, plus bas */
+  let best=null,bs=-1,bl=0;
   for(const [dx,dy] of sens){
-    let n=0;
-    for(let k=1;k<=26;k++){
-      const x=PRACTICE.cx+dx*k, y=PRACTICE.cy+dy*k;
-      if(x<0||y<0||x>=MW||y>=MH)break;
-      if(!HERBE.has(at(x,y)))break;
-      n++;
+    const nx=-dy, ny=dx;
+    let n=0,loin=0;
+    for(let k=1;k<=28;k++){
+      let herbe=0;
+      for(let c=-2;c<=2;c++){
+        const x=PRACTICE.cx+dx*k+nx*c, y=PRACTICE.cy+dy*k+ny*c;
+        if(x<0||y<0||x>=MW||y>=MH)continue;
+        if(HERBE.has(at(x,y)))herbe++;
+      }
+      if(herbe===0)break;      /* plus rien devant : le practice s'arrete la */
+      n+=herbe; loin=k;
     }
-    if(n>bs){bs=n;best=[dx,dy];}
+    if(n>bs){bs=n;best=[dx,dy];bl=loin;}
   }
   if(!best)best=PRACTICE.ligne?[0,-1]:[-1,0];
-  PRACTICE.dx=best[0];PRACTICE.dy=best[1];PRACTICE.long=bs;
+  PRACTICE.dx=best[0];PRACTICE.dy=best[1];PRACTICE.long=bl;
   PRACTICE.angle=Math.atan2(best[1],best[0]);
 }
 /* le tapis le plus proche d'un point, et la case ou se poser dessus */
@@ -7463,6 +7589,7 @@ NPCS.forEach(n=>{
 NPCS.forEach(n=>{n.gx0=n.x;n.gy0=n.y;});
 caleLePractice();
 poseLesPanneaux();
+compteLesVoitures();
 placeAccueil();
 placeAgenda();
 trouveLaPiste();

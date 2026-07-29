@@ -13,7 +13,7 @@ if (src.indexOf('chargeMonde().then(load).finally(loop);') < 0) throw new Error(
 src = src.replace('chargeMonde().then(load).finally(loop);', `globalThis.__t={game,golf,net,update,render,map,MW,MH,T,at,put,NPCS,ITEMS,
   HOLES,PICKS,INT,DOORS,LOCKED,cars,shards,keys,press,release,consume,MAMOU,MAMOU_WIN,FEU,
   players,P_:()=>players,goInside,goOutside,zoneAt,menuList,buildMini,SOLID,getTile,S,ballSpots,updatePick,
-  startHole,save,load,solidAt,placeGang,bruitDuSol,SOL_BRUIT,bonPoste,SOL_DEBOUT,passageEtroit,dansLeHameau,caseDeboutPres,recalePersonnages,roam,MAMOU,LETTRE,LETTRE_BASE,NB_LETTRE,bouts,lettreComplete,poseLaLettre,coinsDuGolf,PENTE_CASES,PENTE_BORD,PRACTICE,trouveLePractice,caleLePractice,tapisPres,cibleDuCours,tapisDuCours,TAPIS,POSTES,POSTES_PRACTICE,POSTES_DEDANS,startPractice,startCours,caseLibreDans,quitGolf,surLaPiste,trouveLaPiste,semeLesBalles,jourFlottant,repousseLesBalles,effaceLesTraces,traces,poseTrace,jardinPrive,CLUB_C,FOES,startFight,posePresDeLaPiste,pente,startPente,SPOTS,TRACKS,musWant,AGENDA,RENTRENT,creneau,placeAgenda,PANNEAUX,porteeDe,hauteurObstacle,sanction,reculeSurLaLigne,autoClub,puissancePour,CLUBS,M,LIEF,PUTTER,caseDe,ROULE,EAUX,HORS,AVALE,pente,CRIS,phaseOf,BALLS,updateCars,timeStep,breakWindow,velo,updateVelo,startPente,updatePente,rendVoiturette,leaves,inBrush,ballVisible,estVitre,estCassee,VILLAS,LISIERE,EVENOU,VOITURES,FICHES,fiche,skillDe,vitPuissance,vitPrecision,longueurDe,cours,startCours,INVITES,inviteRecue,FEU,
+  startHole,save,load,solidAt,placeGang,bruitDuSol,SOL_BRUIT,bonPoste,SOL_DEBOUT,passageEtroit,dansLeHameau,caseDeboutPres,recalePersonnages,roam,MAMOU,LETTRE,LETTRE_BASE,NB_LETTRE,bouts,lettreComplete,poseLaLettre,coinsDuGolf,PENTE_CASES,PENTE_BORD,PRACTICE,trouveLePractice,caleLePractice,tapisPres,cibleDuCours,tapisDuCours,TAPIS,POSTES,POSTES_PRACTICE,POSTES_DEDANS,startPractice,startCours,caseLibreDans,quitGolf,modeleDe,VOITURE_MOD,VOIT_NB,compteLesVoitures,parleDeLaVoiture,MODELES,VOITURES,voitureA,peuplier,ARBRES,TRANSP,BIBLI,PERSO0,put,tile,surLaPiste,trouveLaPiste,semeLesBalles,jourFlottant,repousseLesBalles,effaceLesTraces,traces,poseTrace,jardinPrive,CLUB_C,FOES,startFight,posePresDeLaPiste,pente,startPente,SPOTS,TRACKS,musWant,AGENDA,RENTRENT,creneau,placeAgenda,PANNEAUX,porteeDe,hauteurObstacle,sanction,reculeSurLaLigne,autoClub,puissancePour,CLUBS,M,LIEF,PUTTER,caseDe,ROULE,EAUX,HORS,AVALE,pente,CRIS,phaseOf,BALLS,updateCars,timeStep,breakWindow,velo,updateVelo,startPente,updatePente,rendVoiturette,leaves,inBrush,ballVisible,estVitre,estCassee,VILLAS,LISIERE,EVENOU,VOITURES,FICHES,fiche,skillDe,vitPuissance,vitPrecision,longueurDe,cours,startCours,INVITES,inviteRecue,FEU,
   pers,dogSpr,BODY_SIDE,DOG_SIDE,sfx,ambiances,piscineOuverte,baignade,entreDansLeau,proposePartie,updateAttente,departDu1,hNow,AU_FEU,placesDuFeu,placeAutourDuFeu,trouveLeFeu,FEU,FEU_TALK,feuMenu,eteindreLeFeu,bikeSpr,BIKE_DOWN,BIKE_UP,BIKE_SIDE,MISSIONS,ACTES,mission,missionCourante,niveau,chaparde,voleVoiturette,updateVoiturette,BUTIN,
   BASE,appliqueMonde,carteDe,TUILE_OVR,CORPS,CORPS_BASE,FICHES_BASE,tile,cache,MW_:MW,
   BIBLI,MIROIR,ROT,SAUT,MODELES,HOLES_BASE,DOORS_BASE,estDepart,VILLAS_:VILLAS,
@@ -1473,6 +1473,57 @@ check('personne ne reste plante dans un mur, dedans non plus',
   t.NPCS.filter(n => n.inside && t.INT[n.inside] &&
     t.SOLID.has(t.baseT(t.INT[n.inside].map[n.y * t.INT[n.inside].w + n.x])))
     .map(n => (n.name || n.id) + ' ' + n.inside + ' ' + n.x + ',' + n.y).join(' | '));
+
+/* ---------- 20. les voitures parlent ---------- */
+check('chaque modele de voiture a un proprietaire',
+  t.VOITURE_MOD.length === t.MODELES.length,
+  t.VOITURE_MOD.length + ' textes pour ' + t.MODELES.length + ' modeles');
+check('chacun a un nom et au moins une phrase',
+  t.VOITURE_MOD.every(v => v.n && v.n.length > 2 && Array.isArray(v.d) && v.d.length >= 1));
+check('on reconnait une voiture a n importe laquelle de ses quatre cases',
+  [0, 1, 2, 3].every(q => t.modeleDe(T.VOIT0 + 4 * 2 + q) === 2));
+check('et une voiture retournee aussi', (() => {
+  for (let i = 0; i < 36; i++) { const m = t.modeleDe(T.MIR0 + i); if (m >= 0) return true; }
+  return false;
+})());
+t.compteLesVoitures();
+const garees = t.VOIT_NB.reduce((a, b) => a + b, 0);
+check('les voitures du domaine sont comptees', garees >= 4, garees + ' voitures garees');
+check('aller voir une voiture ouvre sa fiche', (() => {
+  clear(); game.state = t.S.WORLD; game.inside = null;
+  /* on cherche une voiture sur la carte et on se plante devant */
+  for (let y = 2; y < t.MH - 2; y++) for (let x = 2; x < t.MW - 2; x++) {
+    if (t.modeleDe(at(x, y)) < 0) continue;
+    if (t.solidAt(x, y + 1)) continue;
+    tp(x, y + 1); game.dir = 1;
+    t.press('a'); frames(3); t.release('a'); frames(3);
+    return game.state === t.S.DIALOG;
+  }
+  return false;
+})(), 'etat ' + game.state);
+clear();
+
+/* ---------- 21. les peupliers ---------- */
+const PEUP = [T.PEUP1A, T.PEUP1B, T.PEUP1C, T.PEUP1D, T.PEUP2A, T.PEUP2B, T.PEUP2C, T.PEUP2D];
+check('deux peupliers de quatre cases', PEUP.length === 8 &&
+  T.PEUP1D - T.PEUP1A === 3 && T.PEUP2D - T.PEUP2A === 3);
+check('leurs huit cases se dessinent', PEUP.every(v => !!t.tile(v, 0, 0)));
+check('ils ne peignent pas de sol', PEUP.every(v => t.TRANSP.has(v)));
+check('ils comptent comme des arbres pour la balle', PEUP.every(v => t.ARBRES.has(v)));
+check('ils arretent une balle basse et laissent passer une balle haute',
+  PEUP.every(v => t.hauteurObstacle(v) > 10 && t.hauteurObstacle(v) < 40));
+check('ils restent sous les blocs de l atelier', T.PEUP2D < t.PERSO0,
+  'derniere case ' + T.PEUP2D + ', atelier a ' + t.PERSO0);
+check('ils sont dans la bibliotheque, en motif de quatre cases',
+  t.BIBLI.filter(e => e.n && e.n.indexOf('Peuplier') === 0).length === 2 &&
+  t.BIBLI.filter(e => e.n && e.n.indexOf('Peuplier') === 0).every(e => e.w === 1 && e.h === 4));
+check('on les pose et on ne les traverse pas', (() => {
+  const x = 14, y = 34;
+  for (let k = 0; k < 4; k++) t.put(x, y + k, T.PEUP1A + k);
+  const ok2 = t.baseT(at(x, y)) === T.PEUP1A && t.baseT(at(x, y + 3)) === T.PEUP1D;
+  return ok2;
+})());
+remetMonde();
 
 /* ---------- verdict ---------- */
 console.log('\n  ' + ok + ' verifications passees, ' + ko + ' echec(s).');

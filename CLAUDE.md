@@ -143,6 +143,27 @@ La **lettre de Lise Lebel** : dix morceaux aux quatre coins du parcours, un obje
 chacun. Quand on les a tous, elle se lit dans le menu. Son texte s'ecrit dans
 l'atelier, onglet Textes, categorie « La lettre de Lise Lebel ».
 
+## Les voitures du parking
+
+Chaque modele en quatre cases a son proprietaire et son histoire : `VOITURE_MOD`, indexe
+par le numero de modele. `modeleDe(case)` reconnait une voiture depuis n'importe laquelle
+de ses quatre cases, miroir compris, donc ca marche ou qu'elle soit garee et dans quel sens
+qu'on la tourne. Quand il y en a plusieurs du meme modele, on le dit.
+
+Les vieilles cases `T.CAR` gardent leur texte par position (`VOITURES`), et une voiture
+sans nom a droit a sa ligne quand meme.
+
+## Les peupliers
+
+Deux peupliers d'Italie, **une case de large sur quatre de haut**, cases 392 a 399. Un
+fuseau, pas une boule : on empile des ellipses qui s'ouvrent puis se referment en pointe,
+on cerne, on eclaire a gauche, et le vent penche le tout d'un cheveu. Ils sont
+transparents comme le reste de la gamme d'arbres, et ils comptent comme des arbres pour
+la balle.
+
+**Les numeros 392 a 399 sont les derniers libres avant 400**, ou commencent les blocs
+dessines dans l'atelier. Toute nouvelle case doit aller ailleurs.
+
 ## Le practice, oriente par ses tapis
 
 `trouveLePractice()` lit les cases `T.MAT` sur la carte : **alignees en ligne on tape
