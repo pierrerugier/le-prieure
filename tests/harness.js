@@ -1665,14 +1665,84 @@ t.netRecu({ t: 'rejoint', pk: 'oscar' });
 t.netRecu({ t: 'rejoint', pk: 'louis' });
 check('jamais plus de trois invites', game.attente.pk.length === 3,
   JSON.stringify(game.attente && game.attente.pk));
+/* le serveur confirme la partie ouverte, puis la lance */
+const H0 = t.HOLES.map(h => ({ n: h.n, tx: h.tx, ty: h.ty, gx: h.gx, gy: h.gy, par: h.par }));
+/* la partie se joue avec le perso qu'on tient vraiment, plus trois copains */
+const QUATRE = [game.heroId].concat(
+  ['charles', 'victor', 'oscar', 'louis'].filter(x => x !== game.heroId).slice(0, 3));
+function etatServeur(o) {
+  return Object.assign({
+    trou: 0, tour: 0, ouvert: 0, fini: 0, par: 28, trous: H0,
+    joueurs: QUATRE.map((pk, i) => ({
+      pk: pk, nom: pk.toUpperCase(), bx: H0[0].tx + 0.5 + (i % 2 ? 0.6 : -0.6),
+      by: H0[0].ty + 0.5 + (i > 1 ? 0.8 : 0), lie: 'tee', coups: 0, fini: 0, parti: 0, carte: []
+    }))
+  }, o || {});
+}
+t.netRecu({ t: 'golf', p: etatServeur({ ouvert: 1 }) });
+check('la partie ouverte ne demarre pas toute seule', !t.golf.enLigne);
 for (let i = 0; i < 400 && game.attente; i++) t.updateAttente();
-check('la partie demarre toute seule', !game.attente && t.golf.on, 'golf.on=' + t.golf.on);
+t.netRecu({ t: 'golf', p: etatServeur() });
+check('la partie en ligne demarre', t.golf.enLigne && t.golf.on,
+  'enLigne=' + t.golf.enLigne + ' joueurs=' + t.P_().length);
 check('on est quatre sur le depart', t.P_().length === 4, t.P_().length + ' joueurs');
 check('chacun a son nom et sa palette',
   t.P_().every(p => p.name && p.pal) && new Set(t.P_().map(p => p.fid || p.id)).size === 4,
   t.P_().map(p => p.name).join(' '));
-check('un seul est le joueur local', t.P_().filter(p => p.human).length === 1);
-t.quitGolf(''); t.net.on = false; t.net.count = 0; game.party = []; clear();
+check('un seul joueur est le notre', t.P_().filter(p => p.human).length === 1,
+  t.P_().filter(p => p.human).map(p => p.name).join(' '));
+check('c est a nous de jouer', t.golf.phase === 'aim' || t.golf.phase === 'putt',
+  'phase ' + t.golf.phase);
+/* c'est au tour de Charles : on attend, on ne joue pas a sa place */
+t.netRecu({ t: 'golf', p: etatServeur({ tour: 1 }) });
+check('quand c est a un autre, on attend', t.golf.phase === 'attend', 'phase ' + t.golf.phase);
+check('et on ne peut pas taper', (() => {
+  const av = t.P_()[0].stroke;
+  tap('a', 4); frames(8);
+  return t.P_()[0].stroke === av && t.golf.phase === 'attend';
+})(), 'phase ' + t.golf.phase);
+/* Charles tape : sa balle part sous nos yeux */
+const apres = etatServeur({ tour: 0 });
+apres.joueurs[1].bx = H0[0].gx + 3; apres.joueurs[1].by = H0[0].gy + 3; apres.joueurs[1].coups = 1;
+t.netRecu({ t: 'golf', p: apres });
+check('on regarde partir la balle du copain', t.golf.phase === 'vol', 'phase ' + t.golf.phase);
+for (let i = 0; i < 60 && t.golf.phase === 'vol'; i++) frames(1);
+check('puis la main nous revient', t.golf.phase === 'aim' || t.golf.phase === 'putt',
+  'phase ' + t.golf.phase);
+check('les quatre joueurs sont toujours la', t.P_().length === 4,
+  t.P_().length + ' joueurs, phase ' + t.golf.phase + ', enLigne ' + t.golf.enLigne);
+check('sa balle est bien la ou le serveur l a dit',
+  t.P_()[1] && Math.abs(t.P_()[1].bx - (H0[0].gx + 3)) < 0.1 && t.P_()[1].stroke === 1,
+  t.P_()[1] ? (t.P_()[1].bx + ',' + t.P_()[1].by + ' en ' + t.P_()[1].stroke + ' coups') : 'absent');
+/* la partie se termine quand le serveur le dit */
+const fini = etatServeur({ fini: 1 });
+fini.joueurs.forEach((j, i) => { j.carte = [4, 5, 4, 4, 5, 4, 3]; j.fini = 1; });
+t.netRecu({ t: 'golf', p: fini });
+check('la fin de partie vient du serveur', !t.golf.enLigne && !t.golf.on);
+clear();
+/* et si le serveur oublie la partie, on ne reste pas coince dedans */
+t.netRecu({ t: 'golf', p: etatServeur() });
+check('on repart dans une partie', t.golf.enLigne);
+t.netRecu({ t: 'golf', p: null });
+check('partie effacee, on retourne au domaine', !t.golf.enLigne && !t.golf.on);
+/* celui qui est invite s inscrit vraiment aupres du serveur */
+check('accepter une invitation inscrit a la partie', (() => {
+  const src = require('fs').readFileSync(__dirname + '/../public/index.html', 'utf8');
+  return /a:'rejoint'/.test(src) && /kind:'partie'/.test(src);
+})());
+check('le serveur refuse un coup qui n est pas du bon joueur', (() => {
+  const src = require('fs').readFileSync(__dirname + '/../server/index.js', 'utf8');
+  return /partie\.joueurs\[partie\.tour\] !== j/.test(src);
+})());
+check('le serveur oublie une partie abandonnee', (() => {
+  const src = require('fs').readFileSync(__dirname + '/../server/index.js', 'utf8');
+  return /PARTIE_OUBLI/.test(src);
+})());
+check('quitter la partie previent le serveur', (() => {
+  const src = require('fs').readFileSync(__dirname + '/../public/index.html', 'utf8');
+  return /a:'quitte'/.test(src);
+})());
+t.net.on = false; t.net.count = 0; game.party = []; clear();
 
 /* ---------- verdict ---------- */
 console.log('\n  ' + ok + ' verifications passees, ' + ko + ' echec(s).');

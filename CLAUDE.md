@@ -143,6 +143,36 @@ La **lettre de Lise Lebel** : dix morceaux aux quatre coins du parcours, un obje
 chacun. Quand on les a tous, elle se lit dans le menu. Son texte s'ecrit dans
 l'atelier, onglet Textes, categorie « La lettre de Lise Lebel ».
 
+## La partie a quatre, en reseau
+
+**Le serveur est l'arbitre.** Il tient la liste des joueurs, ou est chaque balle, combien
+de coups, et a qui c'est. Un client ne fait que jouer sa balle et annoncer ou elle s'est
+arretee. Deux ecrans ne peuvent donc pas raconter deux parties differentes.
+
+Les coordonnees des trous viennent du client qui **ouvre** la partie : c'est son parcours
+que tout le monde joue, meme celui qui a une version plus ancienne du domaine.
+
+| message | sens | quand |
+|---|---|---|
+| `golf a:ouvre` | client vers serveur | on est sur le depart, on ouvre, avec ses trous |
+| `golf a:rejoint` | client vers serveur | on accepte l'invitation, quatre au maximum |
+| `golf a:lance` | client vers serveur | celui qui a ouvert lance, cinq secondes plus tard |
+| `golf a:coup` | client vers serveur | sa balle s'est arretee la, en tant de coups |
+| `golf a:quitte` | client vers serveur | on s'en va, ou on ferme l'onglet |
+| `golf p:{...}` | serveur vers client | l'etat complet, a chaque changement |
+
+Cote client, `golf.enLigne` change trois choses et pas une de plus : `turn()` n'decide plus
+rien et attend le serveur, la fin d'un coup annonce le resultat au lieu de passer la main,
+et deux phases s'ajoutent, **attend** quand c'est a un autre et **vol** quand on regarde
+partir la balle d'un copain. Tout le reste, les regles, les jauges, les penalites, c'est le
+meme code qu'en solo.
+
+Un joueur qui ferme son onglet est marque parti, la main passe, la partie continue. Une
+partie sans nouvelles pendant trois minutes est oubliee.
+
+`node tests/reseau.js` lance un vrai serveur et quatre connexions : c'est la seule facon
+de prouver que les quatre ecrans racontent la meme partie.
+
 ## Ce qu'on se dit entre copains
 
 En jeu, **B lance une phrase au copain qui est a deux cases**. En ligne c'est un joueur,

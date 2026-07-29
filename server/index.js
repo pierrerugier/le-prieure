@@ -277,6 +277,92 @@ function nombre(v, lo, hi, def) {
 }
 function texte(v, max) { return (typeof v === 'string') ? v.slice(0, max) : ''; }
 
+/* ---------- la partie de golf a plusieurs ----------
+   Le serveur est l'arbitre. Il tient la liste des joueurs, ou est chaque balle,
+   combien de coups, et a qui c'est. Un client ne fait que jouer son coup et dire
+   ou sa balle s'est arretee. Comme ca deux ecrans ne peuvent pas raconter deux
+   parties differentes, et si quelqu'un ferme son onglet la partie continue.
+
+   Les coordonnees des trous viennent du client qui ouvre la partie : c'est sa
+   carte qui fait foi pour tout le monde, y compris pour celui qui a une version
+   plus ancienne du domaine. */
+let partie = null;
+const PARTIE_MAX = 4;
+const PARTIE_OUBLI = 3 * 60 * 1000;   /* trois minutes sans nouvelles, on oublie */
+
+function etatPartie() {
+  if (!partie) return null;
+  return {
+    trou: partie.trou,
+    tour: partie.tour,
+    ouvert: partie.ouvert ? 1 : 0,
+    fini: partie.fini ? 1 : 0,
+    par: partie.par,
+    trous: partie.trous,
+    joueurs: partie.joueurs.map(j => ({
+      pk: j.pk, nom: j.nom, bx: j.bx, by: j.by, lie: j.lie,
+      coups: j.coups, fini: j.fini ? 1 : 0, parti: j.parti ? 1 : 0,
+      carte: j.carte
+    }))
+  };
+}
+function diffusePartie() { diffuse({ t: 'golf', p: etatPartie() }); }
+function joueurDe(ws) {
+  if (!partie) return null;
+  return partie.joueurs.find(j => j.ws === ws) || null;
+}
+/* a qui de jouer : le plus loin du drapeau parmi ceux qui n'ont pas fini.
+   Au depart, personne n'a joue, alors c'est l'honneur du trou precedent. */
+function aQuiDeJouer() {
+  if (!partie) return -1;
+  const h = partie.trous[partie.trou];
+  const enJeu = partie.joueurs.filter(j => !j.fini && !j.parti);
+  if (!enJeu.length) return -1;
+  if (enJeu.every(j => j.coups === 0)) {
+    let best = enJeu[0], bs = 1e9;
+    enJeu.forEach((j, i) => {
+      const r = (partie.trou > 0) ? (j.carte[partie.trou - 1] || 99) : i * 0.001;
+      if (r < bs) { bs = r; best = j; }
+    });
+    return partie.joueurs.indexOf(best);
+  }
+  let best = null, bd = -1;
+  for (const j of enJeu) {
+    const d = Math.hypot(j.bx - (h.gx + 0.5), j.by - (h.gy + 0.5));
+    if (d > bd) { bd = d; best = j; }
+  }
+  return partie.joueurs.indexOf(best);
+}
+function poseAuDepart() {
+  const h = partie.trous[partie.trou];
+  partie.joueurs.forEach((j, i) => {
+    j.bx = h.tx + 0.5 + ((i % 2) ? 0.6 : -0.6);
+    j.by = h.ty + 0.5 + (i > 1 ? 0.8 : 0);
+    j.coups = 0; j.fini = false; j.lie = 'tee';
+  });
+  partie.tour = aQuiDeJouer();
+}
+function trouSuivant() {
+  partie.trou++;
+  if (partie.trou >= partie.trous.length) { partie.fini = true; partie.tour = -1; return; }
+  poseAuDepart();
+}
+function quitteLaPartie(ws) {
+  if (!partie) return;
+  const j = joueurDe(ws);
+  if (!j) return;
+  j.parti = true; j.fini = true; j.ws = null;
+  if (partie.joueurs.every(x => x.parti)) { partie = null; diffuse({ t: 'golf', p: null }); return; }
+  if (partie.joueurs.every(x => x.fini)) trouSuivant();
+  else partie.tour = aQuiDeJouer();
+  diffusePartie();
+}
+setInterval(() => {
+  if (partie && Date.now() - partie.vu > PARTIE_OUBLI) {
+    partie = null; diffuse({ t: 'golf', p: null });
+  }
+}, 20000);
+
 function relacher(c) {
   if (!c || !c.persoId) return;
   const p = perso[c.persoId];
@@ -337,6 +423,76 @@ wss.on('connection', (ws) => {
                 vers: String(m.vers || '').slice(0, 16), i: m.i | 0 }, ws);
       return;
     }
+    /* ---------- la partie a plusieurs ---------- */
+    if (m.t === 'golf') {
+      const pk = texte(m.pk, 16) || c.persoId || '';
+      const nom = texte(m.nom, 14) || pk.toUpperCase();
+
+      if (m.a === 'ouvre') {
+        /* une partie en cours et pas finie : on ne la remplace pas */
+        if (partie && !partie.fini && !partie.joueurs.every(j => j.parti)) {
+          envoi(ws, { t: 'golf', p: etatPartie(), refus: 'deja' });
+          return;
+        }
+        const trous = Array.isArray(m.trous) ? m.trous.slice(0, 24).map(h => ({
+          n: nombre(h.n, 1, 99, 1), tx: nombre(h.tx, 0, 119, 0), ty: nombre(h.ty, 0, 95, 0),
+          gx: nombre(h.gx, 0, 119, 0), gy: nombre(h.gy, 0, 95, 0), par: nombre(h.par, 3, 6, 4)
+        })) : [];
+        if (!trous.length) return;
+        partie = {
+          trou: 0, tour: 0, ouvert: true, fini: false, vu: Date.now(),
+          trous: trous, par: trous.reduce((a, h) => a + h.par, 0),
+          joueurs: [{ pk: pk, nom: nom, ws: ws, bx: trous[0].tx + 0.5, by: trous[0].ty + 0.5,
+                      coups: 0, fini: false, parti: false, lie: 'tee', carte: [] }]
+        };
+        diffusePartie();
+        return;
+      }
+
+      if (m.a === 'rejoint') {
+        if (!partie || !partie.ouvert) { envoi(ws, { t: 'golf', p: etatPartie(), refus: 'fermee' }); return; }
+        if (partie.joueurs.length >= PARTIE_MAX) { envoi(ws, { t: 'golf', p: etatPartie(), refus: 'complet' }); return; }
+        if (partie.joueurs.some(j => j.pk === pk)) { envoi(ws, { t: 'golf', p: etatPartie() }); return; }
+        const h = partie.trous[0];
+        partie.joueurs.push({ pk: pk, nom: nom, ws: ws, bx: h.tx + 0.5, by: h.ty + 0.5,
+                              coups: 0, fini: false, parti: false, lie: 'tee', carte: [] });
+        partie.vu = Date.now();
+        diffusePartie();
+        return;
+      }
+
+      if (m.a === 'lance') {
+        if (!partie || !partie.ouvert) return;
+        if (partie.joueurs[0].ws !== ws) return;   /* seul celui qui a ouvert lance */
+        partie.ouvert = false; partie.vu = Date.now();
+        poseAuDepart();
+        diffusePartie();
+        return;
+      }
+
+      /* un coup joue : on ne croit que celui dont c'est le tour */
+      if (m.a === 'coup') {
+        if (!partie || partie.ouvert || partie.fini) return;
+        const j = joueurDe(ws);
+        if (!j || partie.joueurs[partie.tour] !== j) return;
+        partie.vu = Date.now();
+        j.bx = nombre(m.bx, 0, 119, j.bx);
+        j.by = nombre(m.by, 0, 95, j.by);
+        j.lie = texte(m.lie, 10) || j.lie;
+        j.coups = nombre(m.coups, 0, 99, j.coups + 1);
+        if (m.fini) {
+          j.fini = true;
+          j.carte[partie.trou] = j.coups;
+        }
+        if (partie.joueurs.every(x => x.fini)) trouSuivant();
+        else partie.tour = aQuiDeJouer();
+        diffusePartie();
+        return;
+      }
+
+      if (m.a === 'quitte') { quitteLaPartie(ws); return; }
+      return;
+    }
     if (m.t === 'verre') {
       const x = nombre(m.x, 0, 119, -1), y = nombre(m.y, 0, 95, -1);
       if (x < 0 || y < 0) return;
@@ -346,7 +502,7 @@ wss.on('connection', (ws) => {
     }
   });
 
-  const fin = () => { relacher(c); clients.delete(ws); diffuse({ t: 'roster', roster: roster() }); };
+  const fin = () => { quitteLaPartie(ws); relacher(c); clients.delete(ws); diffuse({ t: 'roster', roster: roster() }); };
   ws.on('close', fin);
   ws.on('error', fin);
 });
