@@ -145,6 +145,30 @@ l'atelier, onglet Textes, categorie « La lettre de Lise Lebel ».
 
 ## La partie a quatre, en reseau
 
+**Plusieurs parties tournent en meme temps.** Chacune a son numero, un joueur n'appartient
+qu'a une seule, et l'invitation porte le numero : un groupe qui part sur le 1 n'empeche pas
+le suivant de monter la sienne.
+
+**Une coupure ne fait pas sortir de la partie.** Fermer un onglet, verrouiller un telephone,
+perdre le wifi : on est marque hors ligne, on garde sa place et sa balle, la main passe aux
+presents, et on revient quand le reseau revient. Il faut **quitter volontairement**, ou rester
+injoignable une minute et demie, pour etre vraiment dehors. Celui qui sort a sa carte bouchee
+au score maximum pour les trous restants.
+
+**Personne ne bloque personne.** Soixante secondes pour jouer son coup, sinon le serveur met
+un coup de penalite et passe la main. Un battement de coeur toutes les dix secondes, sur
+`setInterval` et non sur l'affichage, garde en vie un onglet passe en arriere-plan.
+
+**On ne coupe jamais un coup en cours.** Un etat qui arrive pendant qu'on tient la jauge ou
+que la balle est en l'air est mis de cote et deverse au moment ou l'on annonce son coup.
+Viser ne compte pas : la, on peut nous couper la parole.
+
+Le serveur ne fait jamais confiance au `pk` annonce : le personnage d'une socket est celui
+qu'elle a reclame. Chaque coup porte le numero de sequence de l'etat, et un coup qui ne
+correspond pas est refuse avec l'etat complet, pour que le client se remette d'aplomb.
+
+
+
 **Le serveur est l'arbitre.** Il tient la liste des joueurs, ou est chaque balle, combien
 de coups, et a qui c'est. Un client ne fait que jouer sa balle et annoncer ou elle s'est
 arretee. Deux ecrans ne peuvent donc pas raconter deux parties differentes.
@@ -167,11 +191,15 @@ et deux phases s'ajoutent, **attend** quand c'est a un autre et **vol** quand on
 partir la balle d'un copain. Tout le reste, les regles, les jauges, les penalites, c'est le
 meme code qu'en solo.
 
-Un joueur qui ferme son onglet est marque parti, la main passe, la partie continue. Une
-partie sans nouvelles pendant trois minutes est oubliee.
+`node tests/reseau.js` lance un vrai serveur et une dizaine de connexions : deux parties en
+parallele, une coupure, un retour, un depart volontaire, un coup joue hors de son tour. C'est
+la seule facon de prouver que les ecrans racontent la meme partie.
 
-`node tests/reseau.js` lance un vrai serveur et quatre connexions : c'est la seule facon
-de prouver que les quatre ecrans racontent la meme partie.
+## On repart la ou on s'est arrete
+
+`load()` garde la sauvegarde entiere dans `SAUVE`. A l'ecran de choix, si l'on reprend **le
+meme personnage**, on repart de sa case et de son interieur ; si l'on en prend un autre, on
+demarre chez lui. `?go=x,y` passe toujours devant.
 
 ## Ce qu'on se dit entre copains
 

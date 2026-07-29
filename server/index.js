@@ -277,91 +277,168 @@ function nombre(v, lo, hi, def) {
 }
 function texte(v, max) { return (typeof v === 'string') ? v.slice(0, max) : ''; }
 
-/* ---------- la partie de golf a plusieurs ----------
+/* ---------- les parties de golf a plusieurs ----------
    Le serveur est l'arbitre. Il tient la liste des joueurs, ou est chaque balle,
-   combien de coups, et a qui c'est. Un client ne fait que jouer son coup et dire
-   ou sa balle s'est arretee. Comme ca deux ecrans ne peuvent pas raconter deux
-   parties differentes, et si quelqu'un ferme son onglet la partie continue.
+   combien de coups, et a qui c'est. Un client ne fait que jouer sa balle et dire
+   ou elle s'est arretee. Deux ecrans ne peuvent donc pas raconter deux parties
+   differentes.
 
-   Les coordonnees des trous viennent du client qui ouvre la partie : c'est sa
-   carte qui fait foi pour tout le monde, y compris pour celui qui a une version
-   plus ancienne du domaine. */
-let partie = null;
+   Plusieurs parties tournent en meme temps : chacune a son numero, et un joueur
+   n'appartient qu'a une seule. Un groupe qui part sur le 1 n'empeche pas les
+   suivants de monter la leur.
+
+   Les coordonnees des trous viennent du client qui ouvre : c'est son parcours que
+   tout le monde joue, meme celui qui a une carte plus ancienne.
+
+   Une socket qui tombe ne fait pas sortir de la partie : on est mis hors ligne,
+   on garde sa place et sa balle, et on revient quand le reseau revient. */
+const parties = new Map();
+let partieNo = 0;
 const PARTIE_MAX = 4;
-const PARTIE_OUBLI = 3 * 60 * 1000;   /* trois minutes sans nouvelles, on oublie */
+const PARTIE_OUBLI = 5 * 60 * 1000;   /* cinq minutes sans le moindre coup */
+const OUVERT_MAX = 45 * 1000;         /* une partie ouverte n'attend pas la nuit */
+const TOUR_PATIENCE = 60 * 1000;      /* soixante secondes pour jouer son coup */
+const HS_SORTIE = 90 * 1000;          /* une minute et demie hors ligne, et on sort */
 
-function etatPartie() {
-  if (!partie) return null;
+function etatPartie(P) {
+  if (!P) return null;
   return {
-    trou: partie.trou,
-    tour: partie.tour,
-    ouvert: partie.ouvert ? 1 : 0,
-    fini: partie.fini ? 1 : 0,
-    par: partie.par,
-    trous: partie.trous,
-    joueurs: partie.joueurs.map(j => ({
+    id: P.id, seq: P.seq, trou: P.trou, tour: P.tour,
+    ouvert: P.ouvert ? 1 : 0, fini: P.fini ? 1 : 0,
+    par: P.par, trous: P.trous,
+    joueurs: P.joueurs.map(j => ({
       pk: j.pk, nom: j.nom, bx: j.bx, by: j.by, lie: j.lie,
-      coups: j.coups, fini: j.fini ? 1 : 0, parti: j.parti ? 1 : 0,
+      coups: j.coups, fini: j.fini ? 1 : 0, parti: j.parti ? 1 : 0, hs: j.ws ? 0 : 1,
       carte: j.carte
     }))
   };
 }
-function diffusePartie() { diffuse({ t: 'golf', p: etatPartie() }); }
-function joueurDe(ws) {
-  if (!partie) return null;
-  return partie.joueurs.find(j => j.ws === ws) || null;
+function diffusePartie(P, mot) {
+  if (!P) return;
+  P.seq++;
+  const o = { t: 'golf', p: etatPartie(P) };
+  if (mot) o.mot = mot;
+  const s = JSON.stringify(o);
+  for (const j of P.joueurs) {
+    if (j.ws && j.ws.readyState === 1) { try { j.ws.send(s); } catch (e) { /* tant pis */ } }
+  }
+}
+/* a qui appartient cette socket : on cherche par personnage, pas par socket,
+   comme ca une reconnexion retrouve sa place */
+function partieDe(pk) {
+  if (!pk) return null;
+  for (const P of parties.values())
+    if (P.joueurs.some(j => j.pk === pk && !j.parti)) return P;
+  return null;
+}
+function joueurDe(P, pk) { return P ? P.joueurs.find(j => j.pk === pk) || null : null; }
+/* qui peut jouer maintenant : on saute ceux qui sont hors ligne, sinon le tour
+   revient a un fantome et plus personne n'avance. S'ils sont tous hors ligne, on
+   garde la liste entiere et la patience finira par trancher. */
+function enJeu(P) {
+  const l = P.joueurs.filter(j => !j.fini && !j.parti);
+  const la = l.filter(j => j.ws);
+  return la.length ? la : l;
 }
 /* a qui de jouer : le plus loin du drapeau parmi ceux qui n'ont pas fini.
    Au depart, personne n'a joue, alors c'est l'honneur du trou precedent. */
-function aQuiDeJouer() {
-  if (!partie) return -1;
-  const h = partie.trous[partie.trou];
-  const enJeu = partie.joueurs.filter(j => !j.fini && !j.parti);
-  if (!enJeu.length) return -1;
-  if (enJeu.every(j => j.coups === 0)) {
-    let best = enJeu[0], bs = 1e9;
-    enJeu.forEach((j, i) => {
-      const r = (partie.trou > 0) ? (j.carte[partie.trou - 1] || 99) : i * 0.001;
+function aQuiDeJouer(P) {
+  const h = P.trous[P.trou];
+  const l = enJeu(P);
+  if (!l.length) return -1;
+  if (l.every(j => j.coups === 0)) {
+    let best = l[0], bs = 1e9;
+    l.forEach((j) => {
+      const r = (P.trou > 0) ? (j.carte[P.trou - 1] || 99) : P.joueurs.indexOf(j) * 0.001;
       if (r < bs) { bs = r; best = j; }
     });
-    return partie.joueurs.indexOf(best);
+    return P.joueurs.indexOf(best);
   }
   let best = null, bd = -1;
-  for (const j of enJeu) {
+  for (const j of l) {
     const d = Math.hypot(j.bx - (h.gx + 0.5), j.by - (h.gy + 0.5));
     if (d > bd) { bd = d; best = j; }
   }
-  return partie.joueurs.indexOf(best);
+  return P.joueurs.indexOf(best);
 }
-function poseAuDepart() {
-  const h = partie.trous[partie.trou];
-  partie.joueurs.forEach((j, i) => {
+function passeLaMain(P) {
+  P.tour = aQuiDeJouer(P);
+  P.tourVu = Date.now();
+}
+function poseAuDepart(P) {
+  const h = P.trous[P.trou];
+  P.joueurs.forEach((j, i) => {
+    if (j.parti) { j.fini = true; return; }   /* un parti reste parti, sinon le trou ne finit jamais */
     j.bx = h.tx + 0.5 + ((i % 2) ? 0.6 : -0.6);
     j.by = h.ty + 0.5 + (i > 1 ? 0.8 : 0);
     j.coups = 0; j.fini = false; j.lie = 'tee';
   });
-  partie.tour = aQuiDeJouer();
+  passeLaMain(P);
 }
-function trouSuivant() {
-  partie.trou++;
-  if (partie.trou >= partie.trous.length) { partie.fini = true; partie.tour = -1; return; }
-  poseAuDepart();
+function trouFini(P) { return P.joueurs.every(j => j.fini || j.parti); }
+function trouSuivant(P) {
+  P.trou++;
+  if (P.trou >= P.trous.length) { P.fini = true; P.tour = -1; return; }
+  poseAuDepart(P);
 }
-function quitteLaPartie(ws) {
-  if (!partie) return;
-  const j = joueurDe(ws);
-  if (!j) return;
+/* on remplit la carte de celui qui s'en va : le score maximum jusqu'au bout */
+function boucheLaCarte(P, j) {
+  for (let t = P.trou; t < P.trous.length; t++)
+    if (!j.carte[t]) j.carte[t] = P.trous[t].par + 6;
+}
+function sortDeLaPartie(P, j, mot) {
+  if (!P || !j || j.parti) return;
   j.parti = true; j.fini = true; j.ws = null;
-  if (partie.joueurs.every(x => x.parti)) { partie = null; diffuse({ t: 'golf', p: null }); return; }
-  if (partie.joueurs.every(x => x.fini)) trouSuivant();
-  else partie.tour = aQuiDeJouer();
-  diffusePartie();
+  boucheLaCarte(P, j);
+  if (P.joueurs.every(x => x.parti)) { parties.delete(P.id); return; }
+  if (!P.ouvert) { if (trouFini(P)) trouSuivant(P); else passeLaMain(P); }
+  diffusePartie(P, mot);
+}
+/* une socket tombe : on ne sort pas de la partie, on est juste hors ligne */
+function deconnecte(pk) {
+  const P = partieDe(pk); if (!P) return;
+  const j = joueurDe(P, pk); if (!j || !j.ws) return;
+  j.ws = null; j.hsDepuis = Date.now();
+  if (!P.ouvert && P.tour === P.joueurs.indexOf(j)) passeLaMain(P);
+  diffusePartie(P, (j.nom || j.pk) + ' a perdu le reseau.');
+}
+/* et quand il revient, il reprend sa place et sa balle */
+function reconnecte(pk, ws) {
+  const P = partieDe(pk); if (!P) return null;
+  const j = joueurDe(P, pk); if (!j) return null;
+  j.ws = ws; j.hsDepuis = 0;
+  envoi(ws, { t: 'golf', p: etatPartie(P), mot: 'Te revoila.' });
+  diffusePartie(P);
+  return P;
 }
 setInterval(() => {
-  if (partie && Date.now() - partie.vu > PARTIE_OUBLI) {
-    partie = null; diffuse({ t: 'golf', p: null });
+  const now = Date.now();
+  for (const P of Array.from(parties.values())) {
+    /* une partie ouverte que personne ne lance : on la lance ou on l'oublie */
+    if (P.ouvert && now - P.ne > OUVERT_MAX) {
+      if (P.joueurs.length > 1) { P.ouvert = false; poseAuDepart(P); diffusePartie(P, 'On y va.'); }
+      else { parties.delete(P.id); diffusePartie(P); }
+      continue;
+    }
+    if (P.ouvert) continue;
+    /* celui qui ne joue pas son coup ne bloque pas les autres */
+    if (P.tour >= 0 && now - P.tourVu > TOUR_PATIENCE) {
+      const j = P.joueurs[P.tour];
+      if (j) {
+        j.coups = Math.min(P.trous[P.trou].par + 6, j.coups + 1);
+        if (j.coups >= P.trous[P.trou].par + 6) { j.fini = true; j.carte[P.trou] = j.coups; }
+        if (trouFini(P)) trouSuivant(P); else passeLaMain(P);
+        diffusePartie(P, (j.nom || j.pk) + ' ne joue pas. Un coup de penalite.');
+      } else passeLaMain(P);
+    }
+    /* hors ligne depuis trop longtemps : on sort de la partie */
+    for (const j of P.joueurs)
+      if (!j.ws && !j.parti && j.hsDepuis && now - j.hsDepuis > HS_SORTIE)
+        sortDeLaPartie(P, j, (j.nom || j.pk) + ' ne revient pas.');
+    /* plus personne, ou plus rien depuis longtemps */
+    if (P.joueurs.every(j => j.parti) || now - P.vu > PARTIE_OUBLI) parties.delete(P.id);
   }
-}, 20000);
+}, 5000);
 
 function relacher(c) {
   if (!c || !c.persoId) return;
@@ -393,6 +470,8 @@ wss.on('connection', (ws) => {
       p.inside = texte(m.inside, 16) || null;
       envoi(ws, { t: 'pris', pk: id, min });
       diffuse({ t: 'roster', roster: roster() });
+      /* si une partie l'attendait, il y retrouve sa balle et ses coups */
+      reconnecte(id, ws);
       return;
     }
     if (m.t === 'pos') {
@@ -409,7 +488,9 @@ wss.on('connection', (ws) => {
     if (m.t === 'invite') {
       const kind = texte(m.kind, 12);
       if (['cours', 'pente', 'mamou', 'piscine', 'partie'].indexOf(kind) < 0) return;
-      diffuse({ t: 'invite', kind: kind, from: texte(m.from, 12) || 'Quelqu\'un' }, ws);
+      const o = { t: 'invite', kind: kind, from: texte(m.from, 12) || 'Quelqu\'un' };
+      if (kind === 'partie') o.pid = nombre(m.pid, 0, 1e9, 0);
+      diffuse(o, ws);
       return;
     }
     /* quelqu'un accepte la partie : on previent celui qui l'a proposee */
@@ -423,74 +504,89 @@ wss.on('connection', (ws) => {
                 vers: String(m.vers || '').slice(0, 16), i: m.i | 0 }, ws);
       return;
     }
-    /* ---------- la partie a plusieurs ---------- */
+    /* ---------- les parties a plusieurs ----------
+       On ne fait jamais confiance au pk annonce : le personnage d'une socket est
+       celui qu'elle a reclame, et rien d'autre. Sans personnage, pas de partie. */
     if (m.t === 'golf') {
-      const pk = texte(m.pk, 16) || c.persoId || '';
+      const pk = c.persoId;
+      if (!pk) { envoi(ws, { t: 'golf', p: null, refus: 'sans perso' }); return; }
       const nom = texte(m.nom, 14) || pk.toUpperCase();
+      const P0 = partieDe(pk);
+
+      if (m.a === 'ping') { if (P0) P0.vu = Date.now(); return; }
 
       if (m.a === 'ouvre') {
-        /* une partie en cours et pas finie : on ne la remplace pas */
-        if (partie && !partie.fini && !partie.joueurs.every(j => j.parti)) {
-          envoi(ws, { t: 'golf', p: etatPartie(), refus: 'deja' });
-          return;
-        }
+        if (P0) { envoi(ws, { t: 'golf', p: etatPartie(P0), refus: 'deja' }); return; }
         const trous = Array.isArray(m.trous) ? m.trous.slice(0, 24).map(h => ({
           n: nombre(h.n, 1, 99, 1), tx: nombre(h.tx, 0, 119, 0), ty: nombre(h.ty, 0, 95, 0),
           gx: nombre(h.gx, 0, 119, 0), gy: nombre(h.gy, 0, 95, 0), par: nombre(h.par, 3, 6, 4)
         })) : [];
-        if (!trous.length) return;
-        partie = {
-          trou: 0, tour: 0, ouvert: true, fini: false, vu: Date.now(),
+        if (!trous.length) { envoi(ws, { t: 'golf', p: null, refus: 'parcours' }); return; }
+        const P = {
+          id: ++partieNo, seq: 0, trou: 0, tour: 0, ouvert: true, fini: false,
+          ne: Date.now(), vu: Date.now(), tourVu: Date.now(),
           trous: trous, par: trous.reduce((a, h) => a + h.par, 0),
           joueurs: [{ pk: pk, nom: nom, ws: ws, bx: trous[0].tx + 0.5, by: trous[0].ty + 0.5,
-                      coups: 0, fini: false, parti: false, lie: 'tee', carte: [] }]
+                      coups: 0, fini: false, parti: false, lie: 'tee', carte: [], hsDepuis: 0 }]
         };
-        diffusePartie();
+        parties.set(P.id, P);
+        diffusePartie(P);
         return;
       }
 
       if (m.a === 'rejoint') {
-        if (!partie || !partie.ouvert) { envoi(ws, { t: 'golf', p: etatPartie(), refus: 'fermee' }); return; }
-        if (partie.joueurs.length >= PARTIE_MAX) { envoi(ws, { t: 'golf', p: etatPartie(), refus: 'complet' }); return; }
-        if (partie.joueurs.some(j => j.pk === pk)) { envoi(ws, { t: 'golf', p: etatPartie() }); return; }
-        const h = partie.trous[0];
-        partie.joueurs.push({ pk: pk, nom: nom, ws: ws, bx: h.tx + 0.5, by: h.ty + 0.5,
-                              coups: 0, fini: false, parti: false, lie: 'tee', carte: [] });
-        partie.vu = Date.now();
-        diffusePartie();
+        const P = parties.get(nombre(m.id, 1, 1e9, 0)) ||
+                  Array.from(parties.values()).find(x => x.ouvert);
+        if (!P) { envoi(ws, { t: 'golf', p: null, refus: 'fermee' }); return; }
+        if (P0 && P0 !== P) { envoi(ws, { t: 'golf', p: etatPartie(P0), refus: 'deja' }); return; }
+        if (!P.ouvert) { envoi(ws, { t: 'golf', p: etatPartie(P), refus: 'fermee' }); return; }
+        if (P.joueurs.some(j => j.pk === pk)) { envoi(ws, { t: 'golf', p: etatPartie(P) }); return; }
+        if (P.joueurs.length >= PARTIE_MAX) { envoi(ws, { t: 'golf', p: etatPartie(P), refus: 'complet' }); return; }
+        const h = P.trous[0];
+        P.joueurs.push({ pk: pk, nom: nom, ws: ws, bx: h.tx + 0.5, by: h.ty + 0.5,
+                         coups: 0, fini: false, parti: false, lie: 'tee', carte: [], hsDepuis: 0 });
+        P.vu = Date.now();
+        diffusePartie(P);
         return;
       }
+
+      if (!P0) { envoi(ws, { t: 'golf', p: null, refus: 'pas dedans' }); return; }
+      const j0 = joueurDe(P0, pk);
+      if (j0 && j0.ws !== ws) j0.ws = ws;   /* meme personnage, nouvelle socket */
 
       if (m.a === 'lance') {
-        if (!partie || !partie.ouvert) return;
-        if (partie.joueurs[0].ws !== ws) return;   /* seul celui qui a ouvert lance */
-        partie.ouvert = false; partie.vu = Date.now();
-        poseAuDepart();
-        diffusePartie();
+        if (!P0.ouvert) { envoi(ws, { t: 'golf', p: etatPartie(P0) }); return; }
+        if (P0.joueurs[0].pk !== pk) { envoi(ws, { t: 'golf', p: etatPartie(P0), refus: 'pas hote' }); return; }
+        P0.ouvert = false; P0.vu = Date.now();
+        poseAuDepart(P0);
+        diffusePartie(P0);
         return;
       }
 
-      /* un coup joue : on ne croit que celui dont c'est le tour */
+      /* un coup joue : on ne croit que celui dont c'est le tour, et une seule fois */
       if (m.a === 'coup') {
-        if (!partie || partie.ouvert || partie.fini) return;
-        const j = joueurDe(ws);
-        if (!j || partie.joueurs[partie.tour] !== j) return;
-        partie.vu = Date.now();
+        if (P0.ouvert || P0.fini) { envoi(ws, { t: 'golf', p: etatPartie(P0), refus: 'fermee' }); return; }
+        const j = j0;
+        if (!j || P0.joueurs[P0.tour] !== j) {
+          envoi(ws, { t: 'golf', p: etatPartie(P0), refus: 'pas ton tour' }); return;
+        }
+        const seq = nombre(m.seq, 0, 1e9, -1);
+        if (seq !== P0.seq) { envoi(ws, { t: 'golf', p: etatPartie(P0), refus: 'coup douteux' }); return; }
+        P0.vu = Date.now();
         j.bx = nombre(m.bx, 0, 119, j.bx);
         j.by = nombre(m.by, 0, 95, j.by);
         j.lie = texte(m.lie, 10) || j.lie;
-        j.coups = nombre(m.coups, 0, 99, j.coups + 1);
-        if (m.fini) {
-          j.fini = true;
-          j.carte[partie.trou] = j.coups;
-        }
-        if (partie.joueurs.every(x => x.fini)) trouSuivant();
-        else partie.tour = aQuiDeJouer();
-        diffusePartie();
+        const plafond = P0.trous[P0.trou].par + 6;
+        j.coups = Math.min(plafond, nombre(m.coups, 0, 99, j.coups + 1));
+        if (m.fini || j.coups >= plafond) { j.fini = true; j.carte[P0.trou] = j.coups; }
+        if (trouFini(P0)) trouSuivant(P0); else passeLaMain(P0);
+        diffusePartie(P0);
         return;
       }
 
-      if (m.a === 'quitte') { quitteLaPartie(ws); return; }
+      if (m.a === 'reprend') { envoi(ws, { t: 'golf', p: etatPartie(P0) }); return; }
+      if (m.a === 'quitte') { sortDeLaPartie(P0, j0, (j0 && (j0.nom || j0.pk)) + ' rentre au club house.'); return; }
+      envoi(ws, { t: 'golf', p: etatPartie(P0), refus: 'inconnu' });
       return;
     }
     if (m.t === 'verre') {
@@ -502,7 +598,7 @@ wss.on('connection', (ws) => {
     }
   });
 
-  const fin = () => { quitteLaPartie(ws); relacher(c); clients.delete(ws); diffuse({ t: 'roster', roster: roster() }); };
+  const fin = () => { deconnecte(c.persoId); relacher(c); clients.delete(ws); diffuse({ t: 'roster', roster: roster() }); };
   ws.on('close', fin);
   ws.on('error', fin);
 });

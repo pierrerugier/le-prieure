@@ -3455,7 +3455,7 @@ const golf={on:false,hole:-1,stroke:0,phase:'',club:0,aim:0,power:0,acc:0,gT:0,d
   /* les regles : le dernier point sec survole, la sanction en cours, l'option injouable */
   secx:0,secy:0,lost:false,chute:null,injouable:false,penal:'',stime:0,
   /* la partie a plusieurs : le serveur est l'arbitre, on ne fait que jouer sa balle */
-  enLigne:false,srv:null,attT:0,vol:null};
+  enLigne:false,srv:null,attT:0,vol:null,pid:0,quittee:0,enAttente:null,trousAvant:null};
 const velo={t:0,off:0,on:false,team:[],race:null};
 /* un joueur precis a une jauge de precision plus lente, un joueur puissant a une
    jauge de puissance plus lente et une balle qui part plus loin */
@@ -4398,10 +4398,9 @@ function departDu1(){
 /* On ouvre la partie sur le serveur, avec NOTRE parcours : c'est celui-la que
    tout le monde jouera, meme celui qui a une version plus ancienne du domaine. */
 function proposePartie(){
-  game.attente={t:0,pk:[]};
-  netSend({t:'golf',a:'ouvre',pk:game.heroId,nom:game.hero.name,
+  game.attente={t:0,pk:[],invite:false};
+  netSend({t:'golf',a:'ouvre',nom:game.hero.name,
     trous:HOLES.map(h=>({n:h.n,tx:h.tx,ty:h.ty,gx:h.gx,gy:h.gy,par:h.par}))});
-  netSend({t:'invite',kind:'partie',from:game.hero.name});
   toast('Partie proposée. On attend cinq secondes.');
 }
 function updateAttente(){
@@ -4418,7 +4417,7 @@ function updateAttente(){
       return;
     }
     /* personne : on annule la partie ouverte et on joue seul */
-    netSend({t:'golf',a:'quitte',pk:game.heroId});
+    netSend({t:'golf',a:'quitte'});
     game.party=[];
     if(!startHole()){toast('Trop loin du départ. La partie ne se fait pas.');return;}
     toast('Personne. Tu joues seul.');
@@ -4709,7 +4708,7 @@ function nextHole(){
   beginHole(nx);
 }
 function quitGolf(msg){
-  if(golf.enLigne){golf.enLigne=false;netSend({t:'golf',a:'quitte',pk:game.heroId});}
+  if(golf.enLigne){golf.enLigne=false;netSend({t:'golf',a:'quitte'});}
   golf.srv=null;golf.vol=null;
   golf.on=false;golf.phase='';golf.cible=null;cours.on=false;golf.practice=false;
   golf.lost=false;golf.chute=null;golf.penal='';golf.injouable=false;golf.hgt=0;
@@ -5152,7 +5151,7 @@ function updateGolf(){
     golf.attT++;
     if(consume('b')&&golf.attT>40){
       askYN('Tu quittes la partie ?','EN LIGNE',
-        ()=>{netSend({t:'golf',a:'quitte',pk:game.heroId});golf.enLigne=false;quitGolf('Tu rentres au club house.');},
+        ()=>{finDeLaPartieEnLigne('Tu rentres au club house.');netSend({t:'golf',a:'quitte'});},
         ()=>{});
     }
     return;
@@ -7440,9 +7439,14 @@ function updatePick(){
     if(!persoLibre(p.id)){toast('Déjà pris. Quelqu\'un joue '+p.n+' en ce moment.');return;}
     game.heroId=p.id;game.hero.name=p.n;game.heroPal=pickPal(p);
     if(p.npc){const nn=NPCS.find(x=>x.id===p.npc);if(nn)nn.gone=true;}
-    /* chacun démarre devant chez lui, sauf si on force la case avec ?go=x,y */
-    game.inside=p.sp[2]||null;
-    game.px=p.sp[0];game.py=p.sp[1];game.dir=0;game.ox=0;game.oy=0;game.moving=false;
+    /* on repart de la ou l'on s'est arrete la derniere fois, si c'est bien le
+       meme personnage. Sinon chacun demarre devant chez lui. */
+    const reprise=(SAUVE&&SAUVE.heroId===p.id&&typeof SAUVE.px==='number');
+    game.inside=reprise?(SAUVE.inside||null):(p.sp[2]||null);
+    game.px=reprise?SAUVE.px:p.sp[0];
+    game.py=reprise?SAUVE.py:p.sp[1];
+    game.dir=0;game.ox=0;game.oy=0;game.moving=false;
+    if(reprise)toast('On reprend là où tu t\'étais arrêté.');
     try{
       const g=new URLSearchParams(location.search).get('go');
       if(g){const c=g.split(',');game.inside=c[2]||null;
@@ -7841,14 +7845,14 @@ const INVITES={
  mamou:{q:" est devant chez les Mamoumani, driver en main. Tu viens ?",go:[25,22],run:()=>startMamou(1)},
  piscine:{q:" est déjà dans la piscine. Tu viens te baigner ?",go:[80,44],run:()=>entreDansLeau(0)},
  partie:{q:" propose une partie au départ du 1. Tu joues ?",go:null,
-   run:()=>{
-     /* on previent le proposeur, et surtout on s'inscrit aupres du serveur */
-     netSend({t:'rejoint',pk:game.heroId||'moi'});
-     netSend({t:'golf',a:'rejoint',pk:game.heroId||'moi',nom:game.hero.name});
+   run:(m)=>{
+     /* on s'inscrit a CETTE partie-la : il peut y en avoir plusieurs en cours */
+     netSend({t:'golf',a:'rejoint',id:(m&&m.pid)||0,nom:game.hero.name});
      toast('Tu es sur le départ. Ça va commencer.');
    }}};
 function inviteRecue(m){
   const I=INVITES[m.kind]; if(!I)return;
+  if(m.kind==='partie'&&golf.enLigne)return;
   if(game.state!==S.WORLD||game.fade||game.inside||golf.on)return;
   if(game.inviteT&&game.tick-game.inviteT<900)return;
   game.inviteT=game.tick;
@@ -7860,67 +7864,124 @@ function inviteRecue(m){
       const q=caseLibrePres(go[0],go[1],0)||go;
       game.px=q[0];game.py=q[1];game.ox=0;game.oy=0;game.moving=false;
       game.zone=zoneAt(game.px,game.py);game.banner=game.zone;game.bannerT=0;
-      game.state=S.WORLD;I.run();
+      game.state=S.WORLD;I.run(m);
     }),
     ()=>toast('Tu laisses passer. Ils se débrouilleront.'));
 }
 /* ---------- la partie a plusieurs, cote joueur ----------
    Le serveur dit ou sont les balles, combien de coups, et a qui c'est. On ne
-   calcule rien de tout ca : on joue sa balle, on annonce ou elle s'arrete, et
-   on regarde les autres jouer la leur. */
+   calcule rien de tout ca : on joue sa balle, on annonce ou elle s'arrete, et on
+   regarde les autres jouer la leur.
+
+   Deux precautions valent tout le reste. On ne touche jamais a sa propre ligne
+   tant qu'on a la main : un etat qui arrive pendant qu'on vise est mis de cote
+   et deverse au moment ou l'on annonce son coup. Et on ne rentre jamais dans une
+   partie ou l'on ne joue pas, ou dont on est deja sorti. */
+/* les phases ou notre coup est engage : viser ne l'est pas, on peut nous couper
+   la parole tant qu'on n'a pas lance la jauge. */
+const PHASES_A_MOI=['acc','power','putpow','fly','roll','result','search','drop'];
+function jeJoue(){
+  if(!golf.enLigne||!golf.srv)return false;
+  const P=players[golf.cur];
+  return !!(P&&P.human&&PHASES_A_MOI.indexOf(golf.phase)>=0);
+}
 function etatGolfRecu(m){
   const p=m.p;
-  golf.srv=p;
+  if(m.mot)toast(m.mot);
   if(m.refus){
+    if(m.refus==='deja'&&p&&p.ouvert&&game.attente){
+      /* quelqu'un a ouvert avant nous : on rejoint la sienne au lieu d'insister */
+      game.attente=null;
+      netSend({t:'golf',a:'rejoint',id:p.id,nom:game.hero.name});
+      toast('Une partie est déjà ouverte. Tu la rejoins.');
+      return;
+    }
     toast(m.refus==='complet'?'La partie est complète.'
       :m.refus==='fermee'?'La partie a déjà commencé.'
-      :'Une partie est déjà en cours.');
-    return;
+      :m.refus==='pas ton tour'?"Ce n'est pas à toi."
+      :m.refus==='sans perso'?'Choisis un personnage pour jouer en ligne.'
+      :'La partie ne veut pas de ce coup.');
+    if(!p)return;
   }
   if(!p){
-    if(golf.enLigne){golf.enLigne=false;quitGolf('La partie est terminée.');}
+    if(golf.enLigne){finDeLaPartieEnLigne('La partie est terminée.');}
     return;
   }
-  if(p.ouvert)return;                       /* on attend encore du monde */
+  if(golf.quittee&&p.id===golf.quittee)return;      /* on en est sorti, on n'y retourne pas */
   const moi=p.joueurs.findIndex(j=>j.pk===game.heroId);
-  if(moi<0){                                 /* on n'en fait pas partie */
-    if(golf.enLigne){golf.enLigne=false;quitGolf('Tu as quitté la partie.');}
+  if(moi<0||p.joueurs[moi].parti){
+    if(golf.enLigne&&golf.pid===p.id)finDeLaPartieEnLigne('Tu as quitté la partie.');
+    return;
+  }
+  golf.srv=p;golf.pid=p.id;
+  if(p.ouvert){
+    game.attente=game.attente||{t:0,pk:[],invite:false};
+    /* c'est notre partie et le serveur lui a donne un numero : on invite avec */
+    if(p.joueurs[0].pk===game.heroId&&!game.attente.invite){
+      game.attente.invite=true;
+      netSend({t:'invite',kind:'partie',from:game.hero.name,pid:p.id});
+    }
+    /* et on montre qui a deja dit oui */
+    game.attente.pk=p.joueurs.slice(1).map(j=>j.pk);
     return;
   }
   if(p.fini){
-    const j=p.joueurs[moi], tot=j.carte.reduce((a,b)=>a+(b||0),0);
-    golf.enLigne=false;
-    game.party=[];
-    quitGolf('');
+    const j=p.joueurs[moi], tot=(j.carte||[]).reduce((a,b)=>a+(b||0),0);
+    const rang=p.joueurs.slice().sort((a,b)=>
+      (a.carte||[]).reduce((x,y)=>x+(y||0),0)-(b.carte||[]).reduce((x,y)=>x+(y||0),0));
+    finDeLaPartieEnLigne('');
     say([p.trous.length+' trous. '+tot+' coups pour un par '+p.par+'.',
+      rang.map((q,i)=>(i+1)+'. '+(q.nom||q.pk)+' '+(q.carte||[]).reduce((x,y)=>x+(y||0),0)).join('   '),
       'Les cartes sont les mêmes pour tout le monde, cette fois.'],()=>mission('partie9'));
     return;
   }
+  /* on ne coupe pas un coup en cours : on garde l'etat pour apres */
+  if(jeJoue()){golf.enAttente=p;return;}
   appliqueEtatGolf(p,moi);
+}
+function finDeLaPartieEnLigne(msg){
+  golf.quittee=golf.pid;
+  golf.enLigne=false;golf.srv=null;golf.enAttente=null;golf.vol=null;
+  rendLesTrous();
+  quitGolf(msg);
+}
+/* pendant une partie en ligne, le parcours est celui de l'hote. On repose le
+   notre en sortant : la carte du domaine, elle, n'a pas bouge. */
+function prendLesTrous(trous){
+  if(!trous||!trous.length)return;
+  if(!golf.trousAvant)golf.trousAvant=HOLES.map(h=>Object.assign({},h));
+  HOLES.length=0;
+  trous.forEach(h=>HOLES.push(Object.assign({},h,{len:Math.round(Math.hypot(h.gx-h.tx,h.gy-h.ty)*M)})));
+}
+function rendLesTrous(){
+  if(!golf.trousAvant)return;
+  HOLES.length=0;
+  golf.trousAvant.forEach(h=>HOLES.push(h));
+  golf.trousAvant=null;
 }
 function appliqueEtatGolf(p,moi){
   const nouveau=!golf.enLigne;
+  prendLesTrous(p.trous);
   const changeDeTrou=(golf.hole!==p.trou);
   golf.enLigne=true;golf.on=true;golf.practice=false;golf.cible=null;cours.on=false;
-  if(game.state!==S.GOLF)game.state=S.GOLF;
-  if(nouveau||players.length!==p.joueurs.length){
-    players=p.joueurs.map(j=>{
-      const q=mkP(j.pk,j.nom||FICHES[j.pk]&&FICHES[j.pk].n||j.pk,palFiche(fiche(j.pk)),
-        j.pk===game.heroId,skillDe(j.pk),j.pk);
-      return q;
-    });
+  golf.quittee=0;
+  if(game.state!==S.GOLF&&game.state!==S.DIALOG&&game.state!==S.ASK)game.state=S.GOLF;
+  if(nouveau||players.length!==p.joueurs.length||
+     players.some((q,i)=>q.id!==p.joueurs[i].pk)){
+    players=p.joueurs.map(j=>mkP(j.pk,j.nom||((FICHES[j.pk]&&FICHES[j.pk].n)||j.pk),
+      palFiche(fiche(j.pk)),j.pk===game.heroId,skillDe(j.pk),j.pk));
   }
-  if(changeDeTrou){golf.hole=p.trou;golf.slope=slopeOf(p.trou);golf.club=0;golf.hgt=0;
-    toast('Trou n°'+p.trous[p.trou].n+' , par '+p.trous[p.trou].par);}
+  if(changeDeTrou){golf.hole=p.trou;golf.slope=slopeOf(p.trou);golf.club=0;golf.hgt=0;golf.vol=null;
+    toast('Trou n°'+HOLES[p.trou].n+' , par '+HOLES[p.trou].par);}
   /* les balles : celle des autres se deplace, on la regarde partir */
   p.joueurs.forEach((j,i)=>{
     const q=players[i]; if(!q)return;
-    const bougé=(Math.abs(q.bx-j.bx)>0.05||Math.abs(q.by-j.by)>0.05);
-    if(bougé&&!nouveau&&!changeDeTrou&&j.pk!==game.heroId&&q.stroke<j.coups)
+    const bouge=(Math.abs(q.bx-j.bx)>0.05||Math.abs(q.by-j.by)>0.05);
+    if(bouge&&!nouveau&&!changeDeTrou&&j.pk!==game.heroId&&q.stroke<j.coups)
       golf.vol={i:i,x0:q.bx,y0:q.by,x1:j.bx,y1:j.by,t:0,dur:26,nom:q.name,coups:j.coups};
     q.bx=j.bx;q.by=j.by;q.px=j.bx;q.py=j.by;
-    q.stroke=j.coups;q.done=!!j.fini;q.lie=j.lie||lieAt(j.bx,j.by);
-    q.card=j.carte||[];
+    q.stroke=j.coups;q.done=!!j.fini||!!j.parti;q.lie=j.lie||lieAt(j.bx,j.by);
+    q.card=j.carte||[];q.hs=!!j.hs;
     if(j.pk===game.heroId)game.card=j.carte||game.card;
   });
   golf.cur=Math.max(0,p.tour);
@@ -7928,7 +7989,7 @@ function appliqueEtatGolf(p,moi){
   if(golf.vol){golf.phase='vol';return;}
   if(aMoi){
     const P=players[moi];
-    golf.aim=Math.atan2(p.trous[p.trou].gy+0.5-P.by,p.trous[p.trou].gx+0.5-P.bx);
+    golf.aim=Math.atan2(HOLES[p.trou].gy+0.5-P.by,HOLES[p.trou].gx+0.5-P.bx);
     golf.club=(P.lie==='green')?PUTTER:autoClub(distM(P),P.lie==='tee',P.lie,game.heroId);
     golf.phase=(P.lie==='green')?'putt':'aim';
   } else {
@@ -7937,10 +7998,21 @@ function appliqueEtatGolf(p,moi){
 }
 /* on annonce ou notre balle s'est arretee. C'est tout ce qu'on envoie. */
 function annonceCoup(P){
-  netSend({t:'golf',a:'coup',pk:game.heroId,
+  netSend({t:'golf',a:'coup',seq:golf.srv?golf.srv.seq:0,
     bx:P.bx,by:P.by,lie:P.lie,coups:P.stroke,fini:P.done?1:0});
   golf.phase='attend';golf.attT=0;
+  /* et on deverse l'etat qu'on avait mis de cote pendant qu'on jouait */
+  const q=golf.enAttente; golf.enAttente=null;
+  if(q&&golf.enLigne&&q.id===golf.pid){
+    const moi=q.joueurs.findIndex(j=>j.pk===game.heroId);
+    if(moi>=0)appliqueEtatGolf(q,moi);
+  }
 }
+/* un battement de coeur qui ne depend pas de l'affichage : un onglet en arriere
+   plan ne dessine plus rien, mais il reste dans la partie. */
+setInterval(()=>{
+  if(net.on&&golf.enLigne)netSend({t:'golf',a:'ping'});
+},10000);
 function peerPal(pk){ return palFiche(fiche(pk)); }
 function drawPeers(cx,cy){
   for(const id in net.peers){
@@ -8192,6 +8264,7 @@ async function save(){
   try{ if(window.storage) await window.storage.set(SAVEKEY,d); }catch(e){}
   try{ localStorage.setItem(SAVEKEY,d); }catch(e){}
 }
+let SAUVE=null;
 async function load(){
   let raw=null;
   try{ if(window.storage){const r=await window.storage.get(SAVEKEY); if(r&&r.value)raw=r.value;} }catch(e){}
@@ -8199,6 +8272,7 @@ async function load(){
   if(!raw)return;
   try{
     const d=JSON.parse(raw);
+    SAUVE=d;
     game.px=d.px;game.py=d.py;game.inside=d.inside||null;game.money=d.money||0;
     game.bag=d.bag||[0,0,0,0,0];game.seau=d.seau||0;game.items=d.items||{};
     game.rolex=!!d.rolex;game.card=(d.card&&d.card.length===HOLES.length)?d.card:new Array(HOLES.length).fill(0);

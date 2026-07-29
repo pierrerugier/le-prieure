@@ -13,7 +13,7 @@ if (src.indexOf('chargeMonde().then(load).finally(loop);') < 0) throw new Error(
 src = src.replace('chargeMonde().then(load).finally(loop);', `globalThis.__t={game,golf,net,update,render,map,MW,MH,T,at,put,NPCS,ITEMS,
   HOLES,PICKS,INT,DOORS,LOCKED,cars,shards,keys,press,release,consume,MAMOU,MAMOU_WIN,FEU,
   players,P_:()=>players,goInside,goOutside,zoneAt,menuList,buildMini,SOLID,getTile,S,ballSpots,updatePick,
-  startHole,save,load,solidAt,placeGang,bruitDuSol,SOL_BRUIT,bonPoste,SOL_DEBOUT,passageEtroit,dansLeHameau,caseDeboutPres,recalePersonnages,roam,MAMOU,LETTRE,LETTRE_BASE,NB_LETTRE,bouts,lettreComplete,poseLaLettre,coinsDuGolf,PENTE_CASES,PENTE_BORD,PRACTICE,trouveLePractice,caleLePractice,tapisPres,cibleDuCours,tapisDuCours,TAPIS,POSTES,POSTES_PRACTICE,POSTES_DEDANS,startPractice,startCours,caseLibreDans,quitGolf,modeleDe,VOITURE_MOD,VOIT_NB,compteLesVoitures,parleDeLaVoiture,MODELES,VOITURES,voitureA,peuplier,ARBRES,TRANSP,BIBLI,PERSO0,put,tile,BINOMES,cleBinome,repliquesPour,copainPres,ditAuCopain,entendCopain,PICKS,net,netRecu,proposePartie,updateAttente,departDu1,TEE1,surLaPiste,trouveLaPiste,semeLesBalles,jourFlottant,repousseLesBalles,effaceLesTraces,traces,poseTrace,jardinPrive,CLUB_C,FOES,startFight,posePresDeLaPiste,pente,startPente,SPOTS,TRACKS,musWant,AGENDA,RENTRENT,creneau,placeAgenda,PANNEAUX,porteeDe,hauteurObstacle,sanction,reculeSurLaLigne,autoClub,puissancePour,CLUBS,M,LIEF,PUTTER,caseDe,ROULE,EAUX,HORS,AVALE,pente,CRIS,phaseOf,BALLS,updateCars,timeStep,breakWindow,velo,updateVelo,startPente,updatePente,rendVoiturette,leaves,inBrush,ballVisible,estVitre,estCassee,VILLAS,LISIERE,EVENOU,VOITURES,FICHES,fiche,skillDe,vitPuissance,vitPrecision,longueurDe,cours,startCours,INVITES,inviteRecue,FEU,
+  startHole,save,load,solidAt,placeGang,bruitDuSol,SOL_BRUIT,bonPoste,SOL_DEBOUT,passageEtroit,dansLeHameau,caseDeboutPres,recalePersonnages,roam,MAMOU,LETTRE,LETTRE_BASE,NB_LETTRE,bouts,lettreComplete,poseLaLettre,coinsDuGolf,PENTE_CASES,PENTE_BORD,PRACTICE,trouveLePractice,caleLePractice,tapisPres,cibleDuCours,tapisDuCours,TAPIS,POSTES,POSTES_PRACTICE,POSTES_DEDANS,startPractice,startCours,caseLibreDans,quitGolf,modeleDe,VOITURE_MOD,VOIT_NB,compteLesVoitures,parleDeLaVoiture,MODELES,VOITURES,voitureA,peuplier,ARBRES,TRANSP,BIBLI,PERSO0,put,tile,BINOMES,cleBinome,repliquesPour,copainPres,ditAuCopain,entendCopain,PICKS,net,netRecu,proposePartie,updateAttente,departDu1,TEE1,get SAUVE(){return SAUVE;},set SAUVE(v){SAUVE=v;},surLaPiste,trouveLaPiste,semeLesBalles,jourFlottant,repousseLesBalles,effaceLesTraces,traces,poseTrace,jardinPrive,CLUB_C,FOES,startFight,posePresDeLaPiste,pente,startPente,SPOTS,TRACKS,musWant,AGENDA,RENTRENT,creneau,placeAgenda,PANNEAUX,porteeDe,hauteurObstacle,sanction,reculeSurLaLigne,autoClub,puissancePour,CLUBS,M,LIEF,PUTTER,caseDe,ROULE,EAUX,HORS,AVALE,pente,CRIS,phaseOf,BALLS,updateCars,timeStep,breakWindow,velo,updateVelo,startPente,updatePente,rendVoiturette,leaves,inBrush,ballVisible,estVitre,estCassee,VILLAS,LISIERE,EVENOU,VOITURES,FICHES,fiche,skillDe,vitPuissance,vitPrecision,longueurDe,cours,startCours,INVITES,inviteRecue,FEU,
   pers,dogSpr,BODY_SIDE,DOG_SIDE,sfx,ambiances,piscineOuverte,baignade,entreDansLeau,proposePartie,updateAttente,departDu1,hNow,AU_FEU,placesDuFeu,placeAutourDuFeu,trouveLeFeu,FEU,FEU_TALK,feuMenu,eteindreLeFeu,bikeSpr,BIKE_DOWN,BIKE_UP,BIKE_SIDE,MISSIONS,ACTES,mission,missionCourante,niveau,chaparde,voleVoiturette,updateVoiturette,BUTIN,
   BASE,appliqueMonde,carteDe,TUILE_OVR,CORPS,CORPS_BASE,FICHES_BASE,tile,cache,MW_:MW,
   BIBLI,MIROIR,ROT,SAUT,MODELES,HOLES_BASE,DOORS_BASE,estDepart,VILLAS_:VILLAS,
@@ -1672,7 +1672,7 @@ const QUATRE = [game.heroId].concat(
   ['charles', 'victor', 'oscar', 'louis'].filter(x => x !== game.heroId).slice(0, 3));
 function etatServeur(o) {
   return Object.assign({
-    trou: 0, tour: 0, ouvert: 0, fini: 0, par: 28, trous: H0,
+    id: 1, seq: 0, trou: 0, tour: 0, ouvert: 0, fini: 0, par: 28, trous: H0,
     joueurs: QUATRE.map((pk, i) => ({
       pk: pk, nom: pk.toUpperCase(), bx: H0[0].tx + 0.5 + (i % 2 ? 0.6 : -0.6),
       by: H0[0].ty + 0.5 + (i > 1 ? 0.8 : 0), lie: 'tee', coups: 0, fini: 0, parti: 0, carte: []
@@ -1720,9 +1720,12 @@ fini.joueurs.forEach((j, i) => { j.carte = [4, 5, 4, 4, 5, 4, 3]; j.fini = 1; })
 t.netRecu({ t: 'golf', p: fini });
 check('la fin de partie vient du serveur', !t.golf.enLigne && !t.golf.on);
 clear();
-/* et si le serveur oublie la partie, on ne reste pas coince dedans */
+/* on ne se fait pas raspirer dans la partie qu'on vient de quitter */
 t.netRecu({ t: 'golf', p: etatServeur() });
-check('on repart dans une partie', t.golf.enLigne);
+check('une partie qu on a quittee ne nous reprend pas', !t.golf.enLigne);
+/* mais une nouvelle partie, oui */
+t.netRecu({ t: 'golf', p: etatServeur({ id: 2 }) });
+check('on repart dans une nouvelle partie', t.golf.enLigne);
 t.netRecu({ t: 'golf', p: null });
 check('partie effacee, on retourne au domaine', !t.golf.enLigne && !t.golf.on);
 /* celui qui est invite s inscrit vraiment aupres du serveur */
@@ -1732,17 +1735,45 @@ check('accepter une invitation inscrit a la partie', (() => {
 })());
 check('le serveur refuse un coup qui n est pas du bon joueur', (() => {
   const src = require('fs').readFileSync(__dirname + '/../server/index.js', 'utf8');
-  return /partie\.joueurs\[partie\.tour\] !== j/.test(src);
+  return /joueurs\[P0\.tour\] !== j/.test(src);
 })());
 check('le serveur oublie une partie abandonnee', (() => {
   const src = require('fs').readFileSync(__dirname + '/../server/index.js', 'utf8');
-  return /PARTIE_OUBLI/.test(src);
+  return /PARTIE_OUBLI/.test(src) && /TOUR_PATIENCE/.test(src);
 })());
 check('quitter la partie previent le serveur', (() => {
   const src = require('fs').readFileSync(__dirname + '/../public/index.html', 'utf8');
   return /a:'quitte'/.test(src);
 })());
 t.net.on = false; t.net.count = 0; game.party = []; clear();
+
+/* ---------- 24. on repart la ou on s est arrete ---------- */
+clear(); game.state = t.S.WORLD; game.inside = null;
+tp(96, 24); game.money = 7.5; game.heroId = 'charles';
+t.save();
+const sauve = JSON.parse(store['prieure3']);
+check('la sauvegarde note ou l on est', sauve.px === 96 && sauve.py === 24,
+  sauve.px + ',' + sauve.py);
+check('et avec quel personnage', sauve.heroId === 'charles', sauve.heroId);
+/* on refait le tour de l ecran de choix, avec la sauvegarde en memoire */
+t.SAUVE = sauve;
+game.px = 0; game.py = 0; game.inside = 'club';
+game.state = t.S.PICK;
+game.pick = t.PICKS.findIndex(p => p.id === 'charles');
+tap('a', 3); frames(6);
+check('on reprend a la case ou on avait sauvegarde',
+  game.px === 96 && game.py === 24 && !game.inside,
+  game.px + ',' + game.py + ' inside ' + game.inside);
+/* mais si on prend quelqu un d autre, on demarre chez lui */
+t.SAUVE = sauve;
+game.state = t.S.PICK;
+game.pick = t.PICKS.findIndex(p => p.id === 'oscar');
+tap('a', 3); frames(6);
+const chezLui = t.PICKS.find(p => p.id === 'oscar').sp;
+check('un autre personnage demarre chez lui',
+  Math.abs(game.px - chezLui[0]) <= 2 && Math.abs(game.py - chezLui[1]) <= 3,
+  game.px + ',' + game.py + ' au lieu de ' + chezLui[0] + ',' + chezLui[1]);
+t.SAUVE = null; clear();
 
 /* ---------- verdict ---------- */
 console.log('\n  ' + ok + ' verifications passees, ' + ko + ' echec(s).');
