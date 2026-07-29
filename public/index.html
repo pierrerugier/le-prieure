@@ -7297,21 +7297,21 @@ function drawTitle(){
 
 /* ---------- choix du personnage ---------- */
 const PICKS=[
- {id:'moi',n:'PIERRE',npc:null,sp:[102,6,null],tag:"Grand, brun. Très précis.",
+ {id:'moi',n:'PIERRE',npc:null,sp:[102,6,null],
   intro:["TA MÈRE : Je descends au practice. Tu me fais dix-huit trous aujourd'hui.","TA MÈRE : Et si tu rentres après neuf, ton père va gueuler. Moi je dis rien, mais il va gueuler."]},
- {id:'charles',n:'CHARLES',npc:'charles',sp:[92,7,null],tag:"Seize ans. Tape énorme, air shots fréquents.",
+ {id:'charles',n:'CHARLES',npc:'charles',sp:[92,7,null],
   intro:["TA MÈRE : Faites ce que vous voulez mes petits chéris. Rentrez quand vous voulez.","Tu poses la manette. Tu la reprends. Tu la reposes. Bon. Dehors."]},
- {id:'victor',n:'VICTOR',npc:'victor',sp:[94,7,null],tag:"Petit, peau mate. Régulier partout.",
+ {id:'victor',n:'VICTOR',npc:'victor',sp:[94,7,null],
   intro:["TA MÈRE : Faites ce que vous voulez mes petits chéris, il fait beau.","Tu as déjà un plan pour l'après-midi. Tu l'as déjà changé deux fois."]},
- {id:'oscar',n:'OSCAR',npc:'oscar',sp:[110,47,null],tag:"Grand blond. Une force de la nature.",
+ {id:'oscar',n:'OSCAR',npc:'oscar',sp:[110,47,null],
   intro:["TA MÈRE : Amuse toi bien sur la parcours ! Et prends ton casquette, il fait un grand soleil.","Duke a encore ouvert le portail. Duke est déjà loin."]},
- {id:'antoine',n:'ANTOINE',npc:'antoine',sp:[12,11,'lutreau'],tag:"Pull orange, grosses lunettes. Il aligne longtemps.",
+ {id:'antoine',n:'ANTOINE',npc:'antoine',sp:[12,11,'lutreau'],
   intro:["TA MÈRE : Bon. On te récupère dimanche soir. Sois sage, ne dérange personne.","La voiture fait demi-tour dans l'allée et repart. On est mardi."]},
- {id:'kuperfils',n:'KUPI',npc:'kuperfils',sp:[110,71,null],tag:"Grand. Tape aussi fort qu'Oscar.",
+ {id:'kuperfils',n:'KUPI',npc:'kuperfils',sp:[110,71,null],
   intro:["TA MÈRE : Personne n'entre dans la maison avec ses chaussures. Personne. Tu me le répètes.","TA MÈRE : Et on ne touche pas à la collection de poules de la salle à manger. Jamais."]},
- {id:'louis',n:'LOUIS',npc:'louis',sp:[110,63,null],tag:"Petit. Le plus précis de la bande.",
+ {id:'louis',n:'LOUIS',npc:'louis',sp:[110,63,null],
   intro:["TON PÈRE : Tu as bien ton polo ? Nous déjeunons au club à treize heures précises.","TA MÈRE : Et tu ne joues pas avec n'importe qui, Louis. Tu vois ce que je veux dire."]},
- {id:'paul',n:'PAUL',npc:'paul',sp:[78,70,null],tag:"Musclé, silencieux. Une puissance rare.",
+ {id:'paul',n:'PAUL',npc:'paul',sp:[78,70,null],
   intro:["TON PÈRE : Prends ton temps. On mangera quand tu rentreras.","Tu sors. Tu ne dis rien. C'est très bien comme ça."]}
 ];
 const INTRO=[
@@ -7341,12 +7341,14 @@ function drawPick(){
     if(!libre)text('pris',cxx+20,cyy+20,'#c8443a',8);
   }
   ctx.fillStyle='#c8d0e0';ctx.fillRect(14,128,212,1);
+  /* les deux jauges du sac, et rien d'autre : on ne commente pas les gens */
   const fp=fiche(PICKS[game.pick].id);
-  text('PUISSANCE '+etoiles(fp.puis),132,133,'#5a627a',8);
-  text('PRÉCISION '+etoiles(fp.prec),132,144,'#5a627a',8);
-  const ls=wrap(persoLibre(PICKS[game.pick].id)?PICKS[game.pick].tag
-    :'Déjà pris par quelqu\'un d\'autre.',110);
-  for(let i=0;i<ls.length&&i<2;i++)text(ls[i],14,133+i*11,'#5a627a',8);
+  text('PUISSANCE',14,134,'#5a627a',9);
+  text(etoiles(fp.puis),74,134,'#c9a35c',9);
+  text('PRÉCISION',124,134,'#5a627a',9);
+  text(etoiles(fp.prec),186,134,'#c9a35c',9);
+  if(!persoLibre(PICKS[game.pick].id))
+    text('Déjà pris par quelqu\'un d\'autre.',14,145,'#c8443a',9);
 }
 function updatePick(){
   const n=PICKS.length;
