@@ -4099,7 +4099,9 @@ function interact(){
 }
 function proTalk(n){
   mission('pro',n.id);
-  if(game.phase!=='g'){
+  /* tant qu'il est la, il donne le cours. Le soir il est rentre, et alors on ne
+     lui parle pas du tout : inutile de fermer le practice deux fois. */
+  if(game.phase==='f'){
     say(["Le practice ferme à la nuit. Reviens demain, on fera un cours."],null,n.name);return;
   }
   say(n.d[(Math.random()*n.d.length)|0],()=>{
@@ -4790,6 +4792,17 @@ function caleLePractice(){
   };
   POSTES.gilles=bout(m[0],-1);
   POSTES.pascal=bout(m[m.length-1],1);
+  /* et on les y met vraiment : POSTES n'est lu qu'au demarrage, or les tapis
+     peuvent avoir bouge depuis. Sans ca les pros restent ou ils etaient, c'est
+     a dire dans le mur du hangar, et le practice a l'air vide. */
+  [['gilles',POSTES.gilles],['pascal',POSTES.pascal]].forEach(([id,q])=>{
+    const ovr=(typeof MONDE==='object'&&MONDE&&MONDE.pnj&&MONDE.pnj[id])||null;
+    if(ovr&&(ovr.x!=null||ovr.y!=null))return;
+    const n=NPCS.find(x=>x.id===id);
+    if(n&&!n.inside){n.x=q[0];n.y=q[1];n.hx=q[0];n.hy=q[1];
+      n.dir=(Math.abs(PRACTICE.dx)>Math.abs(PRACTICE.dy))?(PRACTICE.dx>0?3:2):(PRACTICE.dy>0?0:1);}
+    if(NPCS_BASE[id]){NPCS_BASE[id].x=q[0];NPCS_BASE[id].y=q[1];}
+  });
   /* Georgie se met au bout de la ligne, un peu a l'ecart, et il regarde taper */
   const g0=POSTES.gilles;
   for(let k=1;k<=4;k++){
@@ -4869,7 +4882,10 @@ function startPractice(){
   p.px=p.bx;p.py=p.by;p.lie='fairway';
   golf.on=true;golf.practice=true;golf.hole=-1;golf.cur=0;golf.aim=PRACTICE.angle;
   golf.club=0;golf.phase='aim';golf.cible=null;
-  game.state=S.GOLF;toast('Practice. '+game.seau+' balles dans le seau.');
+  game.state=S.GOLF;
+  toast(game.phase==='f'
+    ?('Practice de nuit. '+game.seau+' balles. Les pros sont rentrés.')
+    :('Practice. '+game.seau+' balles dans le seau.'));
 }
 function startMamou(invite){
   players=[mkP('moi',game.hero.name,game.heroPal,true,0,game.heroId)];

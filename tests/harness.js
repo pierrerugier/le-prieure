@@ -1452,6 +1452,49 @@ check('ils regardent dans la bonne direction', (() => {
 })());
 t.quitGolf(''); clear();
 
+/* les pros sont la, et le cours se donne */
+clear(); game.min = 14 * 60; game.phase = 'g'; t.placeGang();
+const pros = ['gilles', 'pascal'].map(id => t.NPCS.find(n => n.id === id));
+check('les deux pros sont au practice', pros.every(n => n && !n.gone &&
+  t.zoneAt(n.x, n.y) === 'LE PRACTICE'),
+  pros.map(n => n.id + ' ' + (n.gone ? 'absent' : n.x + ',' + n.y + ' ' + t.zoneAt(n.x, n.y))).join(' | '));
+check('ils ne sont pas plantes sur un tapis',
+  pros.every(n => at(n.x, n.y) !== T.MAT),
+  pros.map(n => n.id + ':' + at(n.x, n.y)).join(' '));
+check('on peut leur parler et prendre un cours', (() => {
+  const g = pros[0];
+  /* on se met devant lui et on appuie sur A */
+  for (const [dx, dy, d] of [[0, 1, 1], [0, -1, 0], [1, 0, 2], [-1, 0, 3]]) {
+    if (t.solidAt(g.x + dx, g.y + dy)) continue;
+    clear(); tp(g.x + dx, g.y + dy); game.dir = d;
+    t.press('a'); frames(3); t.release('a'); frames(4);
+    if (game.state === t.S.DIALOG || game.state === t.S.ASK) {
+      /* on deroule sa replique jusqu a la question */
+      for (let i = 0; i < 40 && game.state !== t.S.ASK; i++) { tap('a', 1); frames(2); }
+      return game.state === t.S.ASK;
+    }
+  }
+  return false;
+})(), 'etat ' + game.state);
+if (game.state === t.S.ASK) {
+  tap('a', 2); frames(6);
+  check('le cours collectif demarre', t.cours.on, 'cours.on=' + t.cours.on);
+  check('et tout le monde est sur un tapis',
+    t.P_().every(p => at(Math.floor(p.bx), Math.floor(p.by)) === T.MAT),
+    t.P_().map(p => Math.floor(p.bx) + ',' + Math.floor(p.by) + ':' + at(Math.floor(p.bx), Math.floor(p.by))).join(' '));
+  t.quitGolf('');
+}
+clear();
+/* le soir ils rentrent, mais le seau reste tapable */
+game.min = 22 * 60; game.phase = 'f'; t.placeGang();
+check('la nuit les pros sont rentres',
+  ['gilles', 'pascal'].every(id => { const n = t.NPCS.find(x => x.id === id); return n && n.gone; }));
+game.state = t.S.WORLD; game.inside = null; game.seau = 12;
+tp(t.PRACTICE.tapis[3][0], t.PRACTICE.tapis[3][1]); t.startPractice();
+check('mais on peut toujours taper un seau de nuit', t.golf.on && t.golf.practice);
+t.quitGolf(''); clear();
+game.min = 14 * 60; game.phase = 'g'; t.placeGang();
+
 /* ---------- 19. Jacky dans les vestiaires ---------- */
 const jk = t.NPCS.find(n => n.id === 'jackie');
 check('Jacky est dans le club house', !!jk && jk.inside === 'club', jk ? jk.inside : 'absente');
