@@ -142,6 +142,23 @@ const attends = (ms) => new Promise(r => setTimeout(r, ms));
   check('les cartes sont remplies', e3 && e3.joueurs.some(j => (j.carte || []).length),
     e3 ? JSON.stringify(e3.joueurs.map(j => j.carte)) : '');
 
+  /* ---------- la phrase de B passe d'un ecran a l'autre ---------- */
+  const dits = [];
+  ws.forEach((w, i) => w.on('message', d => {
+    try { const m = JSON.parse(d); if (m.t === 'dit') dits.push({ pour: i, de: m.de, vers: m.vers, i: m.i }); } catch (e) {}
+  }));
+  const vivant = ws.findIndex((w, i) => i !== parti && w.readyState === 1);
+  const cible = ws.findIndex((w, i) => i !== parti && i !== vivant && w.readyState === 1);
+  if (vivant >= 0 && cible >= 0) {
+    ws[vivant].send(JSON.stringify({ t: 'dit', de: NOMS[vivant], vers: NOMS[cible], i: 2 }));
+    await attends(250);
+    check('la phrase arrive chez le copain vise',
+      dits.some(x => x.pour === cible && x.de === NOMS[vivant] && x.vers === NOMS[cible] && x.i === 2),
+      JSON.stringify(dits));
+    check('celui qui parle ne se la renvoie pas a lui-meme',
+      !dits.some(x => x.pour === vivant));
+  }
+
   /* ---------- deux parties en meme temps ----------
      On libere d'abord les personnages de la premiere partie, sinon le serveur
      a raison de refuser : on ne joue pas deux parties a la fois. */

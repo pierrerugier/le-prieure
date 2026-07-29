@@ -213,7 +213,10 @@ par paire, sur ce qui les lie : la manette que Charles ne passe jamais, les deux
 d'Antoine, la grammaire d'Oscar que Louis corrige, Paul qui repond par un mot.
 
 En ligne on envoie **le numero de la replique**, pas le texte : les deux ecrans lisent la
-meme table, et l'autre voit la phrase arriver avec le nom de celui qui l'a dite.
+meme table. **Les deux joueurs concernes la voient** : celui qui parle la voit partir avec son
+nom, celui a qui elle s'adresse la voit arriver avec le nom de son copain. Personne d'autre ne
+la recoit. Si le destinataire est sur l'ecran titre ou en train de choisir son personnage, on
+ne lui casse rien ; s'il est dans un menu, ca passe en bandeau.
 
 ## Les voitures du parking
 

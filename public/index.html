@@ -7720,13 +7720,20 @@ function ditAuCopain(){
   if(p.net)netSend({t:'dit',vers:p.pk,de:game.heroId,i:r.i});
   return true;
 }
-/* et de l'autre cote de l'ecran, on l'entend */
+/* Et de l'autre cote de l'ecran, on l'entend. Les deux joueurs concernes voient
+   la meme phrase : celui qui parle la voit partir, celui a qui elle s'adresse la
+   voit arriver avec le nom de son copain dessus. Si le destinataire est en train
+   de choisir son personnage ou de regarder l'ecran titre, on ne lui casse rien :
+   une ligne en bas d'ecran suffit. */
 function entendCopain(m){
-  if(m.vers!==game.heroId)return;
+  if(!m||m.vers!==game.heroId)return;
   const l=BINOMES[cleBinome(m.de,m.vers)];
   if(!l||!l[m.i])return;
-  const nom=(FICHES[m.de]&&FICHES[m.de].n)||m.de.toUpperCase();
-  say([l[m.i].txt],null,nom,true);
+  const nom=(FICHES[m.de]&&FICHES[m.de].n)||String(m.de).toUpperCase();
+  const txt=l[m.i].txt;
+  if(game.state===S.TITLE||game.state===S.PICK)return;
+  if(game.state===S.WORLD||game.state===S.GOLF){sfx('ok');say([txt],null,nom,true);return;}
+  toast(nom+' : '+txt);
 }
 const BANDE_IDS=['charles','victor','oscar','antoine','kuperfils','louis','paul'];
 function netURL(){

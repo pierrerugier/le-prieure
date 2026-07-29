@@ -13,7 +13,7 @@ if (src.indexOf('chargeMonde().then(load).finally(loop);') < 0) throw new Error(
 src = src.replace('chargeMonde().then(load).finally(loop);', `globalThis.__t={game,golf,net,update,render,map,MW,MH,T,at,put,NPCS,ITEMS,
   HOLES,PICKS,INT,DOORS,LOCKED,cars,shards,keys,press,release,consume,MAMOU,MAMOU_WIN,FEU,
   players,P_:()=>players,goInside,goOutside,zoneAt,menuList,buildMini,SOLID,getTile,S,ballSpots,updatePick,
-  startHole,save,load,solidAt,placeGang,bruitDuSol,SOL_BRUIT,bonPoste,SOL_DEBOUT,passageEtroit,dansLeHameau,caseDeboutPres,recalePersonnages,roam,MAMOU,LETTRE,LETTRE_BASE,NB_LETTRE,bouts,lettreComplete,poseLaLettre,coinsDuGolf,PENTE_CASES,PENTE_BORD,PRACTICE,trouveLePractice,caleLePractice,tapisPres,cibleDuCours,tapisDuCours,TAPIS,POSTES,POSTES_PRACTICE,POSTES_DEDANS,startPractice,startCours,caseLibreDans,quitGolf,modeleDe,VOITURE_MOD,VOIT_NB,compteLesVoitures,parleDeLaVoiture,MODELES,VOITURES,voitureA,peuplier,ARBRES,TRANSP,BIBLI,PERSO0,put,tile,BINOMES,cleBinome,repliquesPour,copainPres,ditAuCopain,entendCopain,PICKS,net,netRecu,proposePartie,updateAttente,departDu1,TEE1,get SAUVE(){return SAUVE;},set SAUVE(v){SAUVE=v;},surLaPiste,trouveLaPiste,semeLesBalles,jourFlottant,repousseLesBalles,effaceLesTraces,traces,poseTrace,jardinPrive,CLUB_C,FOES,startFight,posePresDeLaPiste,pente,startPente,SPOTS,TRACKS,musWant,AGENDA,RENTRENT,creneau,placeAgenda,PANNEAUX,porteeDe,hauteurObstacle,sanction,reculeSurLaLigne,autoClub,puissancePour,CLUBS,M,LIEF,PUTTER,caseDe,ROULE,EAUX,HORS,AVALE,pente,CRIS,phaseOf,BALLS,updateCars,timeStep,breakWindow,velo,updateVelo,startPente,updatePente,rendVoiturette,leaves,inBrush,ballVisible,estVitre,estCassee,VILLAS,LISIERE,EVENOU,VOITURES,FICHES,fiche,skillDe,vitPuissance,vitPrecision,longueurDe,cours,startCours,INVITES,inviteRecue,FEU,
+  startHole,save,load,solidAt,placeGang,bruitDuSol,SOL_BRUIT,bonPoste,SOL_DEBOUT,passageEtroit,dansLeHameau,caseDeboutPres,recalePersonnages,roam,MAMOU,LETTRE,LETTRE_BASE,NB_LETTRE,bouts,lettreComplete,poseLaLettre,coinsDuGolf,PENTE_CASES,PENTE_BORD,PRACTICE,trouveLePractice,caleLePractice,tapisPres,cibleDuCours,tapisDuCours,TAPIS,POSTES,POSTES_PRACTICE,POSTES_DEDANS,startPractice,startCours,caseLibreDans,quitGolf,modeleDe,VOITURE_MOD,VOIT_NB,compteLesVoitures,parleDeLaVoiture,MODELES,VOITURES,voitureA,peuplier,ARBRES,TRANSP,BIBLI,PERSO0,put,tile,FICHES,BINOMES,cleBinome,repliquesPour,copainPres,ditAuCopain,entendCopain,PICKS,net,netRecu,proposePartie,updateAttente,departDu1,TEE1,get SAUVE(){return SAUVE;},set SAUVE(v){SAUVE=v;},surLaPiste,trouveLaPiste,semeLesBalles,jourFlottant,repousseLesBalles,effaceLesTraces,traces,poseTrace,jardinPrive,CLUB_C,FOES,startFight,posePresDeLaPiste,pente,startPente,SPOTS,TRACKS,musWant,AGENDA,RENTRENT,creneau,placeAgenda,PANNEAUX,porteeDe,hauteurObstacle,sanction,reculeSurLaLigne,autoClub,puissancePour,CLUBS,M,LIEF,PUTTER,caseDe,ROULE,EAUX,HORS,AVALE,pente,CRIS,phaseOf,BALLS,updateCars,timeStep,breakWindow,velo,updateVelo,startPente,updatePente,rendVoiturette,leaves,inBrush,ballVisible,estVitre,estCassee,VILLAS,LISIERE,EVENOU,VOITURES,FICHES,fiche,skillDe,vitPuissance,vitPrecision,longueurDe,cours,startCours,INVITES,inviteRecue,FEU,
   pers,dogSpr,BODY_SIDE,DOG_SIDE,sfx,ambiances,piscineOuverte,baignade,entreDansLeau,proposePartie,updateAttente,departDu1,hNow,AU_FEU,placesDuFeu,placeAutourDuFeu,trouveLeFeu,FEU,FEU_TALK,feuMenu,eteindreLeFeu,bikeSpr,BIKE_DOWN,BIKE_UP,BIKE_SIDE,MISSIONS,ACTES,mission,missionCourante,niveau,chaparde,voleVoiturette,updateVoiturette,BUTIN,
   BASE,appliqueMonde,carteDe,TUILE_OVR,CORPS,CORPS_BASE,FICHES_BASE,tile,cache,MW_:MW,
   BIBLI,MIROIR,ROT,SAUT,MODELES,HOLES_BASE,DOORS_BASE,estDepart,VILLAS_:VILLAS,
@@ -1746,6 +1746,41 @@ check('quitter la partie previent le serveur', (() => {
   return /a:'quitte'/.test(src);
 })());
 t.net.on = false; t.net.count = 0; game.party = []; clear();
+
+/* ---------- 23 bis. la phrase arrive chez le copain ---------- */
+clear(); game.state = t.S.WORLD; game.inside = null;
+t.net.on = true;
+const paire = Object.keys(t.BINOMES).find(k => k.split('|').indexOf(game.heroId) >= 0);
+const autre = paire.split('|').find(x => x !== game.heroId);
+const lignes = t.BINOMES[paire];
+const iLui = lignes.findIndex(r => r.qui === autre);
+check('le copain a bien des phrases pour nous', iLui >= 0, paire);
+t.netRecu({ t: 'dit', de: autre, vers: game.heroId, i: iLui });
+check('sa phrase s affiche chez nous', game.state === t.S.DIALOG, 'etat ' + game.state);
+check('avec son nom et le bon texte',
+  game.who === ((t.FICHES[autre] && t.FICHES[autre].n) || autre.toUpperCase()) &&
+  JSON.stringify(game.dlg).indexOf(lignes[iLui].txt.slice(0, 20)) >= 0,
+  game.who + ' | ' + JSON.stringify(game.dlg).slice(0, 60));
+clear();
+/* une phrase qui ne nous est pas adressee ne s affiche pas */
+t.netRecu({ t: 'dit', de: autre, vers: 'personne', i: iLui });
+check('une phrase pour quelqu un d autre nous laisse tranquille', game.state === t.S.WORLD);
+/* et pendant une partie de golf, elle passe quand meme */
+t.golf.on = true; game.state = t.S.GOLF;
+t.netRecu({ t: 'dit', de: autre, vers: game.heroId, i: iLui });
+check('elle arrive aussi pendant une partie', game.state === t.S.DIALOG, 'etat ' + game.state);
+t.golf.on = false; clear();
+/* a l ecran titre, on ne casse rien */
+game.state = t.S.TITLE;
+t.netRecu({ t: 'dit', de: autre, vers: game.heroId, i: iLui });
+check('a l ecran titre elle ne casse rien', game.state === t.S.TITLE);
+game.state = t.S.WORLD;
+/* et le serveur la relaie bien */
+check('le serveur relaie les phrases entre copains', (() => {
+  const src = require('fs').readFileSync(__dirname + '/../server/index.js', 'utf8');
+  return /m\.t === 'dit'/.test(src) && /vers:/.test(src);
+})());
+t.net.on = false; clear();
 
 /* ---------- 24. on repart la ou on s est arrete ---------- */
 clear(); game.state = t.S.WORLD; game.inside = null;
