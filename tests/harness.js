@@ -13,7 +13,7 @@ if (src.indexOf('chargeMonde().then(load).finally(loop);') < 0) throw new Error(
 src = src.replace('chargeMonde().then(load).finally(loop);', `globalThis.__t={game,golf,net,update,render,map,MW,MH,T,at,put,NPCS,ITEMS,
   HOLES,PICKS,INT,DOORS,LOCKED,cars,shards,keys,press,release,consume,MAMOU,MAMOU_WIN,FEU,
   players,P_:()=>players,goInside,goOutside,zoneAt,menuList,buildMini,SOLID,getTile,S,ballSpots,updatePick,
-  startHole,save,load,solidAt,placeGang,bruitDuSol,SOL_BRUIT,bonPoste,SOL_DEBOUT,passageEtroit,dansLeHameau,caseDeboutPres,recalePersonnages,roam,MAMOU,LETTRE,LETTRE_BASE,NB_LETTRE,bouts,lettreComplete,poseLaLettre,coinsDuGolf,PENTE_CASES,PENTE_BORD,PRACTICE,trouveLePractice,caleLePractice,tapisPres,cibleDuCours,tapisDuCours,TAPIS,POSTES,POSTES_PRACTICE,POSTES_DEDANS,startPractice,startCours,caseLibreDans,quitGolf,modeleDe,VOITURE_MOD,VOIT_NB,compteLesVoitures,parleDeLaVoiture,MODELES,VOITURES,voitureA,peuplier,ARBRES,TRANSP,BIBLI,PERSO0,put,tile,surLaPiste,trouveLaPiste,semeLesBalles,jourFlottant,repousseLesBalles,effaceLesTraces,traces,poseTrace,jardinPrive,CLUB_C,FOES,startFight,posePresDeLaPiste,pente,startPente,SPOTS,TRACKS,musWant,AGENDA,RENTRENT,creneau,placeAgenda,PANNEAUX,porteeDe,hauteurObstacle,sanction,reculeSurLaLigne,autoClub,puissancePour,CLUBS,M,LIEF,PUTTER,caseDe,ROULE,EAUX,HORS,AVALE,pente,CRIS,phaseOf,BALLS,updateCars,timeStep,breakWindow,velo,updateVelo,startPente,updatePente,rendVoiturette,leaves,inBrush,ballVisible,estVitre,estCassee,VILLAS,LISIERE,EVENOU,VOITURES,FICHES,fiche,skillDe,vitPuissance,vitPrecision,longueurDe,cours,startCours,INVITES,inviteRecue,FEU,
+  startHole,save,load,solidAt,placeGang,bruitDuSol,SOL_BRUIT,bonPoste,SOL_DEBOUT,passageEtroit,dansLeHameau,caseDeboutPres,recalePersonnages,roam,MAMOU,LETTRE,LETTRE_BASE,NB_LETTRE,bouts,lettreComplete,poseLaLettre,coinsDuGolf,PENTE_CASES,PENTE_BORD,PRACTICE,trouveLePractice,caleLePractice,tapisPres,cibleDuCours,tapisDuCours,TAPIS,POSTES,POSTES_PRACTICE,POSTES_DEDANS,startPractice,startCours,caseLibreDans,quitGolf,modeleDe,VOITURE_MOD,VOIT_NB,compteLesVoitures,parleDeLaVoiture,MODELES,VOITURES,voitureA,peuplier,ARBRES,TRANSP,BIBLI,PERSO0,put,tile,BINOMES,cleBinome,repliquesPour,copainPres,ditAuCopain,entendCopain,PICKS,net,surLaPiste,trouveLaPiste,semeLesBalles,jourFlottant,repousseLesBalles,effaceLesTraces,traces,poseTrace,jardinPrive,CLUB_C,FOES,startFight,posePresDeLaPiste,pente,startPente,SPOTS,TRACKS,musWant,AGENDA,RENTRENT,creneau,placeAgenda,PANNEAUX,porteeDe,hauteurObstacle,sanction,reculeSurLaLigne,autoClub,puissancePour,CLUBS,M,LIEF,PUTTER,caseDe,ROULE,EAUX,HORS,AVALE,pente,CRIS,phaseOf,BALLS,updateCars,timeStep,breakWindow,velo,updateVelo,startPente,updatePente,rendVoiturette,leaves,inBrush,ballVisible,estVitre,estCassee,VILLAS,LISIERE,EVENOU,VOITURES,FICHES,fiche,skillDe,vitPuissance,vitPrecision,longueurDe,cours,startCours,INVITES,inviteRecue,FEU,
   pers,dogSpr,BODY_SIDE,DOG_SIDE,sfx,ambiances,piscineOuverte,baignade,entreDansLeau,proposePartie,updateAttente,departDu1,hNow,AU_FEU,placesDuFeu,placeAutourDuFeu,trouveLeFeu,FEU,FEU_TALK,feuMenu,eteindreLeFeu,bikeSpr,BIKE_DOWN,BIKE_UP,BIKE_SIDE,MISSIONS,ACTES,mission,missionCourante,niveau,chaparde,voleVoiturette,updateVoiturette,BUTIN,
   BASE,appliqueMonde,carteDe,TUILE_OVR,CORPS,CORPS_BASE,FICHES_BASE,tile,cache,MW_:MW,
   BIBLI,MIROIR,ROT,SAUT,MODELES,HOLES_BASE,DOORS_BASE,estDepart,VILLAS_:VILLAS,
@@ -1567,6 +1567,76 @@ check('on les pose et on ne les traverse pas', (() => {
   return ok2;
 })());
 remetMonde();
+
+/* ---------- 22. ce qu'on se dit entre copains ---------- */
+const JOUABLES = t.PICKS.map(p => p.id);
+const PAIRES = [];
+for (let i = 0; i < JOUABLES.length; i++)
+  for (let j = i + 1; j < JOUABLES.length; j++) PAIRES.push([JOUABLES[i], JOUABLES[j]]);
+check('chaque binome a ses repliques',
+  PAIRES.every(([a2, b2]) => (t.BINOMES[t.cleBinome(a2, b2)] || []).length >= 4),
+  PAIRES.filter(([a2, b2]) => (t.BINOMES[t.cleBinome(a2, b2)] || []).length < 4)
+    .map(q => q.join('+')).join(' '));
+check('les vingt-huit binomes sont couverts',
+  Object.keys(t.BINOMES).length === PAIRES.length,
+  Object.keys(t.BINOMES).length + ' au lieu de ' + PAIRES.length);
+check('chacun des deux en dit au moins une',
+  PAIRES.every(([a2, b2]) => {
+    const l = t.BINOMES[t.cleBinome(a2, b2)] || [];
+    return l.some(r => r.qui === a2) && l.some(r => r.qui === b2);
+  }));
+check('aucune replique ne parle a la place de quelqu un d autre',
+  Object.keys(t.BINOMES).every(k => {
+    const [a2, b2] = k.split('|');
+    return t.BINOMES[k].every(r => r.qui === a2 || r.qui === b2);
+  }));
+check('aucun tiret cadratin, jamais',
+  Object.keys(t.BINOMES).every(k =>
+    t.BINOMES[k].every(r => r.txt.indexOf('\u2014') < 0 && r.txt.indexOf('\u2013') < 0)),
+  Object.keys(t.BINOMES).filter(k =>
+    t.BINOMES[k].some(r => r.txt.indexOf('\u2014') >= 0 || r.txt.indexOf('\u2013') >= 0)).join(' '));
+check('elles tiennent dans une boite de dialogue',
+  Object.keys(t.BINOMES).every(k => t.BINOMES[k].every(r => r.txt.length <= 100)),
+  Object.keys(t.BINOMES).flatMap(k => t.BINOMES[k]).filter(r => r.txt.length > 100)
+    .map(r => r.txt.length + ':' + r.txt.slice(0, 30)).slice(0, 3).join(' | '));
+check('aucune replique en double dans tout le jeu', (() => {
+  const vus = new Set();
+  for (const k of Object.keys(t.BINOMES))
+    for (const r of t.BINOMES[k]) {
+      const c = r.txt.toLowerCase().replace(/[^a-zà-ÿ]/g, '');
+      if (vus.has(c)) return false;
+      vus.add(c);
+    }
+  return true;
+})());
+check('on n a que ses propres repliques a dire',
+  t.repliquesPour('moi', 'charles').every(r => r.qui === 'moi') &&
+  t.repliquesPour('moi', 'charles').length >= 2);
+/* et ca marche en jeu : on se met a cote d un copain et on appuie sur B */
+clear(); game.state = t.S.WORLD; game.inside = null; game.min = 14 * 60; game.phase = 'g';
+t.placeGang();
+const cop = t.NPCS.find(n => n.gang && !n.gone && !n.dog && !n.inside &&
+  t.BINOMES[t.cleBinome(game.heroId, n.id)]);
+check('un copain de la bande est joignable', !!cop, cop ? cop.id : 'aucun');
+if (cop) {
+  let pose = null;
+  for (const [dx, dy] of [[0, 1], [1, 0], [0, -1], [-1, 0], [1, 1], [-1, -1]]) {
+    if (!t.solidAt(cop.x + dx, cop.y + dy)) { pose = [cop.x + dx, cop.y + dy]; break; }
+  }
+  if (pose) {
+    tp(pose[0], pose[1]);
+    check('il est bien a portee de voix', !!t.copainPres(),
+      'copain ' + cop.id + ' en ' + cop.x + ',' + cop.y + ' moi en ' + game.px + ',' + game.py);
+    t.press('b'); frames(3); t.release('b'); frames(3);
+    check('B lui lance une phrase', game.state === t.S.DIALOG, 'etat ' + game.state);
+    clear();
+    /* et loin de tout le monde, B ne fait rien */
+    tp(60, 10);
+    t.press('b'); frames(3); t.release('b'); frames(3);
+    check('loin de tout le monde, B ne dit rien', game.state === t.S.WORLD, 'etat ' + game.state);
+  }
+}
+clear();
 
 /* ---------- verdict ---------- */
 console.log('\n  ' + ok + ' verifications passees, ' + ko + ' echec(s).');

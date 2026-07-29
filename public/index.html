@@ -7410,6 +7410,257 @@ function updatePick(){
 /* ---------- le jeu en ligne ---------- */
 const net={on:false,ws:null,id:null,peers:{},count:0,tries:0,last:0,
   roster:null,joues:{},pk:null,attente:false};
+/* ---------- ce qu'on se dit quand on se croise ----------
+   En ligne, B lance une phrase au copain le plus proche. Chaque paire a les
+   siennes : ce qu'on dit a Charles n'est pas ce qu'on dit a Paul. On envoie le
+   numero de la replique, pas le texte : les deux ecrans lisent la meme table. */
+const BINOMES_SRC={
+ 'antoine|charles':[  /* ANTOINE et CHARLES */
+  {q:'charles',t:"Aligne pas ce putt, aligne ta vie, on est sur ce trou depuis vingt minutes."},
+  {q:'antoine',t:"Chut, il y a du monde autour du green, je joue l'US Open la."},
+  {q:'charles',t:"Tu me dois deux euros depuis Paques, je les compte en heures de GameCube."},
+  {q:'antoine',t:"Tu t'arretes au 6 tous les jours et c'est moi qui suis lent."},
+  {q:'charles',t:"Viens chez moi apres, tu regardes, je passe pas la manette de toute facon."},
+  {q:'antoine',t:"Prete moi deux euros pour le club sandwich, je te rembourse dimanche."}],
+ 'antoine|kuperfils':[  /* ANTOINE et KUPI */
+  {q:'antoine',t:"La douche du club est comprise dans la cotisation, j'ai verifie, c'est gratuit."},
+  {q:'kuperfils',t:"Toi t'as verifie le prix de la douche gratuite, ca resume tout le personnage."},
+  {q:'antoine',t:"Ta mere compte les essuyages de pieds, la mienne me depose et repart aussitot."},
+  {q:'kuperfils',t:"Tu me dois deux euros, je m'en fiche, mais je le dirai a chaque trou."},
+  {q:'antoine',t:"Je mets quatre coups pour arriver ou tu es en un, et pourtant je gagne le trou."},
+  {q:'kuperfils',t:"Aligne ton putt, je vais me baigner, je reviens, tu seras encore dessus."}],
+ 'antoine|louis':[  /* ANTOINE et LOUIS */
+  {q:'antoine',t:"Attends, je lis la pente. Donne-la moi en degres, toi tu sais faire."},
+  {q:'louis',t:"Deux pour cent vers l'ouest. Frappe, ca fait six minutes que tu vises."},
+  {q:'antoine',t:"Six minutes pour un putt qui vaut l'US Open, c'est raisonnable."},
+  {q:'louis',t:"Le reglement dit quarante secondes par coup. Article huit, je l'ai lu."},
+  {q:'antoine',t:"Prete-moi deux euros, je te rends quand tes grands-parents repartent."},
+  {q:'louis',t:"Tu m'en dois deja quatre, et j'ai note les deux dates."}],
+ 'antoine|moi':[  /* ANTOINE et PIERRE */
+  {q:'moi',t:"Tu me dois deux euros depuis Paques, et je note tout dans mon carnet."},
+  {q:'antoine',t:"Bouge, tu es dans ma ligne. Ce putt la, il vaut l'US Open."},
+  {q:'moi',t:"Ton putt fait quatre-vingts centimetres. Frappe, mon pere ferme a neuf heures."},
+  {q:'antoine',t:"Prete-moi deux euros pour un Oasis, je te rends dimanche, promis."},
+  {q:'moi',t:"Tu as dit dimanche l'ete dernier aussi, Antoine."},
+  {q:'antoine',t:"Toi tu rentres diner chez toi, moi je mange au club. Pas la meme vie."}],
+ 'antoine|oscar':[  /* ANTOINE et OSCAR */
+  {q:'oscar',t:"Ton putt il dure tellement longtemps que Duke il s'est endormi sur le green."},
+  {q:'antoine',t:"Ton chien a mange mon gant, un gant neuf, ca fait douze euros, on arrondit a quinze."},
+  {q:'oscar',t:"Tu m'as pris deux euros mardi, mon pere il dit que je suis trop gentille."},
+  {q:'antoine',t:"Tu dis ma swing mais tu me mets soixante metres, alors je corrige rien du tout."},
+  {q:'oscar',t:"Toi tu vises l'US Open, moi je vise le drapeau, on est pas sur le meme trou."},
+  {q:'antoine',t:"Prete-moi ton bois 3 au 12, je te le rends au 13, comme les deux euros."}],
+ 'antoine|paul':[  /* ANTOINE et PAUL */
+  {q:'antoine',t:"Paul, tu me pretes deux euros, je te rends dimanche quand ma mere revient."},
+  {q:'paul',t:"J'ai rien."},
+  {q:'antoine',t:"Recule un peu, tu es dans ma ligne, la je joue le 18 de l'US Open."},
+  {q:'antoine',t:"Tu portes mon sac deux trous et je te paie un diabolo au club, ca marche?"},
+  {q:'paul',t:"Joue."},
+  {q:'antoine',t:"Tu es le seul qui attend que j'aie fini mon putt. Les autres partent."}],
+ 'antoine|victor':[  /* ANTOINE et VICTOR */
+  {q:'victor',t:"Nouvelle regle, trois secondes par putt, elle a toujours existe, demande aux autres."},
+  {q:'antoine',t:"Tu changes le plan pendant que je vise, et apres c'est moi qui suis lent."},
+  {q:'victor',t:"Tu me dois deux euros depuis Paques, je compte les interets en balles perdues."},
+  {q:'antoine',t:"Je crois que je t'ai rendu tes deux euros, ou alors c'etait a quelqu'un d'autre."},
+  {q:'victor',t:"Tu dejeunes au club, tu dines au club, un jour je te trouve un lit au club."},
+  {q:'antoine',t:"Arrete de tourner a velo autour de moi quand je lis la pente, ca me deconcentre."}],
+ 'charles|kuperfils':[  /* CHARLES et KUPI */
+  {q:'charles',t:"T'es le seul qui tape plus loin que moi, du coup je parle de ton maillot."},
+  {q:'kuperfils',t:"Ton air shot au 4, j'ai entendu le vent, j'ai pas entendu la balle."},
+  {q:'charles',t:"Chez toi on s'essuie les pieds trois fois, c'est pour ca que je viens jamais."},
+  {q:'kuperfils',t:"Passe la manette une fois avant septembre, juste pour voir l'effet que ca fait."},
+  {q:'charles',t:"Nouvelle passion cette semaine, le grass board, et non je te le prete pas."},
+  {q:'kuperfils',t:"On arrete au 6 si tu veux, mais alors je joue une partie chez toi, une vraie."}],
+ 'charles|louis':[  /* CHARLES et LOUIS */
+  {q:'charles',t:"Cent vingt metres pile, Louis. Chez moi on appelle ca un long putt."},
+  {q:'louis',t:"Trois air shots au 3. Tu joues surtout contre l'air, en fait."},
+  {q:'charles',t:"Le prieure de 1170, oui. Tu me l'as dit au 1, au 5 et au 9."},
+  {q:'louis',t:"1170 c'est la fondation. Tu confonds encore avec la chapelle."},
+  {q:'charles',t:"Tes grands-parents t'ont dit de pas jouer avec moi, hein. Ils ont raison."},
+  {q:'louis',t:"Tu veux rentrer au 6 pour la GameCube. Assume, n'accuse pas le vent."}],
+ 'charles|moi':[  /* CHARLES et PIERRE */
+  {q:'charles',t:"On arrete au 6, tu me suis, la GameCube elle va pas se jouer toute seule."},
+  {q:'moi',t:"Tu as dit ca hier, et on a fini a neuf heures dix, et mon pere a gueule."},
+  {q:'charles',t:"Ton pere il gueule a neuf heures, il est huit heures, tape ta balle."},
+  {q:'moi',t:"Tu m'as promis la manette deux etes de suite. Je compte, Charles."},
+  {q:'charles',t:"Regarde ce drive. Bon, regarde pas. C'etait un air shot."},
+  {q:'moi',t:"Margot m'a dit que ton skate dormait au grenier depuis dix jours."}],
+ 'charles|oscar':[  /* CHARLES et OSCAR */
+  {q:'charles',t:"Ton chien a mange mon gant gauche, Oscar. Duke me doit huit euros."},
+  {q:'oscar',t:"Duke il a mange le gant mais il est un bon chien, tu peux pas comprendre."},
+  {q:'charles',t:"Tu tapes plus loin que moi. Tu le dis a personne, c'est entre nous."},
+  {q:'oscar',t:"Ma swing il est tres bien aujourd'hui, la tienne elle est courageuse."},
+  {q:'charles',t:"Redis ca en francais correct et j'accepte de perdre le trou."},
+  {q:'oscar',t:"C'etait un air shot, Charles, le vent il a rien fait, c'est toi tout seul."}],
+ 'charles|paul':[  /* CHARLES et PAUL */
+  {q:'charles',t:"Paul, tu dis rien, mais je sais que tu trouves mon swing magnifique."},
+  {q:'paul',t:"Non."},
+  {q:'charles',t:"Tape le premier, comme ca j'ai une excuse quand je tape moins loin."},
+  {q:'charles',t:"Tu es le seul a qui je passe la manette. Parce que tu la rends."},
+  {q:'paul',t:"Tu bouges ta balle au 4."},
+  {q:'charles',t:"Un jour tu fais trois mots d'affilee et je m'assois par terre."}],
+ 'charles|victor':[  /* CHARLES et VICTOR */
+  {q:'victor',t:"On arrete pas au 6 aujourd'hui. Tu finis les dix-huit, c'est la regle."},
+  {q:'charles',t:"Ton plan de l'apres-midi a deja change deux fois depuis le practice, chef."},
+  {q:'victor',t:"Air shot au depart, et c'est toi qui critiques mon programme."},
+  {q:'charles',t:"Le mulligan par trou, tu l'as invente mardi. J'etais la, moi."},
+  {q:'victor',t:"Il a toujours existe. Passe-moi la manette ce soir et on en reparle."},
+  {q:'charles',t:"Tu me doubles a velo dans la descente parce qu'a pied tu perds."}],
+ 'kuperfils|louis':[  /* KUPI et LOUIS */
+  {q:'kuperfils',t:"Tes parents veulent pas que tu joues avec n'importe qui, n'importe qui c'est moi."},
+  {q:'louis',t:"Chez toi on s'essuie les pieds trois fois et ta mere compte a voix haute."},
+  {q:'kuperfils',t:"Tu tapes a cent metres et tu m'expliques mon swing, j'adore ce moment."},
+  {q:'louis',t:"Meme maillot depuis lundi, on est vendredi, j'ai verifie, j'ai un carnet."},
+  {q:'kuperfils',t:"Tu me corriges jamais la grammaire, tu as renonce a moi ou quoi ?"},
+  {q:'louis',t:"Je te corrige pas parce que tu ecoutes pas, c'est une economie de salive."}],
+ 'kuperfils|moi':[  /* KUPI et PIERRE */
+  {q:'kuperfils',t:"Chez toi on entre direct, chez moi ma mere compte les coups de paillasson."},
+  {q:'moi',t:"Ta mere m'a fait essuyer trois fois, j'avais des tongs, Kupi. Des tongs."},
+  {q:'kuperfils',t:"Je me suis baigne, ca compte comme une douche, tu diras rien a personne."},
+  {q:'moi',t:"Je dirai rien, tu m'as jamais balance pour la vitre du local a chariots."},
+  {q:'kuperfils',t:"Toi tu vises, moi je tape, a nous deux on ferait un joueur correct."},
+  {q:'moi',t:"Dors a la maison ce soir, mon pere a dit oui, ramene un maillot propre."}],
+ 'kuperfils|oscar':[  /* KUPI et OSCAR */
+  {q:'oscar',t:"Duke il a mange mon gant et il a laisse le tien. Ce chien il est intelligent."},
+  {q:'kuperfils',t:"Ton chien bouffe mes gants, donc je joue sans. Je tape pareil."},
+  {q:'oscar',t:"Ta drive elle est longue, oui, mais la mienne elle est plus longue encore."},
+  {q:'kuperfils',t:"On dit ton drive. Meme moi je le sais, et je suis pas Louis."},
+  {q:'oscar',t:"Toi aussi tu me corriges maintenant, mais je m'en fiche, je continue comme ca."},
+  {q:'kuperfils',t:"Concours de longueur au practice, toi et moi. Le perdant porte les deux sacs."}],
+ 'kuperfils|paul':[  /* KUPI et PAUL */
+  {q:'kuperfils',t:"T'es le seul qui me dit jamais rien sur mon maillot, je le note, merci."},
+  {q:'paul',t:"C'est qu'un maillot."},
+  {q:'kuperfils',t:"Une fois par ete tu parles, une fois par ete je me lave, on est raccord."},
+  {q:'kuperfils',t:"Viens chez moi, ma mere compte les essuyages de pieds, toi tu diras rien."},
+  {q:'paul',t:"On tape, on parle apres."},
+  {q:'kuperfils',t:"Tu me regardes taper et tu hoches la tete, c'est ma meilleure note de l'ete."}],
+ 'kuperfils|victor':[  /* KUPI et VICTOR */
+  {q:'victor',t:"Nouvelle regle, tu joues toujours sous le vent. Ca a toujours existe."},
+  {q:'kuperfils',t:"Ta regle tiendra jusqu'a quinze heures. Mon maillot tient la semaine."},
+  {q:'victor',t:"On se retrouve au practice, pas chez toi. Ta mere compte les paillassons."},
+  {q:'kuperfils',t:"Passe a la maison, tu verras. Trois fois les pieds, et elle recompte apres."},
+  {q:'victor',t:"Tu tapes vingt metres de plus que moi et t'as meme pas de gant."},
+  {q:'kuperfils',t:"T'as change le programme trois fois. Moi j'ai rien change depuis lundi."}],
+ 'louis|moi':[  /* LOUIS et PIERRE */
+  {q:'louis',t:"Toi et moi on vise, les autres ils tapent et ils prient."},
+  {q:'moi',t:"Tes grands-parents t'ont fait reviser avant de te lacher sur le parcours ?"},
+  {q:'louis',t:"Le prieure date de 1170, ton hameau a trente ans, calme toi un peu."},
+  {q:'moi',t:"Tes parents savent que tu joues avec nous, ou je suis toujours n'importe qui ?"},
+  {q:'louis',t:"J'ai trente metres de moins que toi au drive et deux coups de moins a la fin."},
+  {q:'moi',t:"Va expliquer le 1170 a Charles, il croit que le prieure c'est le parking."}],
+ 'louis|oscar':[  /* LOUIS et OSCAR */
+  {q:'oscar',t:"Cette nuit elle est very belle, Louis, tu vas pas me corriger encore."},
+  {q:'louis',t:"Belle nuit. Pas cette nuit elle est. Et very, c'est de l'anglais."},
+  {q:'oscar',t:"Je dis les choses, tu comprends tout, donc ta grammaire elle sert a rien."},
+  {q:'louis',t:"Elle sert quand tu dis ma swing. Un swing, c'est masculin, Oscar."},
+  {q:'oscar',t:"Mon pere il est furious quand je parle anglais a table, je fais un mix."},
+  {q:'louis',t:"Apprends moi un mot anglais par trou et je te corrige gratuitement."}],
+ 'louis|paul':[  /* LOUIS et PAUL */
+  {q:'louis',t:"Le prieure est de 1170, Paul. Toi au moins tu ne me coupes jamais."},
+  {q:'paul',t:"Continue."},
+  {q:'louis',t:"Tu envoies a deux cents metres sans un mot. Moi je parle et je tape a cent."},
+  {q:'louis',t:"Je t'ai vu fixer le clocher tout a l'heure. Treizieme siecle, si ca t'interesse."},
+  {q:'paul',t:"Ca m'interesse."},
+  {q:'louis',t:"Un jour tu diras deux phrases de suite et je noterai la date."}],
+ 'louis|victor':[  /* LOUIS et VICTOR */
+  {q:'victor',t:"La regle du mulligan a toujours existe, Louis, demande a qui tu veux."},
+  {q:'louis',t:"Tu l'as inventee mardi a quinze heures. J'etais la. J'ai note l'heure."},
+  {q:'victor',t:"Tu notes l'heure des regles. Monte sur le porte bagages, on y va."},
+  {q:'louis',t:"Le prieure date de 1170, ton parcours est pose sur des moines, respecte."},
+  {q:'victor',t:"Tes parents disent de pas jouer avec n'importe qui. Moi je suis quelqu'un."},
+  {q:'louis',t:"J'ai dit a ma grand mere que tu etais capitaine, elle a trouve ca serieux."}],
+ 'moi|oscar':[  /* PIERRE et OSCAR */
+  {q:'oscar',t:"Ton drive il est tout petit mais il est toujours au milieu, moi j'aime bien ca."},
+  {q:'moi',t:"Duke a mange mon gant gauche, je joue main nue depuis mardi, tu me dois un gant."},
+  {q:'oscar',t:"Duke il a mange ton gant parce que ton gant il sentait bon, c'est un compliment."},
+  {q:'moi',t:"Je compte depuis le depart, tu me mets cinquante metres a chaque coup de depart."},
+  {q:'oscar',t:"Toi tu regardes tout le monde et tu dis rien, moi je trouve ca very malin."},
+  {q:'moi',t:"Prete-moi ton bois 3 deux minutes, je veux savoir ce que ca fait d'envoyer loin."}],
+ 'moi|paul':[  /* PIERRE et PAUL */
+  {q:'moi',t:"Au feu de camp t'as parle des etoiles, tout le monde s'est tu, moi j'ai retenu."},
+  {q:'paul',t:"Regarde en haut ce soir."},
+  {q:'moi',t:"Je t'ai vu partir seul vers le 9 hier soir, j'ai rien dit a personne, promis."},
+  {q:'paul',t:"Toi non plus tu parles pas beaucoup."},
+  {q:'moi',t:"Tape le premier, j'aime bien voir jusqu'ou ca va quand c'est toi qui tapes."},
+  {q:'moi',t:"T'as hoche la tete deux fois hier, pour moi ca fait une conversation entiere."}],
+ 'moi|victor':[  /* PIERRE et VICTOR */
+  {q:'victor',t:"Changement de plan, on va au practice d'abord, ca a toujours ete le plan."},
+  {q:'moi',t:"Tu as dit la piscine il y a dix minutes, Victor."},
+  {q:'victor',t:"Ton pere gueule a neuf heures, il est huit heures et demie, on a le temps."},
+  {q:'moi',t:"Nouvelle regle, celui qui invente une regle la joue en premier."},
+  {q:'victor',t:"Je passe en velo devant chez toi a deux heures, sois deja dehors."},
+  {q:'moi',t:"Tu sonnes pas, tu klaxonnes avec ta bouche, ma mere croit que c'est un oiseau."}],
+ 'oscar|paul':[  /* OSCAR et PAUL */
+  {q:'oscar',t:"Duke il dort devant ta porte et pas la mienne, c'est vexant un peu."},
+  {q:'paul',t:"Duke a encore mon gant."},
+  {q:'oscar',t:"On tape aussi loin tous les deux, mais moi je crie apres, toi tu dis rien."},
+  {q:'paul',t:"Ta phrase etait juste."},
+  {q:'oscar',t:"Louis il corrige ma grammaire, toi jamais, alors toi tu es mon best ami."},
+  {q:'oscar',t:"Tu parles une fois par ete, moi je parle double, ca fait la moyenne bien."}],
+ 'oscar|victor':[  /* OSCAR et VICTOR */
+  {q:'victor',t:"Regle du jour, tout le monde part des jaunes sauf toi, tu recules de trente."},
+  {q:'oscar',t:"Ma swing il est tres bien aujourd'hui, ton regle il est pas juste."},
+  {q:'victor',t:"Duke a mange mon gant, tu me dois un gant, c'est comme ca depuis toujours."},
+  {q:'oscar',t:"Duke il prend que les gants des bons joueurs, c'est un compliment pour toi."},
+  {q:'victor',t:"Tu tapes deux fois plus loin que moi et tu me demandes des conseils, arrete."},
+  {q:'oscar',t:"Tu changes le plan trois fois et on va toujours ou tu veux, very fort ca."}],
+ 'paul|victor':[  /* PAUL et VICTOR */
+  {q:'victor',t:"Tu hoches la tete, je note ca comme un oui, et un oui ca se reprend pas."},
+  {q:'paul',t:"Ton plan a change deux fois."},
+  {q:'victor',t:"Piscine puis practice, tu dis rien, donc tu es d'accord, c'est la regle."},
+  {q:'paul',t:"Je viens quand meme."},
+  {q:'victor',t:"T'es le seul a qui je demande jamais de se taire, profite bien."},
+  {q:'victor',t:"Si tu paries un mot avant le feu de camp, je paye une glace a tout le monde."}],
+};
+const BINOMES={};
+Object.keys(BINOMES_SRC).forEach(k=>{
+  BINOMES[k]=BINOMES_SRC[k].map(r=>({qui:r.q,txt:r.t}));
+});
+function cleBinome(a,b){return (a<b)?(a+'|'+b):(b+'|'+a);}
+function repliquesPour(moi,lui){
+  const l=BINOMES[cleBinome(moi,lui)];
+  if(!l)return [];
+  return l.map((r,i)=>({i:i,qui:r.qui,txt:r.txt})).filter(r=>r.qui===moi);
+}
+/* le copain a portee de voix : meme carte, deux cases autour. En ligne c'est un
+   joueur, hors ligne c'est celui de la bande qui traine par la. */
+function copainPres(){
+  let b=null,bd=9;
+  for(const id in net.peers){
+    const p=net.peers[id];
+    if(!p.pk)continue;
+    if((p.inside||null)!==(game.inside||null))continue;
+    const d=Math.hypot(p.x-game.px,p.y-game.py);
+    if(d<=2.6&&d<bd){bd=d;b={pk:p.pk,net:1};}
+  }
+  if(b)return b;
+  for(const n of NPCS){
+    if(!n.gang||n.gone||n.dog)continue;
+    if((n.inside||null)!==(game.inside||null))continue;
+    if(!BINOMES[cleBinome(game.heroId,n.id)])continue;
+    const d=Math.hypot(n.x-game.px,n.y-game.py);
+    if(d<=2.6&&d<bd){bd=d;b={pk:n.id,net:0,n:n};}
+  }
+  return b;
+}
+function ditAuCopain(){
+  const p=copainPres(); if(!p)return false;
+  const l=repliquesPour(game.heroId,p.pk);
+  if(!l.length)return false;
+  const k=(game.ditT=(game.ditT||0)+1);
+  const r=l[(k+((game.px+game.py)|0))%l.length];
+  say([r.txt],null,game.hero.name);
+  if(p.net)netSend({t:'dit',vers:p.pk,de:game.heroId,i:r.i});
+  return true;
+}
+/* et de l'autre cote de l'ecran, on l'entend */
+function entendCopain(m){
+  if(m.vers!==game.heroId)return;
+  const l=BINOMES[cleBinome(m.de,m.vers)];
+  if(!l||!l[m.i])return;
+  const nom=(FICHES[m.de]&&FICHES[m.de].n)||m.de.toUpperCase();
+  say([l[m.i].txt],null,nom,true);
+}
 const BANDE_IDS=['charles','victor','oscar','antoine','kuperfils','louis','paul'];
 function netURL(){
   try{
@@ -7476,6 +7727,7 @@ function netConnect(){
       }
     }
     else if(m.t==='verre'){ breakWindow(m.x,m.y,true); }
+    else if(m.t==='dit'){ entendCopain(m); }
     else if(m.t==='monde'){
       /* on repose la carte a plat, donc on se souvient des vitres deja cassees */
       const casses=MAMOU_WIN.filter(w=>estCassee(at(w[0],w[1])));
@@ -7684,6 +7936,8 @@ function update(){
                tt!==T.SDOOR&&tt!==T.TVGC&&!SOLID.has(tt)){goFeu();break;}
           }
           interact();break;}
+        /* B : on lance une phrase au copain d'a cote, quand il y en a un */
+        if(consume('b')&&ditAuCopain())break;
         tryMove();
       }break;
     case S.DIALOG:{

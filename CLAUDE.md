@@ -143,6 +143,20 @@ La **lettre de Lise Lebel** : dix morceaux aux quatre coins du parcours, un obje
 chacun. Quand on les a tous, elle se lit dans le menu. Son texte s'ecrit dans
 l'atelier, onglet Textes, categorie « La lettre de Lise Lebel ».
 
+## Ce qu'on se dit entre copains
+
+En jeu, **B lance une phrase au copain qui est a deux cases**. En ligne c'est un joueur,
+hors ligne c'est celui de la bande qui traine par la. `BINOMES` tient les **vingt-huit
+paires** des huit personnages jouables, **six repliques chacune**, et chaque replique sait
+qui la dit : on ne dit que les siennes.
+
+Ce qu'on lance a Charles n'est pas ce qu'on lance a Paul. Les repliques sont ecrites paire
+par paire, sur ce qui les lie : la manette que Charles ne passe jamais, les deux euros
+d'Antoine, la grammaire d'Oscar que Louis corrige, Paul qui repond par un mot.
+
+En ligne on envoie **le numero de la replique**, pas le texte : les deux ecrans lisent la
+meme table, et l'autre voit la phrase arriver avec le nom de celui qui l'a dite.
+
 ## Les voitures du parking
 
 Chaque modele en quatre cases a son proprietaire et son histoire : `VOITURE_MOD`, indexe

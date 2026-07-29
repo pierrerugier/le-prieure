@@ -326,6 +326,12 @@ wss.on('connection', (ws) => {
       diffuse({ t: 'invite', kind: kind, from: texte(m.from, 12) || 'Quelqu\'un' }, ws);
       return;
     }
+    /* ce qu'un joueur lance a un autre en le croisant : on relaie, c'est tout */
+    if (m.t === 'dit') {
+      diffuse({ t: 'dit', de: String(m.de || '').slice(0, 16),
+                vers: String(m.vers || '').slice(0, 16), i: m.i | 0 }, ws);
+      return;
+    }
     if (m.t === 'verre') {
       const x = nombre(m.x, 0, 119, -1), y = nombre(m.y, 0, 95, -1);
       if (x < 0 || y < 0) return;
