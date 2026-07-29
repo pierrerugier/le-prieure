@@ -2183,16 +2183,26 @@ buildWorld();
 /* ---------- les panneaux de distance du practice ----------
    On tape vers le nord depuis les tapis, alors les panneaux remontent la ligne
    de tir. Une case vaut quatorze metres : 50, 100, 150 et 200 tombent la. */
-const PANNEAUX=[[T.PAN50,52],[T.PAN100,49],[T.PAN150,45],[T.PAN200,42]];
+const PANNEAUX=[[T.PAN50,50],[T.PAN100,100],[T.PAN150,150],[T.PAN200,200]];
 function poseLesPanneaux(){
-  PANNEAUX.forEach(([t,y])=>{ [8,22].forEach(x=>{
-    if(x<1||y<1||x>=MW-1||y>=MH-1)return;
-    if(SOLID.has(at(x,y))||EAUX_PAN.has(at(x,y)))return;
-    put(x,y,t);
-  });});
+  if(!PRACTICE.tapis||!PRACTICE.tapis.length)return;
+  /* perpendiculaire a l'axe de tir : c'est de ce cote qu'on plante les piquets */
+  const px=-PRACTICE.dy, py=PRACTICE.dx;
+  const xs=PRACTICE.tapis.map(q=>q[0]), ys=PRACTICE.tapis.map(q=>q[1]);
+  const demi=PRACTICE.ligne?((Math.max(...xs)-Math.min(...xs))/2+1)
+                           :((Math.max(...ys)-Math.min(...ys))/2+1);
+  PANNEAUX.forEach(([t,metres])=>{
+    const k=metres/M;
+    [-1,1].forEach(c=>{
+      const x=Math.round(PRACTICE.cx+PRACTICE.dx*k+px*demi*c);
+      const y=Math.round(PRACTICE.cy+PRACTICE.dy*k+py*demi*c);
+      if(x<1||y<1||x>=MW-1||y>=MH-1)return;
+      if(SOLID.has(at(x,y))||EAUX_PAN.has(at(x,y)))return;
+      put(x,y,t);
+    });
+  });
 }
 const EAUX_PAN=new Set([T.WATER,T.MARE,T.POOL]);
-poseLesPanneaux();
 /* la carte telle que le code la fabrique : sert de reference a l'editeur */
 const BASE={domaine:map.slice()};
 
@@ -2514,6 +2524,7 @@ function appliqueMonde(mo){
   semeLesBalles();
   trouveLaPiste();
   poseLaLettre();
+  caleLePractice();
   recaleBalles();
   poseLesPanneaux();
   centrePiscine();
@@ -2546,10 +2557,12 @@ function dansLeHameau(x,y){
   const z=zoneAt(x,y);
   return z==='HAMEAU DU PRIEURÉ'||z==='MAISONS DE LISIÈRE'||z==='FORÊT DES HAMEAUX';
 }
-/* un couloir d'une seule case : si quelqu'un s'y plante, plus personne ne passe */
+/* Un couloir d'une seule case : si quelqu'un s'y plante, plus personne ne passe.
+   On regarde le terrain, pas les gens : deux copains qui discutent ne ferment
+   pas un passage, ils s'ecartent. */
+function murA(x,y){return SOLID.has(getTile(x,y));}
 function passageEtroit(x,y){
-  const g=solidAt(x-1,y), d=solidAt(x+1,y), h=solidAt(x,y-1), b=solidAt(x,y+1);
-  return (g&&d)||(h&&b);
+  return (murA(x-1,y)&&murA(x+1,y))||(murA(x,y-1)&&murA(x,y+1));
 }
 function bonPoste(x,y){
   if(x<2||y<2||x>MW-3||y>MH-3)return false;
@@ -2569,9 +2582,35 @@ function caseDeboutPres(x,y,r0){
     }
   return caseLibrePres(x,y,r0);
 }
+/* une case libre dans un interieur : meme idee, mais sur la carte de la maison */
+function caseLibreDans(nom,x,y){
+  const C=INT[nom]; if(!C)return null;
+  const dur=v=>SOLID.has(baseT(v));
+  for(let r=0;r<=6;r++)
+    for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){
+      if(Math.max(Math.abs(dx),Math.abs(dy))!==r)continue;
+      const a=x+dx,b=y+dy;
+      if(a<1||b<1||a>=C.w-1||b>=C.h-1)continue;
+      if(!dur(C.map[b*C.w+a]))return [a,b];
+    }
+  return null;
+}
 function recalePersonnages(){
+  /* ceux qui travaillent dedans reprennent leur poste */
+  Object.keys(POSTES_DEDANS).forEach(id=>{
+    const n=NPCS.find(x=>x.id===id), p=POSTES_DEDANS[id];
+    if(n&&p&&!(MONDE&&MONDE.pnj&&MONDE.pnj[id]&&MONDE.pnj[id].x!=null)){
+      n.inside=p.in;n.x=p.x;n.y=p.y;
+    }
+  });
   NPCS.forEach(n=>{
-    if(n.inside)return;
+    if(n.inside){
+      const C=INT[n.inside]; if(!C)return;
+      if(!SOLID.has(baseT(C.map[n.y*C.w+n.x])))return;
+      const q=caseLibreDans(n.inside,n.x,n.y);
+      if(q){n.x=q[0];n.y=q[1];}
+      return;
+    }
     if(bonPoste(n.x,n.y))return;
     const p=caseDeboutPres(n.x,n.y,0);
     if(p){n.x=p[0];n.y=p[1];}
@@ -4141,7 +4180,10 @@ function lieAt(x,y){
   const t=getTile(caseDe(x),caseDe(y));
   if(t===T.GREEN||t===T.FLAG)return 'green';
   if(t===T.SAND)return 'bunker';
-  if(t===T.FAIR||estDepart(t)||t===T.MAT)return 'fairway';
+  /* sur un tapis de practice on met un tee, comme tout le monde : le driver
+     ne subit pas la penalite du coup joue au sol */
+  if(t===T.MAT||estDepart(t))return 'tee';
+  if(t===T.FAIR)return 'fairway';
   if(t===T.TREE||t===T.DENSE||ARBRES.has(t))return 'bois';
   if(t===T.WATER||t===T.MARE)return 'eau';
   return 'rough';
@@ -4548,17 +4590,111 @@ function quitGolf(msg){
 /* ---------- le cours collectif ---------- */
 const cours={on:false,shot:0,max:10,tx:14,ty:42,pro:'GILLES'};
 const TAPIS=[[25,38],[25,41],[25,44],[25,47]];
+/* ---------- le practice, tel qu'il est peint ----------
+   Les tapis disent tout : alignes en ligne, on tape perpendiculairement ; alignes
+   en colonne, on tape sur le cote. Le sens, c'est celui ou il y a de la place.
+   Comme ca Pierre peut tourner le practice d'un quart de tour dans l'atelier et
+   tout suit : la visee, la cible du cours, les pros, les panneaux de distance. */
+const PRACTICE={tapis:[],dx:0,dy:-1,angle:-Math.PI/2,cx:15,cy:56,long:0,ligne:true};
+function trouveLePractice(){
+  const m=[];
+  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++) if(at(x,y)===T.MAT)m.push([x,y]);
+  if(!m.length)return;
+  PRACTICE.tapis=m;
+  const xs=m.map(q=>q[0]), ys=m.map(q=>q[1]);
+  const x0=Math.min(...xs), x1=Math.max(...xs), y0=Math.min(...ys), y1=Math.max(...ys);
+  PRACTICE.cx=Math.round((x0+x1)/2); PRACTICE.cy=Math.round((y0+y1)/2);
+  PRACTICE.ligne=(x1-x0)>=(y1-y0);
+  /* quatre sens possibles, on garde celui qui a le plus d'herbe devant lui */
+  const sens=PRACTICE.ligne?[[0,-1],[0,1]]:[[-1,0],[1,0]];
+  const HERBE=new Set([T.FAIR,T.ROUGH,T.GREEN,T.SAND,T.MAT,T.TEE]);
+  let best=null,bs=-1;
+  for(const [dx,dy] of sens){
+    let n=0;
+    for(let k=1;k<=26;k++){
+      const x=PRACTICE.cx+dx*k, y=PRACTICE.cy+dy*k;
+      if(x<0||y<0||x>=MW||y>=MH)break;
+      if(!HERBE.has(at(x,y)))break;
+      n++;
+    }
+    if(n>bs){bs=n;best=[dx,dy];}
+  }
+  if(!best)best=PRACTICE.ligne?[0,-1]:[-1,0];
+  PRACTICE.dx=best[0];PRACTICE.dy=best[1];PRACTICE.long=bs;
+  PRACTICE.angle=Math.atan2(best[1],best[0]);
+}
+/* le tapis le plus proche d'un point, et la case ou se poser dessus */
+function tapisPres(x,y){
+  let b=null,bd=1e9;
+  for(const q of PRACTICE.tapis){
+    const d=Math.hypot(q[0]-x,q[1]-y);
+    if(d<bd){bd=d;b=q;}
+  }
+  return b;
+}
+/* la cible du cours collectif : plein axe, a cent metres environ */
+function cibleDuCours(){
+  const k=Math.max(4,Math.min(PRACTICE.long-2,Math.round(105/M)));
+  return [PRACTICE.cx+PRACTICE.dx*k, PRACTICE.cy+PRACTICE.dy*k];
+}
+/* les quatre tapis du cours, repartis sur la ligne */
+function tapisDuCours(){
+  const m=PRACTICE.tapis.slice().sort((a,b)=>PRACTICE.ligne?(a[0]-b[0]):(a[1]-b[1]));
+  if(m.length<=1)return [[PRACTICE.cx,PRACTICE.cy]];
+  const out=[];
+  for(let i=0;i<4;i++)out.push(m[Math.min(m.length-1,Math.round(i*(m.length-1)/3))]);
+  return out;
+}
+/* on cale le practice sur ce qui est peint : cible, tapis, pros, panneaux */
+function caleLePractice(){
+  trouveLePractice();
+  if(!PRACTICE.tapis.length)return;
+  const c=cibleDuCours();
+  cours.tx=c[0];cours.ty=c[1];
+  const tp=tapisDuCours();
+  TAPIS.length=0; tp.forEach(q=>TAPIS.push([q[0],q[1]]));
+  /* les deux pros aux extremites de la ligne de tapis */
+  const m=PRACTICE.tapis.slice().sort((a,b)=>PRACTICE.ligne?(a[0]-b[0]):(a[1]-b[1]));
+  const bout=(q,sgn)=>{
+    for(let k=1;k<=4;k++){
+      const x=q[0]+(PRACTICE.ligne?sgn*k:0), y=q[1]+(PRACTICE.ligne?0:sgn*k);
+      if(bonPoste(x,y))return [x,y];
+    }
+    return q;
+  };
+  POSTES.gilles=bout(m[0],-1);
+  POSTES.pascal=bout(m[m.length-1],1);
+  /* Georgie se met au bout de la ligne, un peu a l'ecart, et il regarde taper */
+  const g0=POSTES.gilles;
+  for(let k=1;k<=4;k++){
+    const q=[g0[0]+(PRACTICE.ligne?-k:0), g0[1]+(PRACTICE.ligne?0:-k)];
+    if(bonPoste(q[0],q[1])){POSTES_PRACTICE.georgie=q;break;}
+  }
+  if(!POSTES_PRACTICE.georgie){
+    for(let k=1;k<=4;k++){
+      const q=[PRACTICE.cx-PRACTICE.dx*k, PRACTICE.cy-PRACTICE.dy*k];
+      if(bonPoste(q[0],q[1])){POSTES_PRACTICE.georgie=q;break;}
+    }
+  }
+}
+const POSTES_PRACTICE={};
+/* Ceux qui travaillent dedans ont aussi leur place. Jacky tient les vestiaires :
+   elle est dans l'allee entre les deux rangees de casiers, et elle regarde tes
+   chaussures avant de te regarder toi. */
+const POSTES_DEDANS={ jackie:{in:'club',x:8,y:2}, barman:{in:'club',x:33,y:21} };
 function startCours(pro,invite){
   const dispo=NPCS.filter(n=>n.gang&&!n.gone&&!game.party.includes(n.id)&&!n.dog).slice(0,3);
   players=[mkP('moi',game.hero.name,game.heroPal,true,0,game.heroId)];
   dispo.forEach(n=>players.push(mkP(n.id,n.name,n.pal,false,skillDe(n.id),n.id)));
   players.forEach((p,i)=>{
     const t=TAPIS[i]||TAPIS[0];
-    p.cours=0;p.bx=t[0]+0.5;p.by=t[1]+0.5;p.px=p.bx;p.py=p.by;p.lie='fairway';p.dir=2;
+    p.cours=0;p.bx=t[0]+0.5;p.by=t[1]+0.5;p.px=p.bx;p.py=p.by;p.lie='fairway';
+    p.dir=(Math.abs(PRACTICE.dx)>Math.abs(PRACTICE.dy))?(PRACTICE.dx>0?3:2):(PRACTICE.dy>0?0:1);
   });
   cours.on=true;cours.shot=0;cours.max=10;cours.pro=pro;
   golf.on=true;golf.practice=true;golf.hole=-1;golf.cible=null;golf.cur=0;golf.hgt=0;
-  golf.aim=Math.PI;golf.club=autoClub(coursDist(players[0]),false);golf.phase='aim';
+  golf.aim=Math.atan2(cours.ty+0.5-players[0].by,cours.tx+0.5-players[0].bx);
+  golf.club=autoClub(coursDist(players[0]),false,'fairway',game.heroId);golf.phase='aim';
   game.state=S.GOLF;
   if(!invite)netSend({t:'invite',kind:'cours',from:game.hero.name});
   toast('Cours collectif. Dix balles, la plus proche de la cible.');
@@ -4581,7 +4717,7 @@ function coursTurn(){
   const p=players[golf.cur];
   p.bx=p.px;p.by=p.py;p.lie='fairway';golf.hgt=0;
   golf.aim=Math.atan2(cours.ty+0.5-p.by,cours.tx+0.5-p.bx);
-  if(p.human){golf.club=autoClub(coursDist(p),false);golf.phase='aim';}
+  if(p.human){golf.club=autoClub(coursDist(p),false,'fairway',p.fid||p.id);golf.phase='aim';}
   else{golf.phase='ia';golf.wait=26;golf.gene=false;golf.res2='';}
 }
 function coursFin(){
@@ -4601,8 +4737,11 @@ function startPractice(){
   if(game.seau<=0){say(["Le seau est vide. Alain en vend à la cabane, près du départ du 1.",'Cinq euros. Il te fera le prix de personne.'],null,'ALAIN');return;}
   players=[mkP('moi',game.hero.name,game.heroPal,true,0,game.heroId)];
   const p=players[0];
-  p.bx=game.px-1.5;p.by=game.py+0.5;p.px=p.bx;p.py=p.by;p.lie='fairway';
-  golf.on=true;golf.practice=true;golf.hole=-1;golf.cur=0;golf.aim=Math.PI;
+  /* on tape depuis le tapis, dans l'axe du practice */
+  const t0=tapisPres(game.px,game.py)||[game.px,game.py];
+  p.bx=t0[0]+0.5+PRACTICE.dx*0.6;p.by=t0[1]+0.5+PRACTICE.dy*0.6;
+  p.px=p.bx;p.py=p.by;p.lie='fairway';
+  golf.on=true;golf.practice=true;golf.hole=-1;golf.cur=0;golf.aim=PRACTICE.angle;
   golf.club=0;golf.phase='aim';golf.cible=null;
   game.state=S.GOLF;toast('Practice. '+game.seau+' balles dans le seau.');
 }
@@ -5933,7 +6072,7 @@ const AGENDA={
   {x:59,y:55,ou:'devant le club',d:[
     ["Tiens, un jeune. Tu veux un conseil ? Ne joue jamais pour de l'argent."],
     ["On m'a repris ma carte. On ne m'a jamais rendu ma réputation.","Enfin. Tape ta balle, toi."]]},
-  {x:16,y:54,ou:'au practice',d:[
+  {x:16,y:54,pract:1,ou:'au practice',d:[
     ["Regarde-moi ce geste. Non, le mien. Il ne reste que ça.","Vas-y, tape. Je regarde."],
     ["Il y a des balles qui bougent toutes seules dans le rough.","C'est tout ce que je dirai. Va taper."]]},
   {x:66,y:66,ou:'au putting green',d:[
@@ -6032,6 +6171,8 @@ function placeAgenda(){
     if(game.party.includes(id))continue;
     if(game.phase==='f'&&AU_FEU.includes(id))continue;
     const l=AGENDA[id], p=l[c%l.length];
+    /* le poste du practice suit les tapis, ou qu'ils soient */
+    if(p.pract&&POSTES_PRACTICE[id]){p.x=POSTES_PRACTICE[id][0];p.y=POSTES_PRACTICE[id][1];}
     n.inside=p.in||null;
     if(p.in){n.x=p.x;n.y=p.y;}
     else{
@@ -7320,6 +7461,8 @@ NPCS.forEach(n=>{
   put(n.x,n.y,T.ROUGH);
 });
 NPCS.forEach(n=>{n.gx0=n.x;n.gy0=n.y;});
+caleLePractice();
+poseLesPanneaux();
 placeAccueil();
 placeAgenda();
 trouveLaPiste();

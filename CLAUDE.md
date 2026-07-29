@@ -143,6 +143,25 @@ La **lettre de Lise Lebel** : dix morceaux aux quatre coins du parcours, un obje
 chacun. Quand on les a tous, elle se lit dans le menu. Son texte s'ecrit dans
 l'atelier, onglet Textes, categorie « La lettre de Lise Lebel ».
 
+## Le practice, oriente par ses tapis
+
+`trouveLePractice()` lit les cases `T.MAT` sur la carte : **alignees en ligne on tape
+perpendiculairement, alignees en colonne on tape sur le cote**, et le sens est celui ou
+il y a de l'herbe devant. Tout en decoule et se recale tout seul :
+
+- la visee du seau de balles, et la balle posee sur le tapis
+- la cible du cours collectif, a cent metres dans l'axe, et ses quatre tapis
+- Gilles et Pascal aux deux bouts de la ligne, Georgie un peu a l'ecart
+- les panneaux 50, 100, 150 et 200, plantes de chaque cote de l'axe de tir
+
+Pierre peut tourner le practice d'un quart de tour dans l'atelier, rien ne casse.
+Un tapis de practice compte comme un depart : on y met un tee, donc le driver n'a pas
+la penalite du coup joue au sol.
+
+`POSTES_DEDANS` place ceux qui travaillent a l'interieur, et `recalePersonnages()`
+s'occupe desormais aussi des interieurs : Jacky tient les vestiaires, dans l'allee
+entre les deux rangees de casiers.
+
 ## La piste de grass board
 
 Elle est **le morceau de terre d'un seul tenant** autour de `PENTE_REF`, et nulle

@@ -13,7 +13,7 @@ if (src.indexOf('chargeMonde().then(load).finally(loop);') < 0) throw new Error(
 src = src.replace('chargeMonde().then(load).finally(loop);', `globalThis.__t={game,golf,net,update,render,map,MW,MH,T,at,put,NPCS,ITEMS,
   HOLES,PICKS,INT,DOORS,LOCKED,cars,shards,keys,press,release,consume,MAMOU,MAMOU_WIN,FEU,
   players,P_:()=>players,goInside,goOutside,zoneAt,menuList,buildMini,SOLID,getTile,S,ballSpots,updatePick,
-  startHole,save,load,solidAt,placeGang,bruitDuSol,SOL_BRUIT,bonPoste,SOL_DEBOUT,passageEtroit,dansLeHameau,caseDeboutPres,recalePersonnages,roam,MAMOU,LETTRE,LETTRE_BASE,NB_LETTRE,bouts,lettreComplete,poseLaLettre,coinsDuGolf,PENTE_CASES,PENTE_BORD,surLaPiste,trouveLaPiste,semeLesBalles,jourFlottant,repousseLesBalles,effaceLesTraces,traces,poseTrace,jardinPrive,CLUB_C,FOES,startFight,posePresDeLaPiste,pente,startPente,SPOTS,TRACKS,musWant,AGENDA,RENTRENT,creneau,placeAgenda,PANNEAUX,porteeDe,hauteurObstacle,sanction,reculeSurLaLigne,autoClub,puissancePour,CLUBS,M,LIEF,PUTTER,caseDe,ROULE,EAUX,HORS,AVALE,pente,CRIS,phaseOf,BALLS,updateCars,timeStep,breakWindow,velo,updateVelo,startPente,updatePente,rendVoiturette,leaves,inBrush,ballVisible,estVitre,estCassee,VILLAS,LISIERE,EVENOU,VOITURES,FICHES,fiche,skillDe,vitPuissance,vitPrecision,longueurDe,cours,startCours,INVITES,inviteRecue,FEU,
+  startHole,save,load,solidAt,placeGang,bruitDuSol,SOL_BRUIT,bonPoste,SOL_DEBOUT,passageEtroit,dansLeHameau,caseDeboutPres,recalePersonnages,roam,MAMOU,LETTRE,LETTRE_BASE,NB_LETTRE,bouts,lettreComplete,poseLaLettre,coinsDuGolf,PENTE_CASES,PENTE_BORD,PRACTICE,trouveLePractice,caleLePractice,tapisPres,cibleDuCours,tapisDuCours,TAPIS,POSTES,POSTES_PRACTICE,POSTES_DEDANS,startPractice,startCours,caseLibreDans,quitGolf,surLaPiste,trouveLaPiste,semeLesBalles,jourFlottant,repousseLesBalles,effaceLesTraces,traces,poseTrace,jardinPrive,CLUB_C,FOES,startFight,posePresDeLaPiste,pente,startPente,SPOTS,TRACKS,musWant,AGENDA,RENTRENT,creneau,placeAgenda,PANNEAUX,porteeDe,hauteurObstacle,sanction,reculeSurLaLigne,autoClub,puissancePour,CLUBS,M,LIEF,PUTTER,caseDe,ROULE,EAUX,HORS,AVALE,pente,CRIS,phaseOf,BALLS,updateCars,timeStep,breakWindow,velo,updateVelo,startPente,updatePente,rendVoiturette,leaves,inBrush,ballVisible,estVitre,estCassee,VILLAS,LISIERE,EVENOU,VOITURES,FICHES,fiche,skillDe,vitPuissance,vitPrecision,longueurDe,cours,startCours,INVITES,inviteRecue,FEU,
   pers,dogSpr,BODY_SIDE,DOG_SIDE,sfx,ambiances,piscineOuverte,baignade,entreDansLeau,proposePartie,updateAttente,departDu1,hNow,AU_FEU,placesDuFeu,placeAutourDuFeu,trouveLeFeu,FEU,FEU_TALK,feuMenu,eteindreLeFeu,bikeSpr,BIKE_DOWN,BIKE_UP,BIKE_SIDE,MISSIONS,ACTES,mission,missionCourante,niveau,chaparde,voleVoiturette,updateVoiturette,BUTIN,
   BASE,appliqueMonde,carteDe,TUILE_OVR,CORPS,CORPS_BASE,FICHES_BASE,tile,cache,MW_:MW,
   BIBLI,MIROIR,ROT,SAUT,MODELES,HOLES_BASE,DOORS_BASE,estDepart,VILLAS_:VILLAS,
@@ -1380,6 +1380,99 @@ check('elle se reecrit depuis l atelier', (() => {
 })());
 remetMonde();
 game.items = {};
+
+/* ---------- 18. le practice, oriente par ses tapis ---------- */
+check('les tapis du practice sont sur la carte', t.PRACTICE.tapis.length >= 4,
+  t.PRACTICE.tapis.length + ' tapis');
+check('on tape perpendiculairement a la ligne de tapis', (() => {
+  const P = t.PRACTICE;
+  return P.ligne ? (P.dx === 0 && P.dy !== 0) : (P.dy === 0 && P.dx !== 0);
+})(), 'ligne=' + t.PRACTICE.ligne + ' sens ' + t.PRACTICE.dx + ',' + t.PRACTICE.dy);
+check('il y a de la place devant pour taper', t.PRACTICE.long >= 10,
+  t.PRACTICE.long + ' cases devant');
+check('la visee du practice suit cet axe', (() => {
+  clear(); game.state = t.S.WORLD; game.inside = null; game.seau = 12;
+  const m = t.PRACTICE.tapis[3] || t.PRACTICE.tapis[0];
+  tp(m[0], m[1]); t.startPractice();
+  const dx = Math.cos(t.golf.aim), dy = Math.sin(t.golf.aim);
+  return Math.abs(dx - t.PRACTICE.dx) < 0.05 && Math.abs(dy - t.PRACTICE.dy) < 0.05;
+})(), 'aim ' + (t.golf.aim * 180 / Math.PI).toFixed(0) + ' deg');
+check('la balle part du tapis, pas d a cote', (() => {
+  const p = t.P_()[0];
+  return t.PRACTICE.tapis.some(q => Math.hypot(q[0] + 0.5 - p.bx, q[1] + 0.5 - p.by) < 1.2);
+})());
+t.quitGolf('');
+check('la cible du cours est dans l axe, a bonne distance', (() => {
+  const P = t.PRACTICE, d = Math.hypot(t.cours.tx - P.cx, t.cours.ty - P.cy) * t.M;
+  const vx = Math.sign(t.cours.tx - P.cx), vy = Math.sign(t.cours.ty - P.cy);
+  return d > 60 && d < 200 && vx === P.dx && vy === P.dy;
+})(), Math.round(Math.hypot(t.cours.tx - t.PRACTICE.cx, t.cours.ty - t.PRACTICE.cy) * t.M) + ' m');
+check('les quatre tapis du cours sont de vrais tapis',
+  t.TAPIS.length === 4 && t.TAPIS.every(q => at(q[0], q[1]) === T.MAT),
+  t.TAPIS.map(q => q.join(',') + ':' + at(q[0], q[1])).join(' '));
+check('ils sont repartis sur la ligne',
+  new Set(t.TAPIS.map(q => q.join(','))).size === 4);
+check('les pros sont aux deux bouts de la ligne', (() => {
+  const g = t.POSTES.gilles, p = t.POSTES.pascal;
+  return g && p && t.bonPoste(g[0], g[1]) && t.bonPoste(p[0], p[1]) &&
+    Math.hypot(g[0] - p[0], g[1] - p[1]) > 6;
+})(), JSON.stringify(t.POSTES.gilles) + ' / ' + JSON.stringify(t.POSTES.pascal));
+check('Georgie a une place au practice',
+  !!t.POSTES_PRACTICE.georgie && t.bonPoste(t.POSTES_PRACTICE.georgie[0], t.POSTES_PRACTICE.georgie[1]),
+  JSON.stringify(t.POSTES_PRACTICE.georgie));
+check('les panneaux sont plantes le long de l axe de tir', (() => {
+  const P = t.PRACTICE, vus = {};
+  for (let y = 0; y < t.MH; y++) for (let x = 0; x < t.MW; x++) {
+    const v = t.baseT(at(x, y));
+    const m = v === T.PAN50 ? 50 : v === T.PAN100 ? 100 : v === T.PAN150 ? 150 : v === T.PAN200 ? 200 : 0;
+    if (!m) continue;
+    const d = Math.round((Math.abs(x - P.cx) + Math.abs(y - P.cy)) * 0);
+    const le = P.ligne ? Math.abs(y - P.cy) : Math.abs(x - P.cx);
+    vus[m] = Math.round(le * t.M);
+  }
+  return [50, 100, 150, 200].every(m => vus[m] && Math.abs(vus[m] - m) <= 10);
+})());
+/* le cours collectif tourne dans le bon sens */
+clear(); game.state = t.S.WORLD; game.inside = null;
+t.startCours('GILLES', true);
+check('le cours place tout le monde sur les tapis',
+  t.P_().every(p => t.TAPIS.some(q => Math.abs(q[0] + 0.5 - p.bx) < 0.6 && Math.abs(q[1] + 0.5 - p.by) < 0.6)),
+  t.P_().map(p => p.bx.toFixed(1) + ',' + p.by.toFixed(1)).join(' '));
+check('et ils visent tous la cible', (() => {
+  const dx = Math.cos(t.golf.aim), dy = Math.sin(t.golf.aim);
+  const p = t.P_()[0];
+  const vx = t.cours.tx + 0.5 - p.bx, vy = t.cours.ty + 0.5 - p.by;
+  const n = Math.hypot(vx, vy) || 1;
+  return Math.abs(dx - vx / n) < 0.1 && Math.abs(dy - vy / n) < 0.1;
+})());
+check('ils regardent dans la bonne direction', (() => {
+  const P = t.PRACTICE;
+  const att = (Math.abs(P.dx) > Math.abs(P.dy)) ? (P.dx > 0 ? 3 : 2) : (P.dy > 0 ? 0 : 1);
+  return t.P_().every(p => p.dir === att);
+})());
+t.quitGolf(''); clear();
+
+/* ---------- 19. Jacky dans les vestiaires ---------- */
+const jk = t.NPCS.find(n => n.id === 'jackie');
+check('Jacky est dans le club house', !!jk && jk.inside === 'club', jk ? jk.inside : 'absente');
+check('Jacky est dans les vestiaires', (() => {
+  const C = t.INT.club;
+  /* les casiers sont sur les rangees 1 et 3, l allee entre les deux */
+  const casiers = [];
+  for (let y = 0; y < C.h; y++) for (let x = 0; x < C.w; x++)
+    if (t.baseT(C.map[y * C.w + x]) === T.LOCKER) casiers.push([x, y]);
+  return casiers.length > 4 && casiers.some(q => Math.hypot(q[0] - jk.x, q[1] - jk.y) < 3);
+})(), jk.x + ',' + jk.y);
+check('elle n est pas dans un mur',
+  !t.SOLID.has(t.baseT(t.INT.club.map[jk.y * t.INT.club.w + jk.x])));
+check('personne ne reste plante dans un mur, dedans non plus',
+  t.NPCS.filter(n => n.inside && t.INT[n.inside]).every(n => {
+    const C = t.INT[n.inside];
+    return !t.SOLID.has(t.baseT(C.map[n.y * C.w + n.x]));
+  }),
+  t.NPCS.filter(n => n.inside && t.INT[n.inside] &&
+    t.SOLID.has(t.baseT(t.INT[n.inside].map[n.y * t.INT[n.inside].w + n.x])))
+    .map(n => (n.name || n.id) + ' ' + n.inside + ' ' + n.x + ',' + n.y).join(' | '));
 
 /* ---------- verdict ---------- */
 console.log('\n  ' + ok + ' verifications passees, ' + ko + ' echec(s).');
